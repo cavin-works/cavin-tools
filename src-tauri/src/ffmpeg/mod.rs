@@ -1,3 +1,7 @@
+pub mod info;
+
+pub use info::get_video_info;
+
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
