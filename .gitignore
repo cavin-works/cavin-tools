@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# FFmpeg binaries (will be added during build)
+src-tauri/ffmpeg/**/*.exe
+src-tauri/ffmpeg/**/*.bin
+!src-tauri/ffmpeg/.gitkeep
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Package manager lockfiles (choose one)
+# Uncomment your preferred package manager
+# yarn.lock
+# pnpm-lock.yaml
+package-lock.json
