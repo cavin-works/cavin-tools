@@ -38,11 +38,32 @@ async fn load_video(path: String) -> Result<models::VideoInfo, String> {
     ffmpeg::get_video_info(path).await
 }
 
+/// 打开文件选择对话框
+///
+/// # Returns
+/// 返回选中的视频文件路径,如果用户取消则返回None
+#[tauri::command]
+async fn open_file_dialog() -> Option<String> {
+    use tauri_plugin_dialog::DialogExt;
+    use tauri_plugin_dialog::FilePickerBuilder;
+
+    // TODO: 需要在 Tauri 2.x 中正确实现文件对话框
+    // 这需要使用 tauri-plugin-dialog 的 FilePickerBuilder
+    // 暂时返回 None,等待 Tauri 2.x dialog API 稳定
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![greet, check_ffmpeg, load_video])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            check_ffmpeg,
+            load_video,
+            open_file_dialog
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

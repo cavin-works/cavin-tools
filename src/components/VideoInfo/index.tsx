@@ -1,4 +1,4 @@
-import { useVideoStore } from '@/store/videoStore';
+import { useVideoStore } from '../../store/videoStore';
 
 export function VideoInfo() {
   const { currentVideo } = useVideoStore();
