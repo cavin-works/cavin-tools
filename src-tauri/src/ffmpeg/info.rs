@@ -16,7 +16,7 @@ fn parse_ffmpeg_output(output: &str, path: String) -> Result<VideoInfo, String> 
         // 解析时长
         if line.contains("Duration:") {
             let time_str = line.split("Duration:").nth(1)
-                .ok_or("无法解析时长")?.trim();
+                .ok_or_else(|| format!("无法解析时长，原始内容: {}", line))?.trim();
             let parts: Vec<&str> = time_str.split(':').collect();
             if parts.len() >= 3 {
                 let hours: f64 = parts[0].parse().unwrap_or(0.0);
@@ -46,10 +46,15 @@ fn parse_ffmpeg_output(output: &str, path: String) -> Result<VideoInfo, String> 
                 }
             }
 
-            // 解析帧率
+            // 解析帧率 - 改进:使用 ends_with 而不是 contains 以避免误匹配
             for part in &parts {
-                if part.contains("fps") {
-                    fps = part.replace("fps", "").trim().parse().unwrap_or(0.0);
+                if part.ends_with("fps") {
+                    // 更精确地提取数值:移除 fps 后缀并清理可能的特殊字符
+                    let fps_str = part
+                        .trim_end_matches("fps")
+                        .trim()
+                        .trim_start_matches('r'); // 处理类似 "r30" 的情况
+                    fps = fps_str.parse().unwrap_or(0.0);
                 }
             }
         }
@@ -100,15 +105,21 @@ pub async fn get_video_info(path: String) -> Result<VideoInfo, String> {
     let ffmpeg_path = get_ffmpeg_path()
         .ok_or_else(|| "未找到FFmpeg可执行文件".to_string())?;
 
-    // 运行FFmpeg -i命令
-    let output = Command::new(&ffmpeg_path)
-        .arg("-i")
-        .arg(&path)
-        .output()
-        .map_err(|e| format!("执行FFmpeg失败: {}", e))?;
+    // 使用 spawn_blocking 将同步的 FFmpeg 操作移到独立线程
+    // 避免 async 函数中执行阻塞操作影响异步运行时
+    tokio::task::spawn_blocking(move || {
+        // 运行FFmpeg -i命令
+        let output = Command::new(&ffmpeg_path)
+            .arg("-i")
+            .arg(&path)
+            .output()
+            .map_err(|e| format!("执行FFmpeg失败: {}", e))?;
 
-    // FFmpeg将信息输出到stderr
-    let stderr = String::from_utf8_lossy(&output.stderr);
+        // FFmpeg将信息输出到stderr
+        let stderr = String::from_utf8_lossy(&output.stderr);
 
-    parse_ffmpeg_output(&stderr, path)
+        parse_ffmpeg_output(&stderr, path)
+    })
+    .await
+    .map_err(|e| format!("异步任务执行失败: {}", e))?
 }
