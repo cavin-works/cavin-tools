@@ -19,7 +19,13 @@ pub fn get_ffmpeg_path() -> Option<PathBuf> {
     // 回退到应用目录下的ffmpeg
     if let Ok(exe_path) = env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
-            let ffmpeg_path = exe_dir.join("ffmpeg.exe");
+            // 根据平台使用正确的可执行文件名
+            let ffmpeg_name = if cfg!(windows) {
+                "ffmpeg.exe"
+            } else {
+                "ffmpeg"
+            };
+            let ffmpeg_path = exe_dir.join(ffmpeg_name);
             if ffmpeg_path.exists() {
                 return Some(ffmpeg_path);
             }
