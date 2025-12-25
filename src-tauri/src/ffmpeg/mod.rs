@@ -1,6 +1,16 @@
 pub mod info;
+pub mod compress;
+pub mod speed;
+pub mod extract;
+pub mod trim;
+pub mod gif;
 
 pub use info::get_video_info;
+pub use compress::{compress_video, CompressParams};
+pub use speed::{change_video_speed, SpeedParams};
+pub use extract::{extract_frames, ExtractParams};
+pub use trim::{trim_video, TrimParams};
+pub use gif::{convert_to_gif, GifParams};
 
 use std::env;
 use std::path::PathBuf;
