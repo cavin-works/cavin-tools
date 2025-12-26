@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from './store/videoStore';
 import { VideoInfo } from './components/VideoInfo';
@@ -7,12 +7,22 @@ import { ControlPanel } from './components/ControlPanel';
 import { ProgressBar } from './components/ProgressBar';
 import { isValidVideoFile } from './utils/fileValidation';
 import { showError, showSuccess } from './utils/errorHandling';
+import { listen } from '@tauri-apps/api/event';
 
 function App() {
   const { currentVideo, setCurrentVideo, setError } = useVideoStore();
   const [isDragging, setIsDragging] = useState(false);
+  const [appReady, setAppReady] = useState(false);
+
+  // 标记应用已加载
+  useEffect(() => {
+    setAppReady(true);
+    console.log('App mounted successfully');
+  }, []);
 
   const handleFileSelect = useCallback(async (filePath: string) => {
+    console.log('handleFileSelect called with:', filePath);
+
     if (!isValidVideoFile(filePath)) {
       showError('不支持的视频格式,请选择 MP4/MOV/AVI/WMV 等格式');
       setError('不支持的视频格式');
@@ -32,6 +42,21 @@ function App() {
       setError(errorMsg);
     }
   }, [setCurrentVideo, setError]);
+
+  // 监听Tauri的文件拖拽事件
+  useEffect(() => {
+    const unlisten = listen('tauri://file-drop', (event: any) => {
+      console.log('Tauri file-drop event:', event);
+      const paths = event.payload as string[];
+      if (paths && paths.length > 0) {
+        handleFileSelect(paths[0]);
+      }
+    });
+
+    return () => {
+      unlisten.then(fn => fn());
+    };
+  }, [handleFileSelect]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -62,6 +87,10 @@ function App() {
     e.preventDefault();
     setIsDragging(false);
   }, []);
+
+  if (!appReady) {
+    return <div className="flex items-center justify-center h-screen">加载中...</div>;
+  }
 
   return (
     <div
