@@ -4,21 +4,7 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "shell:default",
-    {
-      "identifier": "allow-video-commands",
-      "description": "允许调用视频编辑相关命令",
-      "commands": {
-        "allow": [
-          "check_ffmpeg",
-          "load_video",
-          "compress_video_command",
-          "change_video_speed",
-          "extract_frames",
-          "trim_video",
-          "convert_to_gif"
-        ]
-      }
-    }
+    "core:event:default",
+    "shell:default"
   ]
 }
