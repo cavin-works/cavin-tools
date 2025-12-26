@@ -29,18 +29,6 @@ async fn load_video(path: String) -> Result<models::VideoInfo, String> {
     ffmpeg::get_video_info(path).await
 }
 
-/// 打开文件选择对话框
-///
-/// # Returns
-/// 返回选中的视频文件路径,如果用户取消则返回None
-#[tauri::command]
-async fn open_file_dialog() -> Option<String> {
-    // TODO: 需要在 Tauri 2.x 中正确实现文件对话框
-    // 这需要使用 tauri-plugin-dialog 的 FileDialogBuilder
-    // 暂时返回 None,等待 Tauri 2.x dialog API 稳定
-    None
-}
-
 /// 压缩视频
 #[tauri::command]
 async fn compress_video_command(
@@ -140,11 +128,9 @@ async fn convert_to_gif(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             check_ffmpeg,
             load_video,
-            open_file_dialog,
             compress_video_command,
             change_video_speed,
             extract_frames,

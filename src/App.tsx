@@ -37,12 +37,18 @@ function App() {
     e.preventDefault();
     setIsDragging(false);
 
+    console.log('Drop event triggered');
     const files = Array.from(e.dataTransfer.files);
+    console.log('Files dropped:', files);
+
     if (files.length > 0) {
       // Tauri会提供文件路径
       const path = (files[0] as any).path;
+      console.log('File path:', path);
       if (path) {
         handleFileSelect(path);
+      } else {
+        showError('无法获取文件路径');
       }
     }
   }, [handleFileSelect]);
@@ -72,23 +78,11 @@ function App() {
         {!currentVideo ? (
           <div className="text-center py-20 border-2 border-dashed border-gray-300 rounded-lg">
             <p className="text-gray-600 mb-4 text-lg">
-              拖拽视频文件到此处,或点击导入
+              拖拽视频文件到此处导入
             </p>
-            <button
-              onClick={async () => {
-                try {
-                  const selected = await invoke<string>('open_file_dialog');
-                  if (selected) {
-                    handleFileSelect(selected);
-                  }
-                } catch (error) {
-                  showError('打开文件对话框失败');
-                }
-              }}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              导入视频
-            </button>
+            <p className="text-gray-400 text-sm">
+              支持 MP4, MOV, AVI, WMV, MKV, FLV, WebM 格式
+            </p>
           </div>
         ) : (
           <div className="space-y-6">
