@@ -10,7 +10,6 @@ fn parse_ffmpeg_output(output: &str, path: String) -> Result<VideoInfo, String> 
     let mut fps = 0.0;
     let mut codec = String::new();
     let mut bitrate = 0u64;
-    let mut format = String::new();
 
     for line in output.lines() {
         // 解析时长

@@ -1,5 +1,5 @@
 use std::process::{Command, Stdio};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use super::get_ffmpeg_path;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

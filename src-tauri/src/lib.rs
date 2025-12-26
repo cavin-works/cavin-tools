@@ -2,20 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::{Deserialize, Serialize};
+use tauri::Emitter;
 
 // 导出ffmpeg模块
 pub mod ffmpeg;
 pub mod models;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct GreetArgs {
-    name: String,
-}
-
-#[tauri::command]
-fn greet(name: String) -> String {
-    format!("Hello, {}! 来自Tauri的问候!", name)
-}
 
 /// 检查FFmpeg是否可用
 ///
@@ -44,11 +35,8 @@ async fn load_video(path: String) -> Result<models::VideoInfo, String> {
 /// 返回选中的视频文件路径,如果用户取消则返回None
 #[tauri::command]
 async fn open_file_dialog() -> Option<String> {
-    use tauri_plugin_dialog::DialogExt;
-    use tauri_plugin_dialog::FilePickerBuilder;
-
     // TODO: 需要在 Tauri 2.x 中正确实现文件对话框
-    // 这需要使用 tauri-plugin-dialog 的 FilePickerBuilder
+    // 这需要使用 tauri-plugin-dialog 的 FileDialogBuilder
     // 暂时返回 None,等待 Tauri 2.x dialog API 稳定
     None
 }
@@ -154,7 +142,6 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
             check_ffmpeg,
             load_video,
             open_file_dialog,
