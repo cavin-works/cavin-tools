@@ -10,10 +10,21 @@ import { RefreshCw } from 'lucide-react';
 const ZOOM_HINT_TIMEOUT_MS = 1500;
 const PIXELS_PER_SECOND_BASE = 100;
 
+// 边界检查函数：确保缩放级别在有效范围内
+const clampZoomLevel = (level: number): number => {
+  const minLevel = ZOOM_LEVELS[0];
+  const maxLevel = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+  return Math.max(minLevel, Math.min(maxLevel, level));
+};
+
 export function Timeline() {
   const { currentVideo, timelineStart, timelineEnd, setTimelineRegion } = useVideoStore();
   const [zoomLevel, setZoomLevel] = useState<number>(() => {
-    return currentVideo ? getInitialZoomForVideo(currentVideo.duration) : 1.0;
+    if (currentVideo) {
+      const initialZoom = getInitialZoomForVideo(currentVideo.duration);
+      return clampZoomLevel(initialZoom);
+    }
+    return 1.0;
   });
   const [showZoomHint, setShowZoomHint] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,7 +33,8 @@ export function Timeline() {
   // Update zoom level when video changes
   useEffect(() => {
     if (currentVideo) {
-      setZoomLevel(getInitialZoomForVideo(currentVideo.duration));
+      const initialZoom = getInitialZoomForVideo(currentVideo.duration);
+      setZoomLevel(clampZoomLevel(initialZoom));
     }
   }, [currentVideo?.path, currentVideo?.duration]);
 
@@ -48,17 +60,22 @@ export function Timeline() {
   }, [setTimelineRegion]);
 
   const handleZoomChange = useCallback((direction: number) => {
-    const currentIndex = ZOOM_LEVELS.findIndex(level => level === zoomLevel);
-    if (currentIndex === -1) {
-      // Current zoom not in array, find closest
-      const closest = findClosestZoomLevel(zoomLevel);
-      const closestIndex = ZOOM_LEVELS.findIndex(level => level === closest);
-      const newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, closestIndex + direction));
-      setZoomLevel(ZOOM_LEVELS[newIndex]);
-    } else {
-      const newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, currentIndex + direction));
-      setZoomLevel(ZOOM_LEVELS[newIndex]);
-    }
+    setZoomLevel(prevLevel => {
+      const currentIndex = ZOOM_LEVELS.findIndex(level => level === prevLevel);
+
+      let newIndex: number;
+      if (currentIndex === -1) {
+        // Current zoom not in array, find closest and navigate
+        const closest = findClosestZoomLevel(prevLevel);
+        const closestIndex = ZOOM_LEVELS.findIndex(level => level === closest);
+        newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, closestIndex + direction));
+      } else {
+        newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, currentIndex + direction));
+      }
+
+      const newLevel = ZOOM_LEVELS[newIndex];
+      return clampZoomLevel(newLevel);
+    });
 
     // Show zoom hint with proper cleanup
     setShowZoomHint(true);
@@ -66,10 +83,11 @@ export function Timeline() {
       clearTimeout(zoomHintTimeoutRef.current);
     }
     zoomHintTimeoutRef.current = setTimeout(() => setShowZoomHint(false), ZOOM_HINT_TIMEOUT_MS);
-  }, [zoomLevel]);
+  }, []);
 
   const handleResetZoom = useCallback(() => {
-    setZoomLevel(getInitialZoomForVideo(duration));
+    const resetZoom = getInitialZoomForVideo(duration);
+    setZoomLevel(clampZoomLevel(resetZoom));
     setShowZoomHint(true);
     if (zoomHintTimeoutRef.current) {
       clearTimeout(zoomHintTimeoutRef.current);
@@ -85,21 +103,27 @@ export function Timeline() {
       const direction = event.deltaY > 0 ? -1 : 1;
       const step = event.ctrlKey || event.metaKey ? 2 : 1;
 
-      const currentIndex = ZOOM_LEVELS.findIndex(level => level === zoomLevel);
-      if (currentIndex !== -1) {
-        const newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, currentIndex + direction * step));
-        setZoomLevel(ZOOM_LEVELS[newIndex]);
+      setZoomLevel(prevLevel => {
+        const currentIndex = ZOOM_LEVELS.findIndex(level => level === prevLevel);
 
-        // Show zoom hint with proper cleanup
-        setShowZoomHint(true);
-        if (zoomHintTimeoutRef.current) {
-          clearTimeout(zoomHintTimeoutRef.current);
+        if (currentIndex !== -1) {
+          const newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, currentIndex + direction * step));
+          const newLevel = ZOOM_LEVELS[newIndex];
+          return clampZoomLevel(newLevel);
         }
-        zoomHintTimeoutRef.current = setTimeout(() => setShowZoomHint(false), ZOOM_HINT_TIMEOUT_MS);
+
+        return prevLevel;
+      });
+
+      // Show zoom hint with proper cleanup
+      setShowZoomHint(true);
+      if (zoomHintTimeoutRef.current) {
+        clearTimeout(zoomHintTimeoutRef.current);
       }
+      zoomHintTimeoutRef.current = setTimeout(() => setShowZoomHint(false), ZOOM_HINT_TIMEOUT_MS);
     }
     // Otherwise, allow default horizontal scrolling
-  }, [zoomLevel]);
+  }, []);
 
   const formatZoomLevel = (level: number): string => {
     return level % 1 === 0 ? `${level}x` : `${level.toFixed(1)}x`;
