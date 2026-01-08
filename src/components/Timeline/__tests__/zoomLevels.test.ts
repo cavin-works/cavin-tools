@@ -27,6 +27,19 @@ describe('zoomLevels', () => {
       expect(getInitialZoomForVideo(301)).toBe(0.25);
       expect(getInitialZoomForVideo(600)).toBe(0.25);
     });
+
+    it('should handle edge case: zero duration', () => {
+      expect(getInitialZoomForVideo(0)).toBe(1.0);
+    });
+
+    it('should throw error for negative duration', () => {
+      expect(() => getInitialZoomForVideo(-1)).toThrow('Duration must be non-negative');
+      expect(() => getInitialZoomForVideo(-100)).toThrow('Duration must be non-negative');
+    });
+
+    it('should throw error for NaN duration', () => {
+      expect(() => getInitialZoomForVideo(NaN)).toThrow('Duration must be a valid number');
+    });
   });
 
   describe('findClosestZoomLevel', () => {

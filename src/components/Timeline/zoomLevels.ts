@@ -17,12 +17,24 @@ export const ZOOM_LEVELS = [
 
 /**
  * Get initial zoom level based on video duration
- * @param duration - Video duration in seconds
+ * @param duration - Video duration in seconds (must be non-negative)
  * @returns Recommended initial zoom level
+ * @throws {Error} If duration is NaN or negative
  */
 export function getInitialZoomForVideo(duration: number): number {
+  // Input validation
+  if (isNaN(duration)) {
+    throw new Error('Duration must be a valid number');
+  }
+  if (duration < 0) {
+    throw new Error('Duration must be non-negative');
+  }
+
+  // Edge case: zero duration videos
+  if (duration === 0) return 1.0;
+
   if (duration < 60) return 1.0;      // short videos (< 1 minute)
-  if (duration <= 300) return 0.5;    // medium videos (1-5 minutes)
+  if (duration <= 300) return 0.5;    // medium videos (1-5 minutes, inclusive)
   return 0.25;                        // long videos (> 5 minutes)
 }
 
