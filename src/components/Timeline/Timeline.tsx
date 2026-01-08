@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useVideoStore } from '../../store/videoStore';
 import { formatDuration } from '../../utils/fileValidation';
 import { TimelineSlider } from './TimelineSlider';
@@ -50,10 +50,31 @@ export function Timeline() {
   if (!currentVideo) return null;
 
   const duration = currentVideo.duration;
-  const pixelsPerSecond = PIXELS_PER_SECOND_BASE * zoomLevel;
-  const width = duration * pixelsPerSecond;
-  // 不再限制宽度,允许横向滚动显示完整视频
-  const actualWidth = Math.max(width, containerRef.current?.clientWidth || 800);
+
+  // Memoize formatted zoom level display
+  const formattedZoomLevel = useMemo(() => {
+    return zoomLevel % 1 === 0 ? `${zoomLevel}x` : `${zoomLevel.toFixed(1)}x`;
+  }, [zoomLevel]);
+
+  // Memoize button states
+  const buttonStates = useMemo(() => ({
+    canZoomOut: zoomLevel > ZOOM_LEVELS[0],
+    canZoomIn: zoomLevel < ZOOM_LEVELS[ZOOM_LEVELS.length - 1],
+    showZoomOutIcon: zoomLevel < 0.5,
+    showZoomInIcon: zoomLevel > 2
+  }), [zoomLevel]);
+
+  // Memoize timeline dimensions
+  const timelineDimensions = useMemo(() => {
+    const pixelsPerSecond = PIXELS_PER_SECOND_BASE * zoomLevel;
+    const width = duration * pixelsPerSecond;
+    const actualWidth = Math.max(width, containerRef.current?.clientWidth || 800);
+    return {
+      width,
+      actualWidth,
+      pixelsPerSecond
+    };
+  }, [duration, zoomLevel, containerRef.current?.clientWidth]);
 
   const handleRegionChange = useCallback((start: number, end: number) => {
     setTimelineRegion(start, end);
@@ -125,13 +146,6 @@ export function Timeline() {
     // Otherwise, allow default horizontal scrolling
   }, []);
 
-  const formatZoomLevel = (level: number): string => {
-    return level % 1 === 0 ? `${level}x` : `${level.toFixed(1)}x`;
-  };
-
-  const canZoomOut = zoomLevel > ZOOM_LEVELS[0];
-  const canZoomIn = zoomLevel < ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
-
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 relative">
       {/* Zoom hint */}
@@ -141,7 +155,7 @@ export function Timeline() {
             {zoomLevel < 1 ? '🔍 缩小视图' : zoomLevel > 1 ? '🔍 放大视图' : '标准视图'}
           </div>
           <div className="text-xs opacity-75 mt-1">
-            {formatZoomLevel(zoomLevel)}
+            {formattedZoomLevel}
           </div>
         </div>
       )}
@@ -151,18 +165,18 @@ export function Timeline() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleZoomChange(-1)}
-            disabled={!canZoomOut}
+            disabled={!buttonStates.canZoomOut}
             className="px-2 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="缩小"
           >
             -
           </button>
           <span className="text-sm text-gray-600 min-w-[3.5rem] text-center font-mono">
-            {formatZoomLevel(zoomLevel)}
+            {formattedZoomLevel}
           </span>
           <button
             onClick={() => handleZoomChange(1)}
-            disabled={!canZoomIn}
+            disabled={!buttonStates.canZoomIn}
             className="px-2 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="放大"
           >
@@ -179,10 +193,10 @@ export function Timeline() {
           </button>
 
           {/* Status icon */}
-          {zoomLevel < 0.5 && (
+          {buttonStates.showZoomOutIcon && (
             <span className="ml-1" title="缩小视图">🔍➖</span>
           )}
-          {zoomLevel > 2 && (
+          {buttonStates.showZoomInIcon && (
             <span className="ml-1" title="放大视图">🔍➕</span>
           )}
         </div>
@@ -195,14 +209,14 @@ export function Timeline() {
       >
         <div
           className="relative bg-gray-100 rounded overflow-hidden transition-all duration-300"
-          style={{ width: `${actualWidth}px`, height: '120px', minWidth: '100%' }}
+          style={{ width: `${timelineDimensions.actualWidth}px`, height: '120px', minWidth: '100%' }}
         >
           {/* Video thumbnails */}
           <div className="absolute inset-0 top-6 bottom-0">
             <ThumbnailStrip
               videoPath={currentVideo.path}
               duration={duration}
-              width={actualWidth}
+              width={timelineDimensions.actualWidth}
               height={90}
             />
           </div>
