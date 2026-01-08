@@ -6,6 +6,10 @@ import { ThumbnailStrip } from './ThumbnailStrip';
 import { ZOOM_LEVELS, getInitialZoomForVideo, findClosestZoomLevel } from './zoomLevels';
 import { RefreshCw } from 'lucide-react';
 
+// 常量定义
+const ZOOM_HINT_TIMEOUT_MS = 1500;
+const PIXELS_PER_SECOND_BASE = 100;
+
 export function Timeline() {
   const { currentVideo, timelineStart, timelineEnd, setTimelineRegion } = useVideoStore();
   const [zoomLevel, setZoomLevel] = useState<number>(() => {
@@ -13,18 +17,28 @@ export function Timeline() {
   });
   const [showZoomHint, setShowZoomHint] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const zoomHintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update zoom level when video changes
   useEffect(() => {
     if (currentVideo) {
       setZoomLevel(getInitialZoomForVideo(currentVideo.duration));
     }
-  }, [currentVideo?.path]);
+  }, [currentVideo?.path, currentVideo?.duration]);
+
+  // 清理定时器，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      if (zoomHintTimeoutRef.current) {
+        clearTimeout(zoomHintTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!currentVideo) return null;
 
   const duration = currentVideo.duration;
-  const pixelsPerSecond = 100 * zoomLevel;
+  const pixelsPerSecond = PIXELS_PER_SECOND_BASE * zoomLevel;
   const width = duration * pixelsPerSecond;
   // 不再限制宽度,允许横向滚动显示完整视频
   const actualWidth = Math.max(width, containerRef.current?.clientWidth || 800);
@@ -46,15 +60,21 @@ export function Timeline() {
       setZoomLevel(ZOOM_LEVELS[newIndex]);
     }
 
-    // Show zoom hint
+    // Show zoom hint with proper cleanup
     setShowZoomHint(true);
-    setTimeout(() => setShowZoomHint(false), 1500);
+    if (zoomHintTimeoutRef.current) {
+      clearTimeout(zoomHintTimeoutRef.current);
+    }
+    zoomHintTimeoutRef.current = setTimeout(() => setShowZoomHint(false), ZOOM_HINT_TIMEOUT_MS);
   }, [zoomLevel]);
 
   const handleResetZoom = useCallback(() => {
     setZoomLevel(getInitialZoomForVideo(duration));
     setShowZoomHint(true);
-    setTimeout(() => setShowZoomHint(false), 1500);
+    if (zoomHintTimeoutRef.current) {
+      clearTimeout(zoomHintTimeoutRef.current);
+    }
+    zoomHintTimeoutRef.current = setTimeout(() => setShowZoomHint(false), ZOOM_HINT_TIMEOUT_MS);
   }, [duration]);
 
   const handleWheel = useCallback((event: React.WheelEvent) => {
@@ -70,9 +90,12 @@ export function Timeline() {
         const newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, currentIndex + direction * step));
         setZoomLevel(ZOOM_LEVELS[newIndex]);
 
-        // Show zoom hint
+        // Show zoom hint with proper cleanup
         setShowZoomHint(true);
-        setTimeout(() => setShowZoomHint(false), 1500);
+        if (zoomHintTimeoutRef.current) {
+          clearTimeout(zoomHintTimeoutRef.current);
+        }
+        zoomHintTimeoutRef.current = setTimeout(() => setShowZoomHint(false), ZOOM_HINT_TIMEOUT_MS);
       }
     }
     // Otherwise, allow default horizontal scrolling
