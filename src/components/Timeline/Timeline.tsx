@@ -5,6 +5,7 @@ import { TimelineSlider } from './TimelineSlider';
 import { ThumbnailStrip } from './ThumbnailStrip';
 import { ZOOM_LEVELS, getInitialZoomForVideo, findClosestZoomLevel } from './zoomLevels';
 import { RefreshCw } from 'lucide-react';
+import { ZoomLevel } from '../../types/timeline';
 
 // 常量定义
 const ZOOM_HINT_TIMEOUT_MS = 1500;
@@ -19,10 +20,10 @@ const clampZoomLevel = (level: number): number => {
 
 export function Timeline() {
   const { currentVideo, timelineStart, timelineEnd, setTimelineRegion } = useVideoStore();
-  const [zoomLevel, setZoomLevel] = useState<number>(() => {
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(() => {
     if (currentVideo) {
       const initialZoom = getInitialZoomForVideo(currentVideo.duration);
-      return clampZoomLevel(initialZoom);
+      return clampZoomLevel(initialZoom) as ZoomLevel;
     }
     return 1.0;
   });
@@ -34,7 +35,7 @@ export function Timeline() {
   useEffect(() => {
     if (currentVideo) {
       const initialZoom = getInitialZoomForVideo(currentVideo.duration);
-      setZoomLevel(clampZoomLevel(initialZoom));
+      setZoomLevel(clampZoomLevel(initialZoom) as ZoomLevel);
     }
   }, [currentVideo?.path, currentVideo?.duration]);
 
@@ -108,7 +109,7 @@ export function Timeline() {
 
   const handleResetZoom = useCallback(() => {
     const resetZoom = getInitialZoomForVideo(duration);
-    setZoomLevel(clampZoomLevel(resetZoom));
+    setZoomLevel(clampZoomLevel(resetZoom) as ZoomLevel);
     setShowZoomHint(true);
     if (zoomHintTimeoutRef.current) {
       clearTimeout(zoomHintTimeoutRef.current);
