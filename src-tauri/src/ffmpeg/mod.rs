@@ -160,11 +160,11 @@ pub fn get_app_dir() -> Option<PathBuf> {
         .and_then(|path| path.parent().map(|p| p.to_path_buf()))
 }
 
-/// 自动下载FFmpeg（仅Windows）
+/// 自动下载FFmpeg（Windows 和 macOS）
 ///
 /// # Returns
 /// 返回下载的FFmpeg路径
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 pub async fn download_ffmpeg() -> Result<String, String> {
     use std::fs::{self, File};
     use std::io::Write;
@@ -172,62 +172,90 @@ pub async fn download_ffmpeg() -> Result<String, String> {
     let app_dir = get_app_dir()
         .ok_or_else(|| "无法获取应用目录".to_string())?;
 
-    let ffmpeg_path = app_dir.join("ffmpeg.exe");
+    let (ffmpeg_filename, download_url, archive_path) = if cfg!(windows) {
+        (
+            "ffmpeg.exe",
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
+            "bin/ffmpeg.exe"
+        )
+    } else if cfg!(target_os = "macos") {
+        (
+            "ffmpeg",
+            "https://evermeet.cx/ffmpeg/getrelease/zip",
+            "ffmpeg"
+        )
+    } else {
+        return Err("不支持的操作系统".to_string());
+    };
+
+    let ffmpeg_path = app_dir.join(ffmpeg_filename);
 
     // 如果已存在，直接返回
     if ffmpeg_path.exists() {
         return Ok(ffmpeg_path.to_string_lossy().to_string());
     }
 
-    // 下载FFmpeg
-    let download_url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
-
     // 下载到临时文件
-    let temp_zip = app_dir.join("ffmpeg.zip");
+    let temp_archive = app_dir.join(if cfg!(windows) { "ffmpeg.zip" } else { "ffmpeg.zip" });
 
     println!("正在下载FFmpeg，请稍候...");
     let response = reqwest::get(download_url)
         .await
         .map_err(|e| format!("下载失败: {}", e))?;
 
-    let zip_bytes = response.bytes()
+    let archive_bytes = response.bytes()
         .await
         .map_err(|e| format!("读取下载内容失败: {}", e))?;
 
-    // 保存zip文件
-    let mut file = File::create(&temp_zip)
+    // 保存压缩文件
+    let mut file = File::create(&temp_archive)
         .map_err(|e| format!("创建临时文件失败: {}", e))?;
-    file.write_all(&zip_bytes)
+    file.write_all(&archive_bytes)
         .map_err(|e| format!("写入文件失败: {}", e))?;
     drop(file);
 
-    // 解压并提取ffmpeg.exe
-    let mut ffmpeg_zip = zip::ZipArchive::new(File::open(&temp_zip)
-        .map_err(|e| format!("打开zip文件失败: {}", e))?)
-        .map_err(|e| format!("读取zip文件失败: {}", e))?;
+    // 解压并提取 ffmpeg
+    let mut ffmpeg_archive = zip::ZipArchive::new(File::open(&temp_archive)
+        .map_err(|e| format!("打开压缩文件失败: {}", e))?)
+        .map_err(|e| format!("读取压缩文件失败: {}", e))?;
 
-    // 查找ffmpeg.exe
-    for i in 0..ffmpeg_zip.len() {
-        let mut file = ffmpeg_zip.by_index(i)
-            .map_err(|e| format!("读取zip条目失败: {}", e))?;
+    // 查找 ffmpeg 可执行文件
+    for i in 0..ffmpeg_archive.len() {
+        let mut file = ffmpeg_archive.by_index(i)
+            .map_err(|e| format!("读取压缩条目失败: {}", e))?;
         let path = file.enclosed_name().ok_or("无效的文件路径")?;
 
-        if path.ends_with("bin/ffmpeg.exe") {
+        // Windows: 查找 bin/ffmpeg.exe, macOS: 查找 ffmpeg
+        if path.ends_with(archive_path) {
             let mut outfile = File::create(&ffmpeg_path)
-                .map_err(|e| format!("创建ffmpeg.exe失败: {}", e))?;
+                .map_err(|e| format!("创建{}失败: {}", ffmpeg_filename, e))?;
             std::io::copy(&mut file, &mut outfile)
-                .map_err(|e| format!("写入ffmpeg.exe失败: {}", e))?;
+                .map_err(|e| format!("写入{}失败: {}", ffmpeg_filename, e))?;
             break;
         }
     }
 
-    // 删除临时zip文件
-    let _ = fs::remove_file(&temp_zip);
+    // 删除临时压缩文件
+    let _ = fs::remove_file(&temp_archive);
+
+    // 为 macOS/Linux 设置执行权限
+    if cfg!(unix) {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&ffmpeg_path)
+                .map_err(|e| format!("读取文件权限失败: {}", e))?
+                .permissions();
+            perms.set_mode(0o755); // rwxr-xr-x
+            fs::set_permissions(&ffmpeg_path, perms)
+                .map_err(|e| format!("设置执行权限失败: {}", e))?;
+        }
+    }
 
     if ffmpeg_path.exists() {
         Ok(ffmpeg_path.to_string_lossy().to_string())
     } else {
-        Err("下载后未找到ffmpeg.exe".to_string())
+        Err(format!("下载后未找到{}", ffmpeg_filename))
     }
 }
 

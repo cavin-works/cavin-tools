@@ -94,7 +94,7 @@ export function FfmpegChecker({
           {downloading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              正在下载 FFmpeg (约100MB)...
+              正在下载 FFmpeg (约{navigator.userAgent.includes('Mac') ? '80' : '100'}MB)...
             </>
           ) : (
             <>
@@ -104,7 +104,7 @@ export function FfmpegChecker({
           )}
         </button>
         <p className="text-gray-400 text-xs mt-2">
-          或手动安装后重启应用
+          支持 Windows 和 macOS，或手动安装后重启应用
         </p>
       </div>
     </div>

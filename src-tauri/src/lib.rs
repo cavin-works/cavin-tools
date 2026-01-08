@@ -22,14 +22,7 @@ async fn check_ffmpeg() -> Result<ffmpeg::FfmpegInfo, String> {
 /// 返回下载的FFmpeg路径
 #[tauri::command]
 async fn download_ffmpeg() -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    {
-        ffmpeg::download_ffmpeg().await
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        Err("自动下载功能仅在Windows上支持".to_string())
-    }
+    ffmpeg::download_ffmpeg().await
 }
 
 /// 生成视频缩略图条纹
