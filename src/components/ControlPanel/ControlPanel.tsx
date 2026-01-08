@@ -4,13 +4,15 @@ import { SpeedPanel } from './SpeedPanel';
 import { ExtractPanel } from './ExtractPanel';
 import { TrimPanel } from './TrimPanel';
 import { GifPanel } from './GifPanel';
+import { OperationQueuePanel } from '../OperationQueuePanel';
 
-type TabType = 'compress' | 'speed' | 'extract' | 'trim' | 'gif';
+type TabType = 'queue' | 'compress' | 'speed' | 'extract' | 'trim' | 'gif';
 
 export function ControlPanel() {
-  const [activeTab, setActiveTab] = useState<TabType>('compress');
+  const [activeTab, setActiveTab] = useState<TabType>('queue');
 
   const tabs = [
+    { id: 'queue' as TabType, label: '队列', icon: '📋' },
     { id: 'compress' as TabType, label: '压缩', icon: '🗜️' },
     { id: 'speed' as TabType, label: '变速', icon: '⚡' },
     { id: 'extract' as TabType, label: '提取帧', icon: '🖼️' },
@@ -23,12 +25,12 @@ export function ControlPanel() {
       <h2 className="text-xl font-semibold mb-4">操作面板</h2>
 
       {/* 标签页 */}
-      <div className="flex border-b mb-4">
+      <div className="flex border-b mb-4 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -42,6 +44,7 @@ export function ControlPanel() {
 
       {/* 面板内容 */}
       <div>
+        {activeTab === 'queue' && <OperationQueuePanel />}
         {activeTab === 'compress' && <CompressPanel />}
         {activeTab === 'speed' && <SpeedPanel />}
         {activeTab === 'extract' && <ExtractPanel />}

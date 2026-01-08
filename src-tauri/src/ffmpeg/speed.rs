@@ -4,6 +4,7 @@ use super::get_ffmpeg_path;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SpeedParams {
     pub speed: f64,  // 0.25 - 4.0
+    #[serde(alias = "preservePitch")]
     pub preserve_pitch: bool,
 }
 

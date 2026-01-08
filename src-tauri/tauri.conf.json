@@ -19,14 +19,12 @@
         "resizable": true,
         "fullscreen": false,
         "minWidth": 800,
-        "minHeight": 600,
-        "fileDropEnabled": true
+        "minHeight": 600
       }
     ],
     "security": {
       "csp": null
-    },
-    "withGlobalTauri": true
+    }
   },
   "bundle": {
     "active": true,

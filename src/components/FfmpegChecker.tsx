@@ -1,0 +1,112 @@
+import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { Loader2, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface FfmpegInfo {
+  available: boolean;
+  path: string;
+  version: string;
+  output: string;
+}
+
+export function FfmpegChecker({
+  onReady
+}: {
+  onReady: (available: boolean) => void;
+}) {
+  const [checking, setChecking] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [ffmpegInfo, setFfmpegInfo] = useState<FfmpegInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkFfmpeg();
+  }, []);
+
+  const checkFfmpeg = async () => {
+    try {
+      setChecking(true);
+      setError(null);
+      const info = await invoke<FfmpegInfo>('check_ffmpeg');
+      setFfmpegInfo(info);
+      onReady(info.available);
+    } catch (err) {
+      setError(err as string);
+      onReady(false);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      setError(null);
+      await invoke('download_ffmpeg');
+
+      // 下载完成后重新检查
+      await checkFfmpeg();
+    } catch (err) {
+      setError(err as string);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (checking) {
+    return (
+      <div className="flex items-center gap-2 text-gray-600">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span>正在检查 FFmpeg...</span>
+      </div>
+    );
+  }
+
+  if (ffmpegInfo?.available) {
+    return (
+      <div className="flex items-center gap-2 text-green-600 text-sm">
+        <CheckCircle2 className="w-4 h-4" />
+        <span>FFmpeg {ffmpegInfo.version} 已就绪</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4 py-12">
+      <AlertCircle className="w-12 h-12 text-amber-500" />
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          需要安装 FFmpeg
+        </h3>
+        <p className="text-gray-600 text-sm mb-4">
+          应用需要 FFmpeg 来处理视频文件
+        </p>
+        {error && (
+          <p className="text-red-500 text-sm mb-4">
+            {error}
+          </p>
+        )}
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {downloading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              正在下载 FFmpeg (约100MB)...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              自动下载 FFmpeg
+            </>
+          )}
+        </button>
+        <p className="text-gray-400 text-xs mt-2">
+          或手动安装后重启应用
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -4,8 +4,10 @@ pub mod speed;
 pub mod extract;
 pub mod trim;
 pub mod gif;
+pub mod thumbnails;
 
 pub use info::get_video_info;
+pub use thumbnails::generate_thumbnails;
 pub use compress::{compress_video, CompressParams};
 pub use speed::{change_video_speed, SpeedParams};
 pub use extract::{extract_frames, ExtractParams};
@@ -93,7 +95,7 @@ fn find_ffmpeg_in_path() -> Option<PathBuf> {
 /// - 测试运行 `ffmpeg -version` 命令
 pub fn check_ffmpeg_available() -> Result<FfmpegInfo, String> {
     let ffmpeg_path = get_ffmpeg_path()
-        .ok_or_else(|| "未找到FFmpeg可执行文件".to_string())?;
+        .ok_or_else(|| "未找到FFmpeg可执行文件。请安装FFmpeg或让应用自动下载。".to_string())?;
 
     // 验证文件存在
     if !ffmpeg_path.exists() {
@@ -149,6 +151,84 @@ pub struct FfmpegInfo {
     pub version: String,
     /// 完整的version命令输出
     pub output: String,
+}
+
+/// 获取应用资源目录（用于存放FFmpeg）
+pub fn get_app_dir() -> Option<PathBuf> {
+    env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(|p| p.to_path_buf()))
+}
+
+/// 自动下载FFmpeg（仅Windows）
+///
+/// # Returns
+/// 返回下载的FFmpeg路径
+#[cfg(target_os = "windows")]
+pub async fn download_ffmpeg() -> Result<String, String> {
+    use std::fs::{self, File};
+    use std::io::Write;
+
+    let app_dir = get_app_dir()
+        .ok_or_else(|| "无法获取应用目录".to_string())?;
+
+    let ffmpeg_path = app_dir.join("ffmpeg.exe");
+
+    // 如果已存在，直接返回
+    if ffmpeg_path.exists() {
+        return Ok(ffmpeg_path.to_string_lossy().to_string());
+    }
+
+    // 下载FFmpeg
+    let download_url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
+
+    // 下载到临时文件
+    let temp_zip = app_dir.join("ffmpeg.zip");
+
+    println!("正在下载FFmpeg，请稍候...");
+    let response = reqwest::get(download_url)
+        .await
+        .map_err(|e| format!("下载失败: {}", e))?;
+
+    let zip_bytes = response.bytes()
+        .await
+        .map_err(|e| format!("读取下载内容失败: {}", e))?;
+
+    // 保存zip文件
+    let mut file = File::create(&temp_zip)
+        .map_err(|e| format!("创建临时文件失败: {}", e))?;
+    file.write_all(&zip_bytes)
+        .map_err(|e| format!("写入文件失败: {}", e))?;
+    drop(file);
+
+    // 解压并提取ffmpeg.exe
+    let mut ffmpeg_zip = zip::ZipArchive::new(File::open(&temp_zip)
+        .map_err(|e| format!("打开zip文件失败: {}", e))?)
+        .map_err(|e| format!("读取zip文件失败: {}", e))?;
+
+    // 查找ffmpeg.exe
+    for i in 0..ffmpeg_zip.len() {
+        let mut file = ffmpeg_zip.by_index(i)
+            .map_err(|e| format!("读取zip条目失败: {}", e))?;
+        let path = file.enclosed_name().ok_or("无效的文件路径")?;
+
+        if path.ends_with("bin/ffmpeg.exe") {
+            let mut outfile = File::create(&ffmpeg_path)
+                .map_err(|e| format!("创建ffmpeg.exe失败: {}", e))?;
+            std::io::copy(&mut file, &mut outfile)
+                .map_err(|e| format!("写入ffmpeg.exe失败: {}", e))?;
+            break;
+        }
+    }
+
+    // 删除临时zip文件
+    let _ = fs::remove_file(&temp_zip);
+
+    if ffmpeg_path.exists() {
+        Ok(ffmpeg_path.to_string_lossy().to_string())
+    } else {
+        Err("下载后未找到ffmpeg.exe".to_string())
+    }
 }
 
 #[cfg(test)]

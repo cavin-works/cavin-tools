@@ -5,6 +5,8 @@ import { VideoInfo } from './components/VideoInfo';
 import { Timeline } from './components/Timeline';
 import { ControlPanel } from './components/ControlPanel';
 import { ProgressBar } from './components/ProgressBar';
+import { FfmpegChecker } from './components/FfmpegChecker';
+import { OperationQueueProvider } from './contexts/OperationQueueContext';
 import { isValidVideoFile } from './utils/fileValidation';
 import { showError, showSuccess } from './utils/errorHandling';
 import { listen } from '@tauri-apps/api/event';
@@ -13,6 +15,7 @@ function App() {
   const { currentVideo, setCurrentVideo, setError } = useVideoStore();
   const [isDragging, setIsDragging] = useState(false);
   const [appReady, setAppReady] = useState(false);
+  const [ffmpegReady, setFfmpegReady] = useState(false);
 
   // 标记应用已加载
   useEffect(() => {
@@ -45,66 +48,73 @@ function App() {
 
   // 监听Tauri的文件拖拽事件
   useEffect(() => {
-    const unlisten = listen('tauri://file-drop', (event: any) => {
-      console.log('Tauri file-drop event:', event);
-      const paths = event.payload as string[];
-      if (paths && paths.length > 0) {
-        handleFileSelect(paths[0]);
-      }
-    });
+    let dragEnterUnlisten: (() => void) | undefined;
+    let dragLeaveUnlisten: (() => void) | undefined;
+    let dragDropUnlisten: (() => void) | undefined;
+
+    async function setupDragListeners() {
+      console.log('Setting up Tauri drag listeners...');
+
+      // 监听文件拖入窗口
+      dragEnterUnlisten = await listen('tauri://drag-enter', (event: any) => {
+        console.log('Tauri drag-enter event:', event);
+        setIsDragging(true);
+      });
+
+      // 监听文件拖离窗口
+      dragLeaveUnlisten = await listen('tauri://drag-leave', (event: any) => {
+        console.log('Tauri drag-leave event:', event);
+        setIsDragging(false);
+      });
+
+      // 监听文件拖放
+      dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
+        console.log('Tauri drag-drop event:', event);
+
+        // Tauri 2.0 的 payload 结构: { paths: string[], position: {x, y} }
+        const payload = event.payload as { paths: string[]; position: { x: number; y: number } };
+        const paths = payload.paths;
+        setIsDragging(false);
+
+        if (paths && paths.length > 0) {
+          console.log('Dropped files:', paths);
+          console.log('First file path:', paths[0]);
+          handleFileSelect(paths[0]);
+        } else {
+          console.error('No files found in payload. Payload:', event.payload);
+        }
+      });
+
+      console.log('Tauri drag listeners setup complete');
+    }
+
+    setupDragListeners();
 
     return () => {
-      unlisten.then(fn => fn());
+      console.log('Cleaning up Tauri drag listeners');
+      if (dragEnterUnlisten) dragEnterUnlisten();
+      if (dragLeaveUnlisten) dragLeaveUnlisten();
+      if (dragDropUnlisten) dragDropUnlisten();
     };
   }, [handleFileSelect]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    console.log('Drop event triggered');
-    const files = Array.from(e.dataTransfer.files);
-    console.log('Files dropped:', files);
-
-    if (files.length > 0) {
-      // Tauri会提供文件路径
-      const path = (files[0] as any).path;
-      console.log('File path:', path);
-      if (path) {
-        handleFileSelect(path);
-      } else {
-        showError('无法获取文件路径');
-      }
-    }
-  }, [handleFileSelect]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
 
   if (!appReady) {
     return <div className="flex items-center justify-center h-screen">加载中...</div>;
   }
 
   return (
-    <div
-      className="min-h-screen bg-gray-50"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-    >
+    <OperationQueueProvider>
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           Video Editor
         </h1>
 
-        {!currentVideo ? (
+        <div className="mb-6">
+          <FfmpegChecker onReady={setFfmpegReady} />
+        </div>
+
+        {ffmpegReady && !currentVideo ? (
           <div className="text-center py-20 border-2 border-dashed border-gray-300 rounded-lg">
             <p className="text-gray-600 mb-4 text-lg">
               拖拽视频文件到此处导入
@@ -113,13 +123,13 @@ function App() {
               支持 MP4, MOV, AVI, WMV, MKV, FLV, WebM 格式
             </p>
           </div>
-        ) : (
+        ) : ffmpegReady && currentVideo ? (
           <div className="space-y-6">
             <VideoInfo />
             <Timeline />
             <ControlPanel />
           </div>
-        )}
+        ) : null}
 
         {isDragging && (
           <div className="fixed inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center pointer-events-none z-50">
@@ -132,6 +142,7 @@ function App() {
 
       <ProgressBar />
     </div>
+    </OperationQueueProvider>
   );
 }
 

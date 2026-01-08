@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useVideoStore } from '../../store/videoStore';
 import { formatDuration } from '../../utils/fileValidation';
 import { TimelineSlider } from './TimelineSlider';
+import { ThumbnailStrip } from './ThumbnailStrip';
 
 export function Timeline() {
   const { currentVideo, timelineStart, timelineEnd, setTimelineRegion } = useVideoStore();
@@ -13,6 +14,8 @@ export function Timeline() {
   const duration = currentVideo.duration;
   const pixelsPerSecond = 100 * zoomLevel;
   const width = duration * pixelsPerSecond;
+  // 不再限制宽度，允许横向滚动显示完整视频
+  const actualWidth = Math.max(width, containerRef.current?.clientWidth || 800);
 
   const handleRegionChange = useCallback((start: number, end: number) => {
     setTimelineRegion(start, end);
@@ -43,14 +46,24 @@ export function Timeline() {
 
       <div
         ref={containerRef}
-        className="overflow-x-auto"
+        className="overflow-x-auto border border-gray-300 rounded"
       >
         <div
-          className="relative bg-gray-100 rounded"
-          style={{ width: `${Math.min(width, containerRef.current?.clientWidth || 800)}px`, height: '120px' }}
+          className="relative bg-gray-100 rounded overflow-hidden"
+          style={{ width: `${actualWidth}px`, height: '120px', minWidth: '100%' }}
         >
+          {/* 视频缩略图条纹 */}
+          <div className="absolute inset-0 top-6 bottom-0">
+            <ThumbnailStrip
+              videoPath={currentVideo.path}
+              duration={duration}
+              width={actualWidth}
+              height={90}
+            />
+          </div>
+
           {/* 时间刻度 */}
-          <div className="absolute top-0 left-0 right-0 h-6 border-b border-gray-300">
+          <div className="absolute top-0 left-0 right-0 h-6 border-b border-gray-300 bg-white bg-opacity-90">
             {Array.from({ length: Math.ceil(duration) }, (_, i) => (
               <div
                 key={i}
@@ -65,7 +78,7 @@ export function Timeline() {
           {/* 选择区域 */}
           {timelineEnd > 0 && (
             <div
-              className="absolute top-6 bottom-0 bg-blue-200 bg-opacity-50 border-2 border-blue-500"
+              className="absolute top-6 bottom-0 bg-blue-200 bg-opacity-50 border-2 border-blue-500 pointer-events-none"
               style={{
                 left: `${(timelineStart / duration) * 100}%`,
                 width: `${((timelineEnd - timelineStart) / duration) * 100}%`

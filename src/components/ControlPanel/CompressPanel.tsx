@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from '../../store/videoStore';
+import { useOperationQueue } from '../../contexts/OperationQueueContext';
+import { Plus } from 'lucide-react';
 
 type CompressPreset = 'mobile' | 'web' | 'high_quality' | 'custom';
 
 export function CompressPanel() {
   const { currentVideo, isProcessing, setProcessing, setProgress, setOperation } = useVideoStore();
+  const { addToQueue } = useOperationQueue();
   const [preset, setPreset] = useState<CompressPreset>('mobile');
 
   const handleCompress = async () => {
@@ -34,6 +37,27 @@ export function CompressPanel() {
     }
   };
 
+  const handleAddToQueue = () => {
+    if (!currentVideo) return;
+
+    const presetNames = {
+      mobile: '手机优化 (720p)',
+      web: '网络分享 (480p)',
+      high_quality: '高质量 (1080p)',
+      custom: '自定义'
+    };
+
+    addToQueue({
+      type: 'compress',
+      name: `压缩 (${presetNames[preset]})`,
+      params: {
+        preset,
+        width: preset === 'mobile' ? 1280 : preset === 'web' ? 854 : 1920,
+        height: preset === 'mobile' ? 720 : preset === 'web' ? 480 : 1080,
+      }
+    });
+  };
+
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">视频压缩</h3>
@@ -56,13 +80,24 @@ export function CompressPanel() {
           </select>
         </div>
 
-        <button
-          onClick={handleCompress}
-          disabled={isProcessing}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-        >
-          {isProcessing ? '压缩中...' : '开始压缩'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleCompress}
+            disabled={isProcessing}
+            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+          >
+            {isProcessing ? '压缩中...' : '立即执行'}
+          </button>
+          <button
+            onClick={handleAddToQueue}
+            disabled={!currentVideo}
+            className="px-4 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 disabled:bg-gray-400 flex items-center gap-2"
+            title="添加到操作队列"
+          >
+            <Plus className="w-4 h-4" />
+            队列
+          </button>
+        </div>
       </div>
     </div>
   );
