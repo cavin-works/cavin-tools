@@ -29,7 +29,7 @@ export function Timeline() {
   });
   const [showZoomHint, setShowZoomHint] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const zoomHintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const zoomHintTimeoutRef = useRef<number | null>(null);
 
   // Update zoom level when video changes
   useEffect(() => {
@@ -96,7 +96,7 @@ export function Timeline() {
       }
 
       const newLevel = ZOOM_LEVELS[newIndex];
-      return clampZoomLevel(newLevel);
+      return clampZoomLevel(newLevel) as ZoomLevel;
     });
 
     // Show zoom hint with proper cleanup
@@ -131,7 +131,7 @@ export function Timeline() {
         if (currentIndex !== -1) {
           const newIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, currentIndex + direction * step));
           const newLevel = ZOOM_LEVELS[newIndex];
-          return clampZoomLevel(newLevel);
+          return clampZoomLevel(newLevel) as ZoomLevel;
         }
 
         return prevLevel;

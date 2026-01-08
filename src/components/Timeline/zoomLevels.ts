@@ -44,7 +44,9 @@ export function getInitialZoomForVideo(duration: number): number {
  * @returns Closest zoom level from ZOOM_LEVELS
  */
 export function findClosestZoomLevel(value: number): number {
-  const clamped = Math.max(ZOOM_LEVELS[0], Math.min(ZOOM_LEVELS[ZOOM_LEVELS.length - 1], value));
+  const minLevel = ZOOM_LEVELS[0];
+  const maxLevel = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+  const clamped = Math.max(minLevel, Math.min(maxLevel, value));
 
   // Special handling for values between 1.0 and 1.5
   // Prefer rounding up to give users more zoom capability
@@ -53,8 +55,8 @@ export function findClosestZoomLevel(value: number): number {
   }
 
   // For other ranges, find the closest level
-  let closest = ZOOM_LEVELS[0];
-  let minDiff = Math.abs(clamped - ZOOM_LEVELS[0]);
+  let closest: number = minLevel;
+  let minDiff = Math.abs(clamped - minLevel);
 
   for (const level of ZOOM_LEVELS) {
     const diff = Math.abs(clamped - level);
