@@ -64,13 +64,13 @@ export function CompressPanel() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             预设
           </label>
           <select
             value={preset}
             onChange={(e) => setPreset(e.target.value as CompressPreset)}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-neutral-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
             disabled={isProcessing}
           >
             <option value="mobile">手机优化 (720p)</option>
@@ -84,14 +84,14 @@ export function CompressPanel() {
           <button
             onClick={handleCompress}
             disabled={isProcessing}
-            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            className="flex-1 bg-black text-white py-2 rounded-lg hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
           >
             {isProcessing ? '压缩中...' : '立即执行'}
           </button>
           <button
             onClick={handleAddToQueue}
             disabled={!currentVideo}
-            className="px-4 bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700 disabled:bg-gray-400 flex items-center gap-2"
+            className="px-4 bg-neutral-600 text-white py-2 rounded-lg hover:bg-neutral-700 disabled:bg-neutral-300 disabled:text-neutral-500 flex items-center gap-2"
             title="添加到操作队列"
           >
             <Plus className="w-4 h-4" />

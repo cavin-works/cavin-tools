@@ -36,7 +36,7 @@ export function GifPanel() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             帧率: {fps} fps
           </label>
           <input
@@ -45,12 +45,12 @@ export function GifPanel() {
             max="30"
             value={fps}
             onChange={(e) => setFps(parseInt(e.target.value))}
-            className="w-full"
+            className="w-full accent-black"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             宽度: {width}px
           </label>
           <input
@@ -60,12 +60,12 @@ export function GifPanel() {
             step="50"
             value={width}
             onChange={(e) => setWidth(parseInt(e.target.value))}
-            className="w-full"
+            className="w-full accent-black"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             颜色数: {colors}
           </label>
           <input
@@ -74,13 +74,13 @@ export function GifPanel() {
             max="256"
             value={colors}
             onChange={(e) => setColors(parseInt(e.target.value))}
-            className="w-full"
+            className="w-full accent-black"
           />
         </div>
 
         <button
           onClick={handleConvert}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+          className="w-full bg-black text-white py-2 rounded-lg hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
         >
           开始转换
         </button>

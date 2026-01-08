@@ -53,9 +53,9 @@ export function OperationQueuePanel() {
           {queue.map((operation, index) => (
             <div
               key={operation.id}
-              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+              className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg"
             >
-              <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+              <div className="flex-shrink-0 w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-sm font-semibold">
                 {index + 1}
               </div>
               <div className="flex-1 min-w-0">
@@ -87,7 +87,7 @@ export function OperationQueuePanel() {
         <button
           onClick={handleProcessQueue}
           disabled={isProcessing || !currentVideo}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-black text-white py-2 rounded-lg hover:bg-neutral-800 disabled:bg-neutral-300 disabled:cursor-not-allowed disabled:text-neutral-500 flex items-center justify-center gap-2"
         >
           {isProcessing ? (
             <>
@@ -105,12 +105,12 @@ export function OperationQueuePanel() {
 
       {/* 执行结果 */}
       {results.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-neutral-200">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-gray-900">执行结果</h4>
+            <h4 className="text-sm font-semibold text-neutral-900">执行结果</h4>
             <button
               onClick={clearResults}
-              className="text-xs text-gray-500 hover:text-gray-700"
+              className="text-xs text-neutral-500 hover:text-neutral-700"
             >
               清除
             </button>
@@ -124,28 +124,28 @@ export function OperationQueuePanel() {
                   key={result.operationId}
                   className={`p-3 rounded-lg border ${
                     result.success
-                      ? 'bg-green-50 border-green-200'
+                      ? 'bg-neutral-50 border-neutral-200'
                       : 'bg-red-50 border-red-200'
                   }`}
                 >
                   <div className="flex items-start gap-2">
                     {result.success ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-neutral-600 flex-shrink-0 mt-0.5" />
                     ) : (
                       <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-neutral-900">
                         {operation?.name || `操作 ${index + 1}`}
                       </p>
                       {result.success ? (
                         <>
-                          <p className="text-xs text-gray-600 break-all mt-1">
+                          <p className="text-xs text-neutral-600 break-all mt-1">
                             {result.outputPath}
                           </p>
                           <button
                             onClick={() => handleOpenFolder(result.outputPath)}
-                            className="mt-2 text-xs text-green-700 hover:text-green-800 flex items-center gap-1"
+                            className="mt-2 text-xs text-neutral-700 hover:text-black flex items-center gap-1"
                           >
                             <FolderOpen className="w-3 h-3" />
                             打开文件夹
@@ -165,11 +165,11 @@ export function OperationQueuePanel() {
 
           {/* 全部完成提示 */}
           {results.every(r => r.success) && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm font-medium text-blue-900">
+            <div className="mt-3 p-3 bg-neutral-100 border border-neutral-300 rounded-lg">
+              <p className="text-sm font-medium text-neutral-900">
                 🎉 所有操作执行完成！
               </p>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-neutral-700 mt-1">
                 最终输出文件已准备好，点击"打开文件夹"查看
               </p>
             </div>

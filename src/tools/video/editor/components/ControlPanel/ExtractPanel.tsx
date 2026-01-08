@@ -43,13 +43,13 @@ export function ExtractPanel() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             提取模式
           </label>
           <select
             value={mode}
             onChange={(e) => setMode(e.target.value as ExtractMode)}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-neutral-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
             disabled={isProcessing}
           >
             <option value="single">单帧</option>
@@ -59,13 +59,13 @@ export function ExtractPanel() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             输出格式
           </label>
           <select
             value={format}
             onChange={(e) => setFormat(e.target.value as 'jpg' | 'png' | 'webp')}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-neutral-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
             disabled={isProcessing}
           >
             <option value="jpg">JPG</option>
@@ -75,7 +75,7 @@ export function ExtractPanel() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             质量: {quality}
           </label>
           <input
@@ -84,21 +84,21 @@ export function ExtractPanel() {
             max="100"
             value={quality}
             onChange={(e) => setQuality(parseInt(e.target.value))}
-            className="w-full"
+            className="w-full accent-black"
             disabled={isProcessing}
           />
         </div>
 
         {mode === 'interval' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
               间隔(秒)
             </label>
             <input
               type="number"
               value={interval}
               onChange={(e) => setInterval(parseFloat(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2"
+              className="w-full border border-neutral-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
               min="0.1"
               step="0.1"
               disabled={isProcessing}
@@ -108,14 +108,14 @@ export function ExtractPanel() {
 
         {mode === 'uniform' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
               提取帧数
             </label>
             <input
               type="number"
               value={count}
               onChange={(e) => setCount(parseInt(e.target.value))}
-              className="w-full border rounded-lg px-3 py-2"
+              className="w-full border border-neutral-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
               min="1"
               disabled={isProcessing}
             />
@@ -125,7 +125,7 @@ export function ExtractPanel() {
         <button
           onClick={handleExtract}
           disabled={isProcessing}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+          className="w-full bg-black text-white py-2 rounded-lg hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
         >
           {isProcessing ? '提取中...' : '开始提取'}
         </button>

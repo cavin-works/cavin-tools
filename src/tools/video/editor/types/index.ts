@@ -1,3 +1,6 @@
+// 导出 timeline 类型
+export * from './timeline';
+
 // 视频信息
 export interface VideoInfo {
   path: string;

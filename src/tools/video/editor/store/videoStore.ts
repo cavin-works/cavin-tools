@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { VideoInfo, Operation } from '@/types';
+import type { VideoInfo, Operation } from '../types';
 
 interface VideoStore {
   // 当前视频信息
