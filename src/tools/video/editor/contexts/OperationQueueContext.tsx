@@ -58,78 +58,43 @@ export function OperationQueueProvider({ children }: { children: React.ReactNode
     if (queue.length === 0) return;
 
     setIsProcessing(true);
-    let currentPath = inputPath;
-    const operationResults: OperationResult[] = [];
+    setResults([]);
 
-    for (const operation of queue) {
-      try {
-        let outputPath: string;
+    try {
+      // 转换队列为后端期望的格式
+      const operations = queue.map(op => ({
+        type: op.type,
+        name: op.name,
+        params: op.params,  // 直接传递对象，Tauri 会自动序列化
+      }));
 
-        switch (operation.type) {
-          case 'compress':
-            outputPath = await invoke<string>('compress_video_command', {
-              inputPath: currentPath,
-              params: operation.params,
-            });
-            break;
+      // 调用后端统一处理队列的命令
+      const finalOutputPath = await invoke<string>('process_operation_queue', {
+        inputPath,
+        operations,
+      });
 
-          case 'speed':
-            outputPath = await invoke<string>('change_video_speed', {
-              inputPath: currentPath,
-              params: operation.params,
-            });
-            break;
+      // 所有操作都成功完成，记录结果
+      const operationResults: OperationResult[] = queue.map((op, index) => ({
+        operationId: op.id,
+        outputPath: index === queue.length - 1 ? finalOutputPath : '(临时文件)',
+        success: true,
+      }));
 
-          case 'extract_frames':
-            const paths = await invoke<string[]>('extract_frames', {
-              inputPath: currentPath,
-              params: operation.params,
-            });
-            // 提取帧操作返回的是多个文件，我们取第一个作为下一个操作的输入（如果需要）
-            outputPath = paths[0] || currentPath;
-            break;
+      setResults(operationResults);
+    } catch (error) {
+      // 处理失败，记录错误
+      const operationResults: OperationResult[] = queue.map(op => ({
+        operationId: op.id,
+        outputPath: '',
+        success: false,
+        error: String(error),
+      }));
 
-          case 'trim':
-            outputPath = await invoke<string>('trim_video', {
-              inputPath: currentPath,
-              params: operation.params,
-            });
-            break;
-
-          case 'to_gif':
-            outputPath = await invoke<string>('convert_to_gif', {
-              inputPath: currentPath,
-              params: operation.params,
-            });
-            break;
-
-          default:
-            throw new Error(`未知的操作类型: ${operation.type}`);
-        }
-
-        operationResults.push({
-          operationId: operation.id,
-          outputPath,
-          success: true,
-        });
-
-        // 当前操作的输出作为下一个操作的输入
-        currentPath = outputPath;
-
-      } catch (error) {
-        operationResults.push({
-          operationId: operation.id,
-          outputPath: currentPath,
-          success: false,
-          error: String(error),
-        });
-        // 出错时停止处理
-        break;
-      }
+      setResults(operationResults);
+    } finally {
+      setIsProcessing(false);
     }
-
-    setResults(operationResults);
-    setIsProcessing(false);
   }, [queue]);
 
   return (

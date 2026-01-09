@@ -164,6 +164,126 @@ async fn convert_to_gif(
     Ok(output_path)
 }
 
+/// 处理操作队列 - 串联执行所有操作，只返回最终输出文件
+#[tauri::command]
+async fn process_operation_queue(
+    input_path: String,
+    operations: Vec<models::QueueOperation>,
+    window: tauri::Window,
+) -> Result<String, String> {
+    use tempfile::NamedTempFile;
+
+    let mut current_path = input_path.clone();
+    let mut temp_files: Vec<String> = Vec::new();
+    let total_operations = operations.len();
+
+    // 处理队列
+    let process_result = async {
+        for (index, operation) in operations.iter().enumerate() {
+        let is_last = index == total_operations - 1;
+        let output_path = if is_last {
+            // 最后一个操作：生成永久输出文件
+            let input_path_obj = std::path::Path::new(&input_path);
+            let parent_dir = input_path_obj.parent()
+                .unwrap_or(std::path::Path::new("."));
+            let filename = input_path_obj.file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("output");
+            let extension = match operation.operation_type.as_str() {
+                "to_gif" => "gif",
+                _ => input_path_obj.extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("mp4")
+            };
+            // 使用跨平台路径拼接
+            parent_dir.join(format!("{}_final.{}", filename, extension))
+                .to_str()
+                .unwrap()
+                .to_string()
+        } else {
+            // 中间操作：使用临时文件，需要添加扩展名以便 FFmpeg 识别格式
+            let extension = match operation.operation_type.as_str() {
+                "to_gif" => "gif",
+                _ => input_path
+                    .split('.')
+                    .last()
+                    .unwrap_or("mp4")
+            };
+            // 创建带扩展名的临时文件
+            let temp_file = NamedTempFile::new()
+                .map_err(|e| format!("创建临时文件失败: {}", e))?;
+            let temp_path_with_ext = temp_file.path()
+                .with_extension(extension);
+            // 先 keep 防止自动删除
+            let temp_path_kept = temp_file.into_temp_path()
+                .keep()
+                .map_err(|e| format!("保持临时文件失败: {}", e))?;
+            // 重命名添加扩展名
+            std::fs::rename(&temp_path_kept, &temp_path_with_ext)
+                .map_err(|e| format!("重命名临时文件失败: {}", e))?;
+            temp_path_with_ext.to_str().unwrap().to_string()
+        };
+
+        temp_files.push(output_path.clone());
+
+        let window_clone = window.clone();
+        match operation.operation_type.as_str() {
+            "compress" => {
+                let params = serde_json::from_value(operation.params.clone())
+                    .map_err(|e| format!("解析压缩参数失败: {}", e))?;
+                ffmpeg::compress_video(current_path.clone(), output_path.clone(), params, move |progress| {
+                    let _ = window_clone.emit("progress", progress);
+                }).await?;
+            }
+            "speed" => {
+                let params = serde_json::from_value(operation.params.clone())
+                    .map_err(|e| format!("解析变速参数失败: {}", e))?;
+                ffmpeg::change_video_speed(current_path.clone(), output_path.clone(), params).await?;
+            }
+            "trim" => {
+                let params = serde_json::from_value(operation.params.clone())
+                    .map_err(|e| format!("解析截断参数失败: {}", e))?;
+                ffmpeg::trim_video(current_path.clone(), output_path.clone(), params).await?;
+            }
+            "to_gif" => {
+                let params = serde_json::from_value(operation.params.clone())
+                    .map_err(|e| format!("解析GIF参数失败: {}", e))?;
+                ffmpeg::convert_to_gif(current_path.clone(), output_path.clone(), params).await?;
+            }
+            "extract_frames" => {
+                // 提取帧操作不产生视频输出，跳过
+                continue;
+            }
+            _ => {
+                return Err(format!("未知的操作类型: {}", operation.operation_type));
+            }
+        }
+
+        current_path = output_path;
+    }
+
+    // 删除所有临时文件（除了最后一个）
+    for temp_file in temp_files.iter().take(temp_files.len() - 1) {
+        let _ = std::fs::remove_file(temp_file);
+    }
+
+    // 返回最终输出文件路径
+    Ok(current_path)
+    }.await;
+
+    // 如果处理失败，清理所有临时文件
+    match process_result {
+        Ok(final_path) => Ok(final_path),
+        Err(error) => {
+            // 清理所有临时文件
+            for temp_file in &temp_files {
+                let _ = std::fs::remove_file(temp_file);
+            }
+            Err(error)
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -178,7 +298,8 @@ pub fn run() {
             change_video_speed,
             extract_frames,
             trim_video,
-            convert_to_gif
+            convert_to_gif,
+            process_operation_queue
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

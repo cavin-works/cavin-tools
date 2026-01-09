@@ -21,7 +21,9 @@ export function OperationQueuePanel() {
   };
 
   const handleOpenFolder = (outputPath: string) => {
-    const folderPath = outputPath.substring(0, outputPath.lastIndexOf('\\'));
+    // 使用 path.posix 或 path.win32 来处理不同平台的路径分隔符
+    const separator = outputPath.includes('\\') ? '\\' : '/';
+    const folderPath = outputPath.substring(0, outputPath.lastIndexOf(separator));
     open(folderPath);
   };
 
@@ -119,6 +121,7 @@ export function OperationQueuePanel() {
           <div className="space-y-2">
             {results.map((result, index) => {
               const operation = queue.find(op => op.id === result.operationId);
+              const isLastOperation = index === results.length - 1;
               return (
                 <div
                   key={result.operationId}
@@ -137,8 +140,11 @@ export function OperationQueuePanel() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-neutral-900">
                         {operation?.name || `操作 ${index + 1}`}
+                        {!isLastOperation && result.success && (
+                          <span className="ml-2 text-xs text-neutral-400">(临时处理)</span>
+                        )}
                       </p>
-                      {result.success ? (
+                      {result.success && isLastOperation ? (
                         <>
                           <p className="text-xs text-neutral-600 break-all mt-1">
                             {result.outputPath}
@@ -151,6 +157,10 @@ export function OperationQueuePanel() {
                             打开文件夹
                           </button>
                         </>
+                      ) : result.success ? (
+                        <p className="text-xs text-neutral-500 mt-1">
+                          已处理 ✓
+                        </p>
                       ) : (
                         <p className="text-xs text-red-600 mt-1">
                           {result.error}

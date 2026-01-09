@@ -23,8 +23,7 @@ export function CompressPanel() {
         inputPath: currentVideo.path,
         params: {
           preset,
-          width: preset === 'mobile' ? 1280 : preset === 'web' ? 854 : 1920,
-          height: preset === 'mobile' ? 720 : preset === 'web' ? 480 : 1080,
+          // 不指定宽高，保持原分辨率
         }
       });
 
@@ -41,9 +40,9 @@ export function CompressPanel() {
     if (!currentVideo) return;
 
     const presetNames = {
-      mobile: '手机优化 (720p)',
-      web: '网络分享 (480p)',
-      high_quality: '高质量 (1080p)',
+      mobile: '手机优化',
+      web: '网络分享',
+      high_quality: '高质量',
       custom: '自定义'
     };
 
@@ -52,8 +51,7 @@ export function CompressPanel() {
       name: `压缩 (${presetNames[preset]})`,
       params: {
         preset,
-        width: preset === 'mobile' ? 1280 : preset === 'web' ? 854 : 1920,
-        height: preset === 'mobile' ? 720 : preset === 'web' ? 480 : 1080,
+        // 不指定宽高，保持原分辨率
       }
     });
   };
@@ -73,11 +71,14 @@ export function CompressPanel() {
             className="w-full border border-neutral-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
             disabled={isProcessing}
           >
-            <option value="mobile">手机优化 (720p)</option>
-            <option value="web">网络分享 (480p)</option>
-            <option value="high_quality">高质量 (1080p)</option>
+            <option value="mobile">手机优化 - 小文件，适合移动设备</option>
+            <option value="web">网络分享 - 更小文件，适合网络传输</option>
+            <option value="high_quality">高质量 - 保持较好画质</option>
             <option value="custom">自定义</option>
           </select>
+          <p className="text-xs text-neutral-500 mt-1.5">
+            ℹ️ 压缩不会改变视频分辨率，只通过调整编码参数减小文件大小
+          </p>
         </div>
 
         <div className="flex gap-2">
