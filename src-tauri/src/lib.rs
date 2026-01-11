@@ -6,6 +6,7 @@ use tauri::Emitter;
 // 导出ffmpeg模块
 pub mod ffmpeg;
 pub mod models;
+pub mod image;
 
 /// 检查FFmpeg是否可用
 ///
@@ -282,6 +283,188 @@ async fn process_operation_queue(
             Err(error)
         }
     }
+}
+
+
+// ========== 图片处理命令 ==========
+
+/// 加载图片并获取信息
+#[tauri::command]
+async fn load_image(path: String) -> Result<image::ImageInfo, String> {
+    image::get_image_info(path).map_err(|e| format!("{:?}", e))
+}
+
+/// 裁剪图片
+#[tauri::command]
+async fn crop_image_command(
+    input_path: String,
+    params: image::crop::CropParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let input_path_obj = std::path::Path::new(&input_path);
+    let parent_dir = input_path_obj.parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or(".");
+    let filename = input_path_obj.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let extension = input_path_obj.extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("jpg");
+
+    let output_path = format!("{}/{}_cropped.{}", parent_dir, filename, extension);
+
+    image::crop::crop_image(input_path, output_path.clone(), params)
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
+/// 旋转图片
+#[tauri::command]
+async fn rotate_image_command(
+    input_path: String,
+    params: image::rotate::RotateParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let input_path_obj = std::path::Path::new(&input_path);
+    let parent_dir = input_path_obj.parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or(".");
+    let filename = input_path_obj.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let extension = input_path_obj.extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("jpg");
+
+    let output_path = format!("{}/{}_rotated_{}.{}", parent_dir, filename, params.angle, extension);
+
+    image::rotate::rotate_image(input_path, output_path.clone(), params)
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
+/// 翻转图片
+#[tauri::command]
+async fn flip_image_command(
+    input_path: String,
+    params: image::flip::FlipParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let input_path_obj = std::path::Path::new(&input_path);
+    let parent_dir = input_path_obj.parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or(".");
+    let filename = input_path_obj.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let extension = input_path_obj.extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("jpg");
+
+    let output_path = format!("{}/{}_flipped.{}", parent_dir, filename, extension);
+
+    image::flip::flip_image(input_path, output_path.clone(), params)
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
+/// 调整图片尺寸
+#[tauri::command]
+async fn resize_image_command(
+    input_path: String,
+    params: image::resize::ResizeParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let input_path_obj = std::path::Path::new(&input_path);
+    let parent_dir = input_path_obj.parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or(".");
+    let filename = input_path_obj.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let extension = input_path_obj.extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("jpg");
+
+    let output_path = format!("{}/{}_resized.{}", parent_dir, filename, extension);
+
+    image::resize::resize_image(input_path, output_path.clone(), params)
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
+/// 获取预设尺寸列表
+#[tauri::command]
+async fn get_preset_sizes() -> Result<Vec<image::resize::PresetSize>, String> {
+    Ok(image::resize::get_preset_sizes())
+}
+
+/// 添加水印
+#[tauri::command]
+async fn add_watermark_command(
+    input_path: String,
+    params: image::watermark::WatermarkParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let input_path_obj = std::path::Path::new(&input_path);
+    let parent_dir = input_path_obj.parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or(".");
+    let filename = input_path_obj.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let extension = input_path_obj.extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("jpg");
+
+    let output_path = format!("{}/{}_watermarked.{}", parent_dir, filename, extension);
+
+    image::watermark::add_watermark(input_path, output_path.clone(), params)
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
+/// 创建网格拼图
+#[tauri::command]
+async fn create_collage_command(
+    params: image::collage::CollageParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let output_dir = std::env::current_dir()
+        .map_err(|e| format!("获取当前目录失败: {}", e))?;
+    let output_dir = output_dir.to_str().unwrap_or(".");
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let output_path = format!("{}/collage_{}.jpg", output_dir, timestamp);
+
+    image::collage::create_grid_collage(params, output_path.clone())
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
+/// 获取预设拼图配置
+#[tauri::command]
+async fn get_preset_collages() -> Result<Vec<image::collage::PresetCollage>, String> {
+    Ok(image::collage::get_preset_collages())
+}
+
+/// 批量处理图片
+#[tauri::command]
+async fn batch_process_images_command(
+    params: image::batch::BatchParams,
+) -> Result<image::batch::BatchResult, String> {
+    image::batch::batch_process_images(params)
+        .map_err(|e| format!("{:?}", e))
+}
+
+/// 导出图片
+#[tauri::command]
+async fn export_image_command(
+    input_path: String,
+    options: image::convert::ExportOptions,
+) -> Result<String, String> {
+    image::convert::export_image(input_path, options)
+        .map_err(|e| format!("{:?}", e))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
