@@ -482,7 +482,19 @@ pub fn run() {
             extract_frames,
             trim_video,
             convert_to_gif,
-            process_operation_queue
+            process_operation_queue,
+            // 图片处理命令
+            load_image,
+            crop_image_command,
+            resize_image_command,
+            rotate_image_command,
+            flip_image_command,
+            add_watermark_command,
+            create_collage_command,
+            batch_process_images_command,
+            get_preset_sizes,
+            get_preset_collages,
+            export_image_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

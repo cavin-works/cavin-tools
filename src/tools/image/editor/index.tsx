@@ -7,6 +7,7 @@ import { FileUploader } from './components/common/FileUploader';
 import { Toolbar } from './components/Toolbar';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { useImageStore } from './store/imageStore';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 export function ImageEditor() {
   const { currentImage } = useImageStore();
@@ -26,7 +27,7 @@ export function ImageEditor() {
           ) : (
             <div className="text-center">
               <img
-                src={`file://${currentImage.path}`}
+                src={convertFileSrc(currentImage.path)}
                 alt={currentImage.filename}
                 className="max-w-full max-h-full object-contain"
               />

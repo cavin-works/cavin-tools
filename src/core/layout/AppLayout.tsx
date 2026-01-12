@@ -25,7 +25,7 @@ export function AppLayout() {
   const currentTool = currentToolId ? (getToolById(currentToolId) ?? null) : null;
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div className="flex h-screen bg-neutral-900 overflow-hidden">
       <Sidebar />
       <MainContent tool={currentTool} />
     </div>

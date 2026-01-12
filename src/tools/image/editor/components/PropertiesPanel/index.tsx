@@ -1,5 +1,6 @@
 /**
  * 参数面板主组件
+ * 仅包含图片编辑器的参数，拼图和批量处理已移至独立工具
  */
 
 import { ImageInfo } from './ImageInfo';
@@ -7,12 +8,10 @@ import { TransformParams } from './TransformParams';
 import { ExportOptions } from './ExportOptions';
 import { ResizePanel } from './ResizePanel';
 import { WatermarkPanel } from './WatermarkPanel';
-import { CollagePanel } from './CollagePanel';
-import { BatchProcessorPanel } from './BatchProcessorPanel';
 
 export function PropertiesPanel() {
   return (
-    <div className="h-full flex flex-col bg-neutral-800 border-l border-neutral-700">
+    <div className="h-full w-72 flex flex-col bg-neutral-800 border-l border-neutral-700 flex-shrink-0">
       <div className="flex-1 overflow-y-auto">
         {/* 图片信息 */}
         <ImageInfo />
@@ -25,12 +24,6 @@ export function PropertiesPanel() {
 
         {/* 水印 */}
         <WatermarkPanel />
-
-        {/* 拼图 */}
-        <CollagePanel />
-
-        {/* 批量处理 */}
-        <BatchProcessorPanel />
 
         {/* 导出选项 */}
         <ExportOptions />
