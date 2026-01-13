@@ -13,6 +13,7 @@ pub mod watermark;
 pub mod collage;
 pub mod batch;
 pub mod convert;
+pub mod mosaic;
 
 // 重新导出常用类型
 pub use info::{get_image_info, ImageInfo};

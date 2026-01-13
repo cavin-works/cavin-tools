@@ -62,40 +62,93 @@ export function FileUploader() {
 
   const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
 
-    // 尝试从拖拽事件中获取文件路径
-    const files = Array.from(e.dataTransfer.files);
+    console.log('=== DROP EVENT TRIGGERED ===');
+    console.log('DataTransfer:', e.dataTransfer);
+    console.log('Files length:', e.dataTransfer.files.length);
 
-    if (files.length > 0) {
-      const file = files[0];
+    try {
+      // 获取拖拽的文件路径
+      const files = e.dataTransfer.files;
 
-      // 检查是否是图片类型
-      if (!file.type.startsWith('image/')) {
-        setError('请选择图片文件');
+      if (files.length === 0) {
+        console.error('No files detected in drop event');
+        setError('没有检测到文件');
         return;
       }
 
-      // 注意：在Tauri中，Web浏览器拖拽的File对象无法直接获取文件路径
-      // 这里使用一个变通方法：提示用户选择文件
-      // 但如果文件有path属性（某些Tauri版本支持），则直接使用
-      if ('path' in file && typeof (file as any).path === 'string') {
-        await loadImage((file as any).path);
-      } else {
-        // 如果无法获取路径，使用文件选择器让用户手动选择
-        setError('拖拽文件暂不支持，请使用"选择图片"按钮');
+      const file = files[0];
+      console.log('Dropped file:', file);
+      console.log('File name:', file.name);
+      console.log('File type:', file.type);
+      console.log('File size:', file.size);
+
+      // 检查file对象的所有属性
+      console.log('File properties:', Object.keys(file));
+      console.log('Has path property:', 'path' in file);
+      if ('path' in file) {
+        console.log('Path value:', (file as any).path);
       }
+
+      // 检查是否是图片类型
+      if (!file.type.startsWith('image/')) {
+        setError('请选择图片文件（JPG, PNG, GIF等）');
+        return;
+      }
+
+      // 尝试获取文件路径
+      let filePath: string | null = null;
+
+      // 方法1：检查file对象的path属性
+      if ('path' in file && typeof (file as any).path === 'string' && (file as any).path) {
+        filePath = (file as any).path;
+        console.log('Using path property:', filePath);
+      }
+      // 方法2：尝试从webkitRelativePath获取
+      else if (file.webkitRelativePath) {
+        filePath = file.webkitRelativePath;
+        console.log('Using webkitRelativePath:', filePath);
+      }
+      // 方法3：尝试从name属性构造路径（不太可靠）
+      else if (file.name) {
+        console.warn('No file path available, only file name:', file.name);
+        setError('无法获取文件路径，请使用"选择图片"按钮');
+        return;
+      }
+
+      if (filePath) {
+        console.log('Loading image from path:', filePath);
+        await loadImage(filePath);
+      } else {
+        setError('无法获取文件路径，请使用"选择图片"按钮');
+      }
+    } catch (err) {
+      console.error('Error handling drop:', err);
+      setError(`处理拖拽文件失败: ${err}`);
     }
   }, [setCurrentImage, setError]);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Drag over event triggered');
     setIsDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Drag leave event triggered');
     setIsDragging(false);
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Drag enter event triggered');
+    setIsDragging(true);
   }, []);
 
   return (
@@ -115,6 +168,7 @@ export function FileUploader() {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onDragEnter={handleDragEnter}
         className={`border-2 border-dashed rounded-lg p-12 text-center transition-all cursor-pointer ${
           isDragging
             ? 'border-blue-500 bg-blue-500/10'

@@ -7,7 +7,8 @@ export type TransformType =
   | 'flip'
   | 'resize'
   | 'watermark'
-  | 'collage';
+  | 'collage'
+  | 'mosaic';
 
 /**
  * 裁剪参数
@@ -176,6 +177,34 @@ export interface CollageParams {
 }
 
 /**
+ * 马赛克参数
+ */
+export interface MosaicParams {
+  /** 马赛克区域列表 */
+  regions: MosaicRegion[];
+  /** 马赛克块大小（像素） */
+  blockSize: number;
+}
+
+/**
+ * 马赛克区域
+ */
+export interface MosaicRegion {
+  /** 区域类型 */
+  regionType: 'rect' | 'ellipse' | 'brush';
+  /** X 坐标 */
+  x: number;
+  /** Y 坐标 */
+  y: number;
+  /** 宽度（rect/ellipse） */
+  width?: number;
+  /** 高度（rect/ellipse） */
+  height?: number;
+  /** 画笔点（brush） */
+  points?: { x: number; y: number }[];
+}
+
+/**
  * 预设拼图配置
  */
 export interface PresetCollage {
@@ -236,4 +265,30 @@ export interface BatchResult {
   success_paths: string[];
   /** 错误信息 */
   errors: string[];
+}
+
+/**
+ * 图片操作（用于操作队列）
+ */
+export interface ImageOperation {
+  /** 操作ID */
+  id?: string;
+  /** 操作类型 */
+  type: TransformType;
+  /** 操作名称 */
+  name: string;
+  /** 操作参数 */
+  params: CropParams | RotateParams | FlipParams | ResizeParams | WatermarkParams | MosaicParams | CollageParams;
+}
+
+/**
+ * 处理结果
+ */
+export interface ProcessResult {
+  /** 是否成功 */
+  success: boolean;
+  /** 输出路径 */
+  path?: string;
+  /** 错误信息 */
+  error?: string;
 }

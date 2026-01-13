@@ -467,6 +467,31 @@ async fn export_image_command(
         .map_err(|e| format!("{:?}", e))
 }
 
+/// 应用马赛克
+#[tauri::command]
+async fn apply_mosaic_command(
+    input_path: String,
+    params: image::mosaic::MosaicParams,
+) -> Result<String, String> {
+    // 生成输出路径
+    let input_path_obj = std::path::Path::new(&input_path);
+    let parent_dir = input_path_obj.parent()
+        .and_then(|p| p.to_str())
+        .unwrap_or(".");
+    let filename = input_path_obj.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let extension = input_path_obj.extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("jpg");
+
+    let output_path = format!("{}/{}_mosaic.{}", parent_dir, filename, extension);
+
+    image::mosaic::apply_mosaic(input_path, output_path.clone(), params)
+        .map_err(|e| format!("{:?}", e))?;
+    Ok(output_path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -494,7 +519,8 @@ pub fn run() {
             batch_process_images_command,
             get_preset_sizes,
             get_preset_collages,
-            export_image_command
+            export_image_command,
+            apply_mosaic_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
