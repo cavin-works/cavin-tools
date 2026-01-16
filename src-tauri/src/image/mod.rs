@@ -14,9 +14,11 @@ pub mod collage;
 pub mod batch;
 pub mod convert;
 pub mod mosaic;
+pub mod save;
 
 // 重新导出常用类型
 pub use info::{get_image_info, ImageInfo};
+pub use save::save_edited_image;
 
 use serde::{Deserialize, Serialize};
 

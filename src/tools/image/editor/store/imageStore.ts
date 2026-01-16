@@ -8,6 +8,7 @@ import type {
   WatermarkParams,
   ExportOptions,
 } from '../types';
+import type { Crop, PixelCrop } from 'react-image-crop';
 
 interface ImageStore {
   // ========== 当前图片 ==========
@@ -27,6 +28,22 @@ interface ImageStore {
   resize: ResizeParams | null;
   /** 水印参数 */
   watermark: WatermarkParams | null;
+
+  // ========== 交互式裁剪 ==========
+  /** 是否处于交互式裁剪模式 */
+  isCropMode: boolean;
+  /** 设置交互式裁剪模式 */
+  setCropMode: (enabled: boolean) => void;
+
+  // ========== react-image-crop 裁剪状态 ==========
+  /** 裁剪区域状态 */
+  reactCrop: Crop | null;
+  /** 已完成的裁剪区域（像素） */
+  completedCrop: PixelCrop | null;
+  /** 更新裁剪状态 */
+  setReactCrop: (crop: Crop | null) => void;
+  /** 更新完成裁剪状态 */
+  setCompletedCrop: (crop: PixelCrop | null) => void;
 
   /** 设置变换参数 */
   setTransform: <T extends CropParams | RotateParams | FlipParams | ResizeParams | WatermarkParams>(
@@ -107,6 +124,15 @@ export const useImageStore = create<ImageStore>((set, get) => ({
   flip: null,
   resize: null,
   watermark: null,
+
+  // ========== 交互式裁剪 ==========
+  isCropMode: false,
+  reactCrop: null,
+  completedCrop: null,
+
+  setCropMode: (enabled) => set({ isCropMode: enabled }),
+  setReactCrop: (crop) => set({ reactCrop: crop }),
+  setCompletedCrop: (crop) => set({ completedCrop: crop }),
 
   setTransform: (type, params) => {
     set({ [type]: params });

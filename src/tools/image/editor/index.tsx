@@ -1,15 +1,12 @@
 /**
  * 图片编辑器主组件
- * 标签页式布局：标签导航（左）+ 预览画布（中）+ 操作队列（右）
+ * 全屏画布 + 底部工具栏设计
  */
 
-import { useState } from 'react';
 import { FileUploader } from './components/common/FileUploader';
-import { TabPanel } from './components/TabPanel';
 import { ImageInfoBar } from './components/ImageInfoBar';
-import { OperationQueuePanel } from './components/OperationQueuePanel';
 import { PreviewCanvas } from './components/PreviewCanvas';
-import { ImageOperationQueueProvider } from './contexts/ImageOperationQueueContext';
+import { EditorToolbar } from './components/EditorToolbar';
 import { useImageStore } from './store/imageStore';
 
 export function ImageEditor() {
@@ -26,27 +23,19 @@ export function ImageEditor() {
     );
   }
 
-  // 已加载图片，显示编辑界面
+  // 已加载图片，显示全屏编辑界面
   return (
-    <ImageOperationQueueProvider>
-      <div className="flex h-screen bg-neutral-900 text-white">
-        {/* 左侧标签页导航 */}
-        <TabPanel />
+    <div className="flex h-screen flex-col bg-neutral-900 text-white overflow-hidden">
+      {/* 顶部信息条 */}
+      <ImageInfoBar image={currentImage} />
 
-        {/* 中央画布区 */}
-        <div className="flex-1 flex flex-col bg-neutral-900 overflow-hidden">
-          {/* 图片信息条 */}
-          <ImageInfoBar image={currentImage} />
+      {/* 全屏画布区域 - 工具栏浮动显示在底部 */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden relative">
+        <PreviewCanvas className="max-w-full max-h-full" />
 
-          {/* 预览画布 */}
-          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-            <PreviewCanvas className="max-w-full max-h-full" />
-          </div>
-        </div>
-
-        {/* 右侧操作队列 */}
-        <OperationQueuePanel />
+        {/* 底部工具栏 */}
+        <EditorToolbar />
       </div>
-    </ImageOperationQueueProvider>
+    </div>
   );
 }

@@ -1,17 +1,15 @@
 /**
  * 旋转面板
  * 提供图片旋转参数控制
+ * TODO: 需要重构为直接应用操作，而非添加到队列
  */
 
 import { useState } from 'react';
-import { useImageQueue } from '../../contexts/ImageOperationQueueContext';
 import { useImageStore } from '../../store/imageStore';
-import type { RotateParams } from '../../types';
-import { Plus } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 
 export function RotatePanel() {
   const { currentImage } = useImageStore();
-  const { addToQueue } = useImageQueue();
   const [angle, setAngle] = useState(90);
   const [customAngle, setCustomAngle] = useState(0);
 
@@ -19,18 +17,9 @@ export function RotatePanel() {
     setAngle(presetAngle);
   };
 
-  const handleAddToQueue = () => {
-    if (!currentImage) return;
-
-    const params: RotateParams = {
-      angle: customAngle > 0 ? customAngle : angle,
-    };
-
-    addToQueue({
-      type: 'rotate',
-      name: `旋转 ${params.angle}°`,
-      params,
-    });
+  const handleApply = () => {
+    // TODO: 实现直接应用旋转功能
+    alert('旋转功能正在重构中，敬请期待！');
   };
 
   if (!currentImage) {
@@ -46,7 +35,15 @@ export function RotatePanel() {
     <div className="p-4">
       <h3 className="text-sm font-semibold text-white mb-3">旋转图片</h3>
 
-      <div className="space-y-3">
+      {/* 功能开发中提示 */}
+      <div className="mb-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2">
+        <p className="text-xs text-yellow-200 flex items-center gap-2">
+          <RotateCw className="w-4 h-4 flex-shrink-0" />
+          <span>该功能正在重构中，将支持实时预览</span>
+        </p>
+      </div>
+
+      <div className="space-y-3 opacity-50 pointer-events-none">
         {/* 预设角度 */}
         <div>
           <label className="text-xs text-neutral-400 block mb-2">预设角度</label>
@@ -108,13 +105,13 @@ export function RotatePanel() {
           </div>
         </div>
 
-        {/* 添加到队列按钮 */}
+        {/* 应用按钮 */}
         <button
-          onClick={handleAddToQueue}
+          onClick={handleApply}
           className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium text-white flex items-center justify-center gap-2 transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          添加到队列
+          <RotateCw className="w-4 h-4" />
+          应用旋转
         </button>
       </div>
     </div>

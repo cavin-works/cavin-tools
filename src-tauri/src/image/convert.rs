@@ -3,9 +3,10 @@
  */
 
 use image::ImageEncoder;
-use image::{DynamicImage, ImageOutputFormat};
+use image::{DynamicImage, ImageOutputFormat, ImageBuffer, Rgba};
 use serde::{Deserialize, Serialize};
-use std::io::BufWriter;
+use std::io::{BufWriter, Cursor, Write};
+use std::path::Path;
 
 use super::ImageError;
 
@@ -121,4 +122,49 @@ pub fn batch_convert_images(
     }
 
     Ok(results)
+}
+
+/**
+ * 从字节数组保存图片
+ *
+ * # 参数
+ * - buffer: 图片字节数组(JPEG/PNG等格式)
+ * - path: 保存路径
+ *
+ * # 返回
+ * 成功时返回保存路径，失败时返回错误信息
+ */
+pub fn save_image_from_buffer(buffer: Vec<u8>, path: String) -> Result<String, ImageError> {
+    // 从buffer创建图片
+    let img = image::load_from_memory(&buffer)?;
+
+    // 保存图片
+    let path_obj = Path::new(&path);
+
+    // 根据扩展名确定格式
+    let extension = path_obj
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("jpg");
+
+    match extension.to_lowercase().as_str() {
+        "jpg" | "jpeg" => {
+            img.save_with_format(&path, image::ImageFormat::Jpeg)?;
+        }
+        "png" => {
+            img.save_with_format(&path, image::ImageFormat::Png)?;
+        }
+        "webp" => {
+            img.save_with_format(&path, image::ImageFormat::WebP)?;
+        }
+        "bmp" => {
+            img.save_with_format(&path, image::ImageFormat::Bmp)?;
+        }
+        _ => {
+            // 默认保存为JPEG
+            img.save_with_format(&path, image::ImageFormat::Jpeg)?;
+        }
+    }
+
+    Ok(path)
 }

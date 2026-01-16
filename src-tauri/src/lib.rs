@@ -467,6 +467,16 @@ async fn export_image_command(
         .map_err(|e| format!("{:?}", e))
 }
 
+/// 从字节数组保存图片
+#[tauri::command]
+async fn save_image_from_buffer(
+    buffer: Vec<u8>,
+    path: String,
+) -> Result<String, String> {
+    image::convert::save_image_from_buffer(buffer, path)
+        .map_err(|e| format!("{:?}", e))
+}
+
 /// 应用马赛克
 #[tauri::command]
 async fn apply_mosaic_command(
@@ -490,6 +500,15 @@ async fn apply_mosaic_command(
     image::mosaic::apply_mosaic(input_path, output_path.clone(), params)
         .map_err(|e| format!("{:?}", e))?;
     Ok(output_path)
+}
+
+/// 保存编辑后的图片
+#[tauri::command]
+async fn save_edited_image(
+    original_path: String,
+    image_data: String,
+) -> Result<String, String> {
+    image::save::save_edited_image(original_path, image_data)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -520,7 +539,9 @@ pub fn run() {
             get_preset_sizes,
             get_preset_collages,
             export_image_command,
-            apply_mosaic_command
+            save_image_from_buffer,
+            apply_mosaic_command,
+            save_edited_image
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

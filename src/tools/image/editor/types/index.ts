@@ -5,3 +5,6 @@
 
 export * from './image';
 export * from './operations';
+export * from './tools';
+export * from './annotations';
+export * from './editor';

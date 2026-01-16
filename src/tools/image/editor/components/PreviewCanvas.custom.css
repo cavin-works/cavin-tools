@@ -1,0 +1,218 @@
+/**
+ * React Image Crop 自定义样式
+ * 专业图片编辑器 - 暗色主题
+ */
+
+/* ========== 裁剪容器基础样式 ========== */
+.ReactCrop {
+  /* 确保裁剪组件占满容器 */
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* 确保可以接收鼠标事件 */
+  pointer-events: auto !important;
+  position: relative !important;
+  /* 防止用户选择文本干扰拖动 */
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* ========== 裁剪区域选中框 ========== */
+.ReactCrop__crop-selection {
+  /* 边框样式 - 专业蓝色焦点 */
+  border: 2px solid #3B82F6 !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
+              0 0 20px rgba(59, 130, 246, 0.4) !important;
+
+  /* 平滑过渡动画 */
+  transition: border-color 200ms ease-out,
+              box-shadow 200ms ease-out;
+
+  /* 确保边框清晰可见 */
+  outline: none !important;
+
+  /* 确保裁剪框可以被拖动 */
+  pointer-events: auto !important;
+  cursor: move !important;
+}
+
+/* 悬停状态 - 增强可见性 */
+.ReactCrop__crop-selection:hover {
+  border-color: #60A5FA !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4),
+              0 0 30px rgba(59, 130, 246, 0.6) !important;
+}
+
+/* ========== 裁剪区域遮罩（暗化区域） ========== */
+.ReactCrop__image {
+  /* 确保图片正常显示 */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* 遮罩层 - 裁剪区域外暗化 */
+.ReactCrop__crop-selection::before,
+.ReactCrop__crop-selection::after {
+  /* 使用更深的半透明遮罩 */
+  background-color: rgba(15, 23, 42, 0.75) !important;
+}
+
+/* ========== 角标控制点 ========== */
+.ReactCrop__drag-handle {
+  /* 更大的控制点 - 易于操作 */
+  width: 16px !important;
+  height: 16px !important;
+
+  /* 专业蓝色 - 高对比度 */
+  background-color: #3B82F6 !important;
+  border: 2px solid #FFFFFF !important;
+
+  /* 圆形角标 - 现代感 */
+  border-radius: 50% !important;
+
+  /* 平滑过渡 */
+  transition: all 200ms ease-out;
+
+  /* 阴影提升层次感 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4),
+              0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+
+  /* 确保角标在最上层 */
+  position: absolute !important;
+  z-index: 1000 !important;
+}
+
+/* 角标悬停状态 */
+.ReactCrop__drag-handle:hover {
+  /* 放大效果 */
+  transform: scale(1.2) !important;
+
+  /* 更亮的蓝色 */
+  background-color: #60A5FA !important;
+
+  /* 更强的发光效果 */
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6),
+              0 0 0 3px rgba(59, 130, 246, 0.4) !important;
+
+  /* 光标指示 */
+  cursor: pointer !important;
+}
+
+/* 角标活动状态（拖动中） */
+.ReactCrop__drag-handle:active,
+.ReactCrop__drag-handle.ReactCrop__drag-handle-active {
+  /* 强调的橙红色 - 清晰的活动指示 */
+  background-color: #F97316 !important;
+
+  /* 按下效果 */
+  transform: scale(1.1) !important;
+
+  /* 更强的阴影 */
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.6),
+              0 0 0 4px rgba(249, 115, 22, 0.3) !important;
+}
+
+/* ========== 边缘控制点（可选 - 如果启用） ========== */
+.ReactCrop__drag-handle.ord-nw {
+  cursor: nw-resize !important;
+}
+.ReactCrop__drag-handle.ord-ne {
+  cursor: ne-resize !important;
+}
+.ReactCrop__drag-handle.ord-sw {
+  cursor: sw-resize !important;
+}
+.ReactCrop__drag-handle.ord-se {
+  cursor: se-resize !important;
+}
+
+/* ========== 三分线网格 ========== */
+.ReactCrop__rule-of-thirds {
+  /* 三分线颜色 - 半透明白色 */
+  border-color: rgba(241, 245, 249, 0.3) !important;
+
+  /* 虚线样式 */
+  border-style: dashed !important;
+
+  /* 确保在裁剪框内显示 */
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+/* ========== 裁剪区域新创建动画 ========== */
+@keyframes cropSelectionFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ReactCrop__crop-selection {
+  animation: cropSelectionFadeIn 200ms ease-out !important;
+}
+
+/* ========== 响应式调整 ========== */
+/* 小屏幕 - 减小角标尺寸 */
+@media (max-width: 768px) {
+  .ReactCrop__drag-handle {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .ReactCrop__crop-selection {
+    border-width: 1.5px !important;
+  }
+}
+
+/* ========== 无障碍改进 ========== */
+/* 减少动画 - 尊重用户偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .ReactCrop__crop-selection,
+  .ReactCrop__drag-handle {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .ReactCrop__drag-handle:hover {
+    transform: none !important;
+  }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .ReactCrop__crop-selection {
+    border-width: 3px !important;
+    border-color: #60A5FA !important;
+  }
+
+  .ReactCrop__drag-handle {
+    width: 20px !important;
+    height: 20px !important;
+    border-width: 3px !important;
+  }
+}
+
+/* ========== 焦点状态 - 键盘导航 ========== */
+.ReactCrop__crop-selection:focus,
+.ReactCrop__drag-handle:focus {
+  outline: 2px solid #F97316 !important;
+  outline-offset: 2px !important;
+}
+
+/* ========== 打印样式 ========== */
+@media print {
+  .ReactCrop__drag-handle {
+    /* 打印时隐藏控制点 */
+    display: none !important;
+  }
+
+  .ReactCrop__crop-selection {
+    border: 2px solid #000 !important;
+    box-shadow: none !important;
+  }
+}

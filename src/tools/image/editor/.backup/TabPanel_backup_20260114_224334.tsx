@@ -3,7 +3,7 @@
  * 垂直标签页导航，显示不同的编辑功能
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TABS, TabType } from '../types/tabs';
 import { CropPanel } from './Panels/CropPanel';
 import { RotatePanel } from './Panels/RotatePanel';
@@ -11,9 +11,20 @@ import { FlipPanel } from './Panels/FlipPanel';
 import { ResizePanel } from './Panels/ResizePanel';
 import { WatermarkPanel } from './Panels/WatermarkPanel';
 import { MosaicPanel } from './Panels/MosaicPanel';
+import { useImageStore } from '../store/imageStore';
 
 export function TabPanel() {
   const [activeTab, setActiveTab] = useState<TabType>('crop');
+  const { setCropMode } = useImageStore();
+
+  // 当切换到裁剪标签时，启用裁剪模式
+  useEffect(() => {
+    if (activeTab === 'crop') {
+      setCropMode(true);
+    } else {
+      setCropMode(false);
+    }
+  }, [activeTab, setCropMode]);
 
   return (
     <div className="w-80 flex bg-neutral-800 border-r border-neutral-700">
