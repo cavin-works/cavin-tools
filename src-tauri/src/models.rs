@@ -26,3 +26,15 @@ pub struct QueueOperation {
     /// 操作参数（JSON格式）
     pub params: Value,
 }
+
+/// 图片信息
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImageInfo {
+    pub path: String,
+    pub filename: String,
+    pub width: u32,
+    pub height: u32,
+    pub format: String,      // 原始格式
+    pub file_size: u64,
+    pub color_type: String,  // RGB, RGBA, Grayscale 等
+}

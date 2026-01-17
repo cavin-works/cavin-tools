@@ -1,5 +1,7 @@
 import { ToolMetadata, ToolCategory } from './ToolMetadata';
 import videoEditorToolConfig from '@/tools/video/editor/tool.config';
+import imageConverterToolConfig from '@/tools/image/converter/tool.config';
+import imageCompressorToolConfig from '@/tools/image/compressor/tool.config';
 
 /**
  * 工具注册表
@@ -9,8 +11,9 @@ import videoEditorToolConfig from '@/tools/video/editor/tool.config';
  */
 export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'video-editor': videoEditorToolConfig,
+  'image-converter': imageConverterToolConfig,
+  'image-compressor': imageCompressorToolConfig,
   // 未来添加更多工具:
-  // 'image-compressor': imageCompressorToolConfig,
   // 'json-formatter': jsonFormatterToolConfig,
 };
 

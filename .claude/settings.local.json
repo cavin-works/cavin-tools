@@ -19,7 +19,9 @@
       "Skill(superpowers:writing-plans)",
       "Skill(superpowers:writing-plans:*)",
       "mcp__plugin_serena_serena__list_dir",
-      "mcp__plugin_serena_serena__read_file"
+      "mcp__plugin_serena_serena__read_file",
+      "Bash(cargo check)",
+      "Bash(cargo build --release)"
     ]
   }
 }

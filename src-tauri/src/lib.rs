@@ -6,6 +6,7 @@ use tauri::Emitter;
 // 导出ffmpeg模块
 pub mod ffmpeg;
 pub mod models;
+pub mod image_converter;
 
 /// 检查FFmpeg是否可用
 ///
@@ -285,6 +286,43 @@ async fn process_operation_queue(
 }
 
 
+/// 获取图片信息
+#[tauri::command]
+async fn get_image_info(path: String) -> Result<models::ImageInfo, String> {
+    image_converter::get_image_info(path)
+}
+
+/// 转换单个图片
+#[tauri::command]
+async fn convert_image(
+    input_path: String,
+    params: image_converter::ConvertParams,
+) -> Result<image_converter::ConvertResult, String> {
+    image_converter::convert_image(input_path, params).await
+}
+
+/// 批量转换图片
+#[tauri::command]
+async fn batch_convert_images(
+    input_paths: Vec<String>,
+    params: image_converter::ConvertParams,
+    window: tauri::Window,
+) -> Result<Vec<Result<image_converter::ConvertResult, String>>, String> {
+    let window_clone = window.clone();
+    image_converter::batch_convert_images(
+        input_paths,
+        params,
+        move |current, total| {
+            let _ = window_clone.emit("batch-progress", serde_json::json!({
+                "current": current,
+                "total": total,
+                "percentage": (current as f32 / total as f32 * 100.0)
+            }));
+        }
+    ).await
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -300,7 +338,10 @@ pub fn run() {
             extract_frames,
             trim_video,
             convert_to_gif,
-            process_operation_queue
+            process_operation_queue,
+            get_image_info,
+            convert_image,
+            batch_convert_images
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
