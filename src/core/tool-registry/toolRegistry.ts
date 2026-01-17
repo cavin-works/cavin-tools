@@ -2,6 +2,7 @@ import { ToolMetadata, ToolCategory } from './ToolMetadata';
 import videoEditorToolConfig from '@/tools/video/editor/tool.config';
 import imageConverterToolConfig from '@/tools/image/converter/tool.config';
 import imageCompressorToolConfig from '@/tools/image/compressor/tool.config';
+import watermarkRemoverToolConfig from '@/tools/image/watermark-remover/tool.config';
 
 /**
  * 工具注册表
@@ -13,6 +14,7 @@ export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'video-editor': videoEditorToolConfig,
   'image-converter': imageConverterToolConfig,
   'image-compressor': imageCompressorToolConfig,
+  'watermark-remover': watermarkRemoverToolConfig,
   // 未来添加更多工具:
   // 'json-formatter': jsonFormatterToolConfig,
 };

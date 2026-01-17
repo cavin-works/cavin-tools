@@ -1,116 +1,16 @@
-   0.341865200s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint: fingerprint error for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: false }/TargetInner { ..: lib_target("video_editor_lib", ["staticlib", "cdylib", "rlib"], "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\lib.rs", Edition2021) }
-   0.341905300s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\workspace\projects\cavin-works\cavin-tools\src-tauri\target\debug\.fingerprint\video-editor-d06b552d05afe3ad\lib-video_editor_lib`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_libgit2_prerelease
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: git_midx_writer_dump
-  17: git_filter_source_repo
-  18: git_midx_writer_dump
-  19: BaseThreadInitThunk
-  20: RtlUserThreadStart
-   0.433386000s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint: fingerprint error for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: true }/TargetInner { ..: lib_target("video_editor_lib", ["staticlib", "cdylib", "rlib"], "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\lib.rs", Edition2021) }
-   0.433406800s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\workspace\projects\cavin-works\cavin-tools\src-tauri\target\debug\.fingerprint\video-editor-123815d728938c68\test-lib-video_editor_lib`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_libgit2_prerelease
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: git_midx_writer_dump
-  17: git_filter_source_repo
-  18: git_midx_writer_dump
-  19: BaseThreadInitThunk
-  20: RtlUserThreadStart
-   0.434928200s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint: fingerprint error for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: false }/TargetInner { name: "video-editor", doc: true, ..: with_path("D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\main.rs", Edition2021) }
-   0.434949900s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\workspace\projects\cavin-works\cavin-tools\src-tauri\target\debug\.fingerprint\video-editor-7f7c45f215c72d84\bin-video-editor`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_libgit2_prerelease
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: git_midx_writer_dump
-  17: git_filter_source_repo
-  18: git_midx_writer_dump
-  19: BaseThreadInitThunk
-  20: RtlUserThreadStart
-   0.436099100s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint: fingerprint error for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: true }/TargetInner { name: "video-editor", doc: true, ..: with_path("D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\main.rs", Edition2021) }
-   0.436112800s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint:     err: failed to read `D:\workspace\projects\cavin-works\cavin-tools\src-tauri\target\debug\.fingerprint\video-editor-6f0818ea298c65c8\test-bin-video-editor`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_libgit2_prerelease
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: git_midx_writer_dump
-  17: git_filter_source_repo
-  18: git_midx_writer_dump
-  19: BaseThreadInitThunk
-  20: RtlUserThreadStart
+   0.332246000s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint: stale: changed "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\watermark_remover\\remove.rs"
+   0.332279100s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:           (vs) "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\target\\debug\\.fingerprint\\video-editor-d06b552d05afe3ad\\dep-lib-video_editor_lib"
+   0.332285200s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 13413118450, nanos: 474438600 } < FileTime { seconds: 13413118486, nanos: 623182300 }
+   0.332736300s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint: fingerprint dirty for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: false }/TargetInner { ..: lib_target("video_editor_lib", ["staticlib", "cdylib", "rlib"], "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\lib.rs", Edition2021) }
+   0.332764200s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\target\\debug\\.fingerprint\\video-editor-d06b552d05afe3ad\\dep-lib-video_editor_lib", reference_mtime: FileTime { seconds: 13413118450, nanos: 474438600 }, stale: "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\watermark_remover\\remove.rs", stale_mtime: FileTime { seconds: 13413118486, nanos: 623182300 } }))
+   0.421087700s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint: stale: changed "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\watermark_remover\\remove.rs"
+   0.421104200s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:           (vs) "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\target\\debug\\.fingerprint\\video-editor-123815d728938c68\\dep-test-lib-video_editor_lib"
+   0.421108800s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 13413118450, nanos: 474438600 } < FileTime { seconds: 13413118486, nanos: 623182300 }
+   0.421251600s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint: fingerprint dirty for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: true }/TargetInner { ..: lib_target("video_editor_lib", ["staticlib", "cdylib", "rlib"], "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\lib.rs", Edition2021) }
+   0.421265900s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video_editor_lib"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\target\\debug\\.fingerprint\\video-editor-123815d728938c68\\dep-test-lib-video_editor_lib", reference_mtime: FileTime { seconds: 13413118450, nanos: 474438600 }, stale: "D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\watermark_remover\\remove.rs", stale_mtime: FileTime { seconds: 13413118486, nanos: 623182300 } }))
+   0.423154400s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint: fingerprint dirty for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: false }/TargetInner { name: "video-editor", doc: true, ..: with_path("D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\main.rs", Edition2021) }
+   0.423176100s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "video_editor_lib" })
+   0.424581000s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint: fingerprint dirty for video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)/Check { test: true }/TargetInner { name: "video-editor", doc: true, ..: with_path("D:\\workspace\\projects\\cavin-works\\cavin-tools\\src-tauri\\src\\main.rs", Edition2021) }
+   0.424597100s  INFO prepare_target{force=false package_id=video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri) target="video-editor"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "video_editor_lib" })
     Checking video-editor v0.1.0 (D:\workspace\projects\cavin-works\cavin-tools\src-tauri)
-error: could not compile `video-editor` (lib) due to 1 previous error
-warning: build failed, waiting for other jobs to finish...
-error: could not compile `video-editor` (lib test) due to 1 previous error
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.03s

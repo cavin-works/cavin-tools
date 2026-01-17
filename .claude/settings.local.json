@@ -21,7 +21,9 @@
       "mcp__plugin_serena_serena__list_dir",
       "mcp__plugin_serena_serena__read_file",
       "Bash(cargo check)",
-      "Bash(cargo build --release)"
+      "Bash(cargo build --release)",
+      "Bash(dir /s /b \"d:\\\\workspace\")",
+      "Bash(findstr /i \"gemini-watermark\")"
     ]
   }
 }
