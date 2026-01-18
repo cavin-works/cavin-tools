@@ -20,6 +20,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: none;
 }
 
 #root {
@@ -27,22 +29,60 @@ body {
   height: 100vh;
 }
 
-/* 自定义滚动条 */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+
+/* 移除默认的 tap 高亮 */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
+/* 只移除链接的默认下划线，不强制颜色 */
+a {
+  text-decoration: none;
+}
+
+/* 滚动条优化 - 彻底隐藏但保留功能 */
+::-webkit-scrollbar {
+  width: 0px;
   background: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
-  border-radius: 3px;
+::-webkit-scrollbar-track {
+  background-color: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.8);
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* View Transitions API 主题切换动画 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-old(root) {
+  z-index: 9999;
+}
+
+.dark::view-transition-new(root) {
+  z-index: 1;
 }
 
 /* 淡入动画 */

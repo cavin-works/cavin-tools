@@ -32,19 +32,19 @@ export function ConvertSettings() {
   const isPNG = targetFormat === 'png';
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6">
-      <h3 className="text-lg font-semibold text-neutral-900 mb-4">转换设置</h3>
+    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">转换设置</h3>
 
       <div className="space-y-5">
         {/* 目标格式 */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             目标格式
           </label>
           <select
             value={targetFormat}
             onChange={(e) => setTargetFormat(e.target.value as ImageFormat)}
-            className="w-full border border-neutral-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900"
+            className="w-full border border-neutral-200 dark:border-neutral-600 rounded-lg px-3 py-2 bg-white dark:bg-neutral-700 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-neutral-400 focus:border-neutral-900 dark:focus:border-neutral-400"
           >
             {FORMAT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -56,8 +56,8 @@ export function ConvertSettings() {
 
         {/* 质量设置 */}
         {showQuality && (
-          <div className="border-t border-neutral-200 pt-4">
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               {isPNG ? '压缩优化' : '图片质量'}: {quality}%
             </label>
             <input
@@ -66,13 +66,13 @@ export function ConvertSettings() {
               max="100"
               value={quality}
               onChange={(e) => setQuality(Number(e.target.value))}
-              className="w-full accent-neutral-900"
+              className="w-full accent-neutral-900 dark:accent-neutral-400"
             />
-            <div className="flex justify-between text-xs text-neutral-500 mt-1">
+            <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               <span>{isPNG ? '高压缩 (体积小)' : '低质量 (体积小)'}</span>
               <span>{isPNG ? '低压缩 (质量最佳)' : '高质量 (体积大)'}</span>
             </div>
-            <p className="text-xs text-neutral-500 mt-2 bg-neutral-50 p-2 rounded">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 bg-neutral-50 dark:bg-neutral-700 p-2 rounded">
               {isPNG ? (
                 <>
                   💡 PNG 优化压缩：
@@ -91,10 +91,10 @@ export function ConvertSettings() {
         )}
 
         {/* 尺寸调整区域 */}
-        <div className="border-t border-neutral-200 pt-4">
+        <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
           <div className="flex items-center gap-2 mb-3">
-            <Minimize2 className="w-4 h-4 text-neutral-700" />
-            <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
+            <Minimize2 className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
+            <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
               <input
                 type="checkbox"
                 checked={enableResize}
@@ -109,30 +109,30 @@ export function ConvertSettings() {
             <div className="space-y-3 pl-6">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-neutral-600 mb-1">宽度(px)</label>
+                  <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1">宽度(px)</label>
                   <input
                     type="number"
                     min="1"
                     value={resizeWidth || ''}
                     onChange={(e) => setResizeWidth(e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="自动"
-                    className="w-full border border-neutral-200 rounded px-2 py-1 text-sm"
+                    className="w-full border border-neutral-200 dark:border-neutral-600 rounded px-2 py-1 text-sm bg-white dark:bg-neutral-700 dark:text-neutral-100"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-neutral-600 mb-1">高度(px)</label>
+                  <label className="block text-xs text-neutral-600 dark:text-neutral-400 mb-1">高度(px)</label>
                   <input
                     type="number"
                     min="1"
                     value={resizeHeight || ''}
                     onChange={(e) => setResizeHeight(e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="自动"
-                    className="w-full border border-neutral-200 rounded px-2 py-1 text-sm"
+                    className="w-full border border-neutral-200 dark:border-neutral-600 rounded px-2 py-1 text-sm bg-white dark:bg-neutral-700 dark:text-neutral-100"
                   />
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 text-xs text-neutral-600">
+              <label className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
                 <input
                   type="checkbox"
                   checked={maintainAspectRatio}

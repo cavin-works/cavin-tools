@@ -52,11 +52,11 @@ export function SpeedPanel() {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">视频变速</h3>
+      <h3 className="text-lg font-semibold mb-4 text-neutral-900 dark:text-neutral-100">视频变速</h3>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             速度: {speed}x
           </label>
           <input
@@ -66,10 +66,10 @@ export function SpeedPanel() {
             step="0.25"
             value={speed}
             onChange={(e) => setSpeed(parseFloat(e.target.value))}
-            className="w-full accent-black"
+            className="w-full accent-black dark:accent-neutral-400"
             disabled={isProcessing}
           />
-          <div className="flex justify-between text-xs text-neutral-500 mt-1">
+          <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400 mt-1">
             <span>0.25x</span>
             <span>1x</span>
             <span>4x</span>
@@ -81,23 +81,23 @@ export function SpeedPanel() {
             type="checkbox"
             checked={preservePitch}
             onChange={(e) => setPreservePitch(e.target.checked)}
-            className="mr-2 accent-black"
+            className="mr-2 accent-black dark:accent-neutral-400"
           />
-          <span className="text-sm text-neutral-700">保持音高(避免声音变调)</span>
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">保持音高(避免声音变调)</span>
         </label>
 
         <div className="flex gap-2">
           <button
             onClick={handleSpeedChange}
             disabled={isProcessing}
-            className="flex-1 bg-black text-white py-2 rounded-lg hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
+            className="flex-1 bg-black dark:bg-neutral-100 text-white dark:text-neutral-900 py-2 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400"
           >
             {isProcessing ? '处理中...' : '立即执行'}
           </button>
           <button
             onClick={handleAddToQueue}
             disabled={!currentVideo}
-            className="px-4 bg-neutral-600 text-white py-2 rounded-lg hover:bg-neutral-700 disabled:bg-neutral-300 disabled:text-neutral-500 flex items-center gap-2"
+            className="px-4 bg-neutral-600 dark:bg-neutral-500 text-white py-2 rounded-lg hover:bg-neutral-700 dark:hover:bg-neutral-400 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400 flex items-center gap-2"
             title="添加到操作队列"
           >
             <Plus className="w-4 h-4" />
@@ -106,14 +106,14 @@ export function SpeedPanel() {
         </div>
 
         {outputPath && (
-          <div className="mt-4 p-3 bg-neutral-50 border border-neutral-200 rounded-lg">
-            <p className="text-sm text-neutral-800 font-medium mb-2">✓ 变速完成!</p>
-            <p className="text-xs text-neutral-700 break-all mb-2">
+          <div className="mt-4 p-3 bg-neutral-50 dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-lg">
+            <p className="text-sm text-neutral-800 dark:text-neutral-200 font-medium mb-2">✓ 变速完成!</p>
+            <p className="text-xs text-neutral-700 dark:text-neutral-300 break-all mb-2">
               输出文件: {outputPath}
             </p>
             <button
               onClick={handleOpenFolder}
-              className="flex items-center gap-2 text-sm bg-black text-white px-3 py-1.5 rounded hover:bg-neutral-800"
+              className="flex items-center gap-2 text-sm bg-black dark:bg-neutral-100 text-white dark:text-neutral-900 px-3 py-1.5 rounded hover:bg-neutral-800 dark:hover:bg-neutral-200"
             >
               <FolderOpen className="w-4 h-4" />
               打开文件夹

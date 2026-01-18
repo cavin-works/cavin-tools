@@ -8,15 +8,15 @@ import { PreviewPanel } from './components/PreviewPanel';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
 import type { RemoveTask, RemoveResult, BatchProgressEvent } from './types';
 
-// 复用 ImageInfo 类型
+// 复用 ImageInfo 类型（与 Rust 返回的 snake_case 匹配）
 interface ImageInfo {
   path: string;
   filename: string;
   width: number;
   height: number;
   format: string;
-  fileSize: number;
-  colorType: string;
+  file_size: number;
+  color_type: string;
 }
 
 export function WatermarkRemover() {
@@ -93,7 +93,7 @@ export function WatermarkRemover() {
           inputPath: path,
           filename: info.filename,
           format: info.format.toLowerCase(),
-          originalSize: info.fileSize,
+          originalSize: info.file_size,
           width: info.width,
           height: info.height,
           status: 'pending',
@@ -171,9 +171,9 @@ export function WatermarkRemover() {
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-900">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-neutral-900 mb-8">
+        <h1 className="text-3xl font-bold text-white mb-8">
           Gemini 水印去除
         </h1>
 
@@ -196,12 +196,12 @@ export function WatermarkRemover() {
             )}
 
             {/* 操作按钮 */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                <h3 className="text-lg font-semibold text-white mb-2">
                   去水印说明
                 </h3>
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-neutral-400">
                   自动检测 Gemini AI 生成图片的水印位置并无损去除。使用反向 Alpha 混合算法，完全本地处理，保护您的隐私。
                 </p>
               </div>
@@ -209,7 +209,7 @@ export function WatermarkRemover() {
               <button
                 onClick={handleRemoveWatermarks}
                 disabled={isBatchProcessing || pendingCount === 0}
-                className="w-full bg-neutral-900 text-white py-3 rounded-lg font-medium hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500 transition-colors"
+                className="w-full bg-white text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-100 disabled:bg-neutral-600 disabled:text-neutral-400 transition-colors"
               >
                 {isBatchProcessing
                   ? `处理中... ${Math.round(useWatermarkRemoverStore.getState().batchProgress)}%`
@@ -218,9 +218,9 @@ export function WatermarkRemover() {
 
               {isBatchProcessing && (
                 <div className="mt-4">
-                  <div className="w-full bg-neutral-200 rounded-full h-2">
+                  <div className="w-full bg-neutral-700 rounded-full h-2">
                     <div
-                      className="bg-neutral-900 h-2 rounded-full transition-all duration-300"
+                      className="bg-white h-2 rounded-full transition-all duration-300"
                       style={{ width: `${useWatermarkRemoverStore.getState().batchProgress}%` }}
                     />
                   </div>
@@ -233,8 +233,8 @@ export function WatermarkRemover() {
 
       {/* 拖拽遮罩 */}
       {isDragging && (
-        <div className="fixed inset-0 bg-neutral-900 bg-opacity-10 flex items-center justify-center pointer-events-none z-50">
-          <p className="text-2xl font-semibold text-neutral-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pointer-events-none z-50">
+          <p className="text-2xl font-semibold text-white">
             松开以导入图片
           </p>
         </div>

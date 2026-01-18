@@ -32,11 +32,11 @@ export function GifPanel() {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">转换为GIF</h3>
+      <h3 className="text-lg font-semibold mb-4 text-neutral-900 dark:text-neutral-100">转换为GIF</h3>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             帧率: {fps} fps
           </label>
           <input
@@ -45,12 +45,12 @@ export function GifPanel() {
             max="30"
             value={fps}
             onChange={(e) => setFps(parseInt(e.target.value))}
-            className="w-full accent-black"
+            className="w-full accent-black dark:accent-neutral-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             宽度: {width}px
           </label>
           <input
@@ -60,12 +60,12 @@ export function GifPanel() {
             step="50"
             value={width}
             onChange={(e) => setWidth(parseInt(e.target.value))}
-            className="w-full accent-black"
+            className="w-full accent-black dark:accent-neutral-400"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             颜色数: {colors}
           </label>
           <input
@@ -74,13 +74,13 @@ export function GifPanel() {
             max="256"
             value={colors}
             onChange={(e) => setColors(parseInt(e.target.value))}
-            className="w-full accent-black"
+            className="w-full accent-black dark:accent-neutral-400"
           />
         </div>
 
         <button
           onClick={handleConvert}
-          className="w-full bg-black text-white py-2 rounded-lg hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
+          className="w-full bg-black dark:bg-neutral-100 text-white dark:text-neutral-900 py-2 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400"
         >
           开始转换
         </button>

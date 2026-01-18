@@ -55,7 +55,7 @@ export function FfmpegChecker({
 
   if (checking) {
     return (
-      <div className="flex items-center gap-2 text-gray-600">
+      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
         <Loader2 className="w-4 h-4 animate-spin" />
         <span>正在检查 FFmpeg...</span>
       </div>
@@ -64,7 +64,7 @@ export function FfmpegChecker({
 
   if (ffmpegInfo?.available) {
     return (
-      <div className="flex items-center gap-2 text-green-600 text-sm">
+      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
         <CheckCircle2 className="w-4 h-4" />
         <span>FFmpeg {ffmpegInfo.version} 已就绪</span>
       </div>
@@ -75,21 +75,21 @@ export function FfmpegChecker({
     <div className="flex flex-col items-center gap-4 py-12">
       <AlertCircle className="w-12 h-12 text-amber-500" />
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
           需要安装 FFmpeg
         </h3>
-        <p className="text-gray-600 text-sm mb-4">
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
           应用需要 FFmpeg 来处理视频文件
         </p>
         {error && (
-          <p className="text-red-500 text-sm mb-4">
+          <p className="text-red-500 dark:text-red-400 text-sm mb-4">
             {error}
           </p>
         )}
         <button
           onClick={handleDownload}
           disabled={downloading}
-          className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {downloading ? (
             <>
@@ -103,7 +103,7 @@ export function FfmpegChecker({
             </>
           )}
         </button>
-        <p className="text-gray-400 text-xs mt-2">
+        <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
           支持 Windows 和 macOS，或手动安装后重启应用
         </p>
       </div>
