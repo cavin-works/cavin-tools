@@ -8,6 +8,20 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 主题响应式颜色
+        theme: {
+          'bg-primary': 'rgb(var(--color-bg-primary) / <alpha-value>)',
+          'bg-secondary': 'rgb(var(--color-bg-secondary) / <alpha-value>)',
+          'bg-tertiary': 'rgb(var(--color-bg-tertiary) / <alpha-value>)',
+          'bg-card': 'rgb(var(--color-bg-card) / <alpha-value>)',
+          'border': 'rgb(var(--color-border) / <alpha-value>)',
+          'border-light': 'rgb(var(--color-border-light) / <alpha-value>)',
+          'text-primary': 'rgb(var(--color-text-primary) / <alpha-value>)',
+          'text-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
+          'text-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
+          'accent': 'rgb(var(--color-accent) / <alpha-value>)',
+          'accent-hover': 'rgb(var(--color-accent-hover) / <alpha-value>)',
+        },
         // 主色调 - 纯黑
         primary: {
           50: '#FAFAFA',

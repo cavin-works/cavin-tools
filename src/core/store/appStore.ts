@@ -37,6 +37,11 @@ interface AppState {
   /** 切换侧边栏状态 */
   toggleSidebar: () => void;
 
+  /** 是否显示设置页面 */
+  showSettings: boolean;
+  /** 设置是否显示设置页面 */
+  setShowSettings: (show: boolean) => void;
+
   /** 应用设置 */
   settings: AppSettings;
   /** 更新应用设置 */
@@ -80,6 +85,10 @@ export const useAppStore = create<AppState>()(
       sidebarCollapsed: false,
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+      // 设置页面
+      showSettings: false,
+      setShowSettings: (show) => set({ showSettings: show }),
 
       // 应用设置
       settings: {

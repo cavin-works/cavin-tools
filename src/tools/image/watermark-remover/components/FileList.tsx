@@ -44,7 +44,7 @@ function TaskItem({ task }: { task: RemoveTask }) {
       case 'completed':
         return task.result ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-400">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               水印尺寸: {task.result.watermarkInfo?.watermarkSize}×{task.result.watermarkInfo?.watermarkSize}
             </span>
             <span className="text-xs font-medium text-green-500">
@@ -70,14 +70,14 @@ function TaskItem({ task }: { task: RemoveTask }) {
   return (
     <div
       onClick={handleClick}
-      className={`flex items-center gap-3 p-3 bg-neutral-800 border rounded-lg transition-colors cursor-pointer ${
+      className={`flex items-center gap-3 p-3 bg-neutral-100 dark:bg-neutral-800 border rounded-lg transition-colors cursor-pointer ${
         isSelected
-          ? 'border-white ring-1 ring-white'
-          : 'border-neutral-700 hover:border-neutral-600'
+          ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900 dark:ring-white'
+          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
       }`}
     >
       {/* 图片预览 */}
-      <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-700 flex-shrink-0">
+      <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-700 flex-shrink-0">
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
@@ -100,10 +100,10 @@ function TaskItem({ task }: { task: RemoveTask }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">
+        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
           {task.filename}
         </p>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
           {task.format.toUpperCase()} • {formatFileSize(task.originalSize)} • {task.width}×{task.height}
         </p>
         <div className="mt-1">
@@ -116,10 +116,10 @@ function TaskItem({ task }: { task: RemoveTask }) {
           e.stopPropagation();
           removeTask(task.id);
         }}
-        className="p-1.5 hover:bg-neutral-700 rounded transition-colors flex-shrink-0"
+        className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded transition-colors flex-shrink-0"
         title="移除"
       >
-        <X className="w-4 h-4 text-neutral-400" />
+        <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
       </button>
     </div>
   );
@@ -133,14 +133,14 @@ export function FileList() {
   }
 
   return (
-    <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">
+        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
           文件列表 ({tasks.length})
         </h3>
         <button
           onClick={clearTasks}
-          className="text-sm text-neutral-400 hover:text-white"
+          className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
         >
           清空列表
         </button>

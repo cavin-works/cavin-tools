@@ -26,12 +26,12 @@ export function PreviewPanel({ task }: PreviewPanelProps) {
   }
 
   return (
-    <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
+      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
         处理预览
       </h3>
 
-      <div className="relative aspect-video bg-neutral-700 rounded-lg overflow-hidden mb-4">
+      <div className="relative aspect-video bg-neutral-200 dark:bg-neutral-700 rounded-lg overflow-hidden mb-4">
         {processedUrl && (
           <img
             src={showOriginal ? originalUrl : processedUrl}
@@ -52,7 +52,7 @@ export function PreviewPanel({ task }: PreviewPanelProps) {
           onMouseLeave={() => setShowOriginal(false)}
           onTouchStart={() => setShowOriginal(true)}
           onTouchEnd={() => setShowOriginal(false)}
-          className="absolute bottom-4 right-4 px-3 py-1.5 bg-white/90 text-neutral-900 text-sm rounded-lg hover:bg-white transition-colors"
+          className="absolute bottom-4 right-4 px-3 py-1.5 bg-white/90 dark:bg-neutral-900/90 text-neutral-900 dark:text-white text-sm rounded-lg hover:bg-white dark:hover:bg-neutral-900 transition-colors"
         >
           按住查看原图
         </button>
@@ -60,13 +60,13 @@ export function PreviewPanel({ task }: PreviewPanelProps) {
 
       {/* 水印信息 */}
       {task.result.watermarkInfo && (
-        <div className="text-sm text-neutral-400 space-y-1 bg-neutral-700 rounded-lg p-3">
-          <p className="font-medium text-white mb-2">水印信息</p>
+        <div className="text-sm text-neutral-600 dark:text-neutral-400 space-y-1 bg-neutral-100 dark:bg-neutral-700 rounded-lg p-3">
+          <p className="font-medium text-neutral-900 dark:text-white mb-2">水印信息</p>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <p>水印尺寸: <span className="font-medium text-neutral-200">{task.result.watermarkInfo.watermarkSize}×{task.result.watermarkInfo.watermarkSize}</span></p>
-            <p>位置: <span className="font-medium text-neutral-200">({task.result.watermarkInfo.regionX}, {task.result.watermarkInfo.regionY})</span></p>
-            <p>右边距: <span className="font-medium text-neutral-200">{task.result.watermarkInfo.marginRight}px</span></p>
-            <p>下边距: <span className="font-medium text-neutral-200">{task.result.watermarkInfo.marginBottom}px</span></p>
+            <p>水印尺寸: <span className="font-medium text-neutral-700 dark:text-neutral-200">{task.result.watermarkInfo.watermarkSize}×{task.result.watermarkInfo.watermarkSize}</span></p>
+            <p>位置: <span className="font-medium text-neutral-700 dark:text-neutral-200">({task.result.watermarkInfo.regionX}, {task.result.watermarkInfo.regionY})</span></p>
+            <p>右边距: <span className="font-medium text-neutral-700 dark:text-neutral-200">{task.result.watermarkInfo.marginRight}px</span></p>
+            <p>下边距: <span className="font-medium text-neutral-700 dark:text-neutral-200">{task.result.watermarkInfo.marginBottom}px</span></p>
           </div>
         </div>
       )}

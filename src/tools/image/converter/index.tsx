@@ -160,9 +160,9 @@ export function ImageConverter() {
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-8">
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8">
           图片格式转换
         </h1>
 
@@ -181,11 +181,11 @@ export function ImageConverter() {
           <div className="space-y-6">
             <ConvertSettings />
 
-            <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
+            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
               <button
                 onClick={handleConvert}
                 disabled={isBatchProcessing || pendingCount === 0}
-                className="w-full bg-white text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-100 disabled:bg-neutral-600 disabled:text-neutral-400 transition-colors"
+                className="w-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400 transition-colors"
               >
                 {isBatchProcessing
                   ? `转换中... ${Math.round(useImageConverterStore.getState().batchProgress)}%`
@@ -194,9 +194,9 @@ export function ImageConverter() {
 
               {isBatchProcessing && (
                 <div className="mt-4">
-                  <div className="w-full bg-neutral-700 rounded-full h-2">
+                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                     <div
-                      className="bg-white h-2 rounded-full transition-all duration-300"
+                      className="bg-neutral-900 dark:bg-white h-2 rounded-full transition-all duration-300"
                       style={{ width: `${useImageConverterStore.getState().batchProgress}%` }}
                     />
                   </div>

@@ -35,7 +35,7 @@ function TaskItem({ task }: { task: CompressTask }) {
       case 'completed':
         return task.result ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-400">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               {formatFileSize(task.result.originalSize)} → {formatFileSize(task.result.compressedSize)}
             </span>
             {task.result.compressionRatio > 0 && (
@@ -55,16 +55,15 @@ function TaskItem({ task }: { task: CompressTask }) {
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-neutral-800 border border-neutral-700 rounded-lg hover:border-neutral-600 transition-colors">
+    <div className="flex items-center gap-3 p-3 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:border-neutral-300 dark:hover:border-neutral-600 transition-colors">
       {/* 图片预览 */}
-      <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-700 flex-shrink-0">
+      <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-700 flex-shrink-0">
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
             alt={task.filename}
             className="w-full h-full object-cover"
             onError={(e) => {
-              // 图片加载失败时隐藏
               e.currentTarget.style.display = 'none';
             }}
           />
@@ -81,10 +80,10 @@ function TaskItem({ task }: { task: CompressTask }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">
+        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
           {task.filename}
         </p>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
           {task.format.toUpperCase()} • {formatFileSize(task.originalSize)}
         </p>
         <div className="mt-1">
@@ -94,10 +93,10 @@ function TaskItem({ task }: { task: CompressTask }) {
 
       <button
         onClick={() => removeTask(task.id)}
-        className="p-1.5 hover:bg-neutral-700 rounded transition-colors flex-shrink-0"
+        className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded transition-colors flex-shrink-0"
         title="移除"
       >
-        <X className="w-4 h-4 text-neutral-400" />
+        <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
       </button>
     </div>
   );
@@ -111,14 +110,14 @@ export function FileList() {
   }
 
   return (
-    <div className="bg-neutral-800 rounded-xl border border-neutral-700 p-6">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">
+        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
           文件列表 ({tasks.length})
         </h3>
         <button
           onClick={clearTasks}
-          className="text-sm text-neutral-400 hover:text-white"
+          className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
         >
           清空列表
         </button>
