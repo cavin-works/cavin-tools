@@ -9,6 +9,10 @@ pub mod models;
 pub mod image_converter;
 pub mod watermark_remover;
 pub mod background_remover;
+pub mod process_manager;
+
+// 导入进程管理命令
+use process_manager::{get_processes, search_processes, kill_process_command, query_port_command, kill_port_command, query_ports_by_pid_command};
 
 /// 检查FFmpeg是否可用
 ///
@@ -426,7 +430,13 @@ pub fn run() {
             check_bg_model_status,
             download_bg_model,
             remove_image_background,
-            batch_remove_image_backgrounds
+            batch_remove_image_backgrounds,
+            get_processes,
+            search_processes,
+            kill_process_command,
+            query_port_command,
+            kill_port_command,
+            query_ports_by_pid_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

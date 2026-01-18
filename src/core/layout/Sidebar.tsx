@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, Video, Image, File, Code, Type, Wrench, Settings, Moon, Sun, Monitor, SmilePlus, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, Video, Image, File, Code, Type, Wrench, Settings, Moon, Sun, Monitor, SmilePlus, Download, Activity } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { TOOL_CATEGORIES } from '../tool-registry/toolRegistry';
 import type { ToolMetadata } from '../tool-registry/ToolMetadata';
@@ -14,6 +14,7 @@ function getToolIcon(iconName: string): React.ComponentType<{ className?: string
     File,
     Code,
     Type,
+    Activity,
   };
   return iconMap[iconName] || Wrench;
 }
@@ -22,7 +23,7 @@ function getToolIcon(iconName: string): React.ComponentType<{ className?: string
  * 侧边栏组件
  */
 export function Sidebar() {
-  const [expandedCategories] = useState<Set<string>>(new Set(['video', 'image']));
+  const [expandedCategories] = useState<Set<string>>(new Set(['video', 'image', 'dev']));
   const { currentToolId, setCurrentToolId, sidebarCollapsed, toggleSidebar, showSettings, setShowSettings, theme, setTheme } = useAppStore();
 
   const handleToolClick = (tool: ToolMetadata) => {
