@@ -5,6 +5,8 @@
  */
 
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { execSync } = require('child_process');
 
 const version = process.argv[2];
@@ -120,10 +122,15 @@ try {
   }
 
   // 6. 保存 release notes 到文件（供 GitHub Actions 使用）
-  fs.writeFileSync('/tmp/release_notes.txt', releaseNotes);
+  // 使用跨平台临时目录
+  const tmpDir = process.env.RUNNER_TEMP || os.tmpdir();
+  const releaseNotesPath = path.join(tmpDir, 'release_notes.txt');
+  fs.writeFileSync(releaseNotesPath, releaseNotes);
 
   console.log('\n✅ CHANGELOG 生成完成');
-  console.log('📝 Release notes 已保存到 /tmp/release_notes.txt');
+  console.log(`📝 Release notes 已保存到 ${releaseNotesPath}`);
+  // 输出路径供 CI 使用
+  console.log(`RELEASE_NOTES_PATH=${releaseNotesPath}`);
 
 } catch (error) {
   console.error('\n❌ 错误:', error.message);
