@@ -8,6 +8,7 @@ pub mod ffmpeg;
 pub mod models;
 pub mod image_converter;
 pub mod watermark_remover;
+pub mod background_remover;
 
 /// 检查FFmpeg是否可用
 ///
@@ -353,6 +354,53 @@ async fn batch_remove_watermarks(
     ).await
 }
 
+// ========== 背景去除命令 ==========
+
+/// 检查背景去除模型状态
+#[tauri::command]
+async fn check_bg_model_status() -> Result<background_remover::ModelInfo, String> {
+    background_remover::check_model_status()
+}
+
+/// 下载背景去除模型
+#[tauri::command]
+async fn download_bg_model(window: tauri::Window) -> Result<String, String> {
+    let window_clone = window.clone();
+    background_remover::download_model(move |progress| {
+        let _ = window_clone.emit("bg-model-download-progress", &progress);
+    }).await
+}
+
+/// 去除单张图片背景
+#[tauri::command]
+async fn remove_image_background(
+    input_path: String,
+    params: background_remover::RemoveBackgroundParams,
+) -> Result<background_remover::RemoveBackgroundResult, String> {
+    background_remover::remove_background(input_path, params).await
+}
+
+/// 批量去除图片背景
+#[tauri::command]
+async fn batch_remove_image_backgrounds(
+    input_paths: Vec<String>,
+    params: background_remover::RemoveBackgroundParams,
+    window: tauri::Window,
+) -> Result<Vec<Result<background_remover::RemoveBackgroundResult, String>>, String> {
+    let window_clone = window.clone();
+    background_remover::batch_remove_backgrounds(
+        input_paths,
+        params,
+        move |current, total| {
+            let _ = window_clone.emit("bg-remove-batch-progress", serde_json::json!({
+                "current": current,
+                "total": total,
+                "percentage": (current as f32 / total as f32 * 100.0)
+            }));
+        }
+    ).await
+}
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -374,7 +422,11 @@ pub fn run() {
             convert_image,
             batch_convert_images,
             remove_watermark,
-            batch_remove_watermarks
+            batch_remove_watermarks,
+            check_bg_model_status,
+            download_bg_model,
+            remove_image_background,
+            batch_remove_image_backgrounds
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

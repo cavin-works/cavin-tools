@@ -23,7 +23,11 @@
       "Bash(cargo check)",
       "Bash(cargo build --release)",
       "Bash(dir /s /b \"d:\\\\workspace\")",
-      "Bash(findstr /i \"gemini-watermark\")"
+      "Bash(findstr /i \"gemini-watermark\")",
+      "Bash(cargo search rmbg --limit 5)",
+      "Bash(cargo info rmbg)",
+      "mcp__open-websearch__fetchGithubReadme",
+      "Bash(cargo search ort --limit 10)"
     ]
   }
 }
