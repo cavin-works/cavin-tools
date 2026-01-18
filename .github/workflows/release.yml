@@ -1,0 +1,120 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest"
+            args: "--target x86_64-apple-darwin"
+          - platform: "macos-latest"
+            args: "--target universal-apple-darwin"
+          - platform: "windows-latest"
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf pkg-config libsoup-3.0-dev javascriptcoregtk-4.1 libjavascriptcoregtk-4.1-dev
+          # Tauri 2 可能需要 libnm-dev
+          sudo apt-get install -y libnm-dev xdg-utils
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Install both targets for macOS to allow cross-compilation and universal build
+          # And install Linux ARM target if needed
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || (contains(matrix.args, 'aarch64') && 'aarch64-unknown-linux-gnu' || '') }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Get version from tag
+        id: get_version
+        shell: bash
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          echo "Tag: $GITHUB_REF_NAME -> Version: ${GITHUB_REF_NAME#v}"
+
+      - name: Update version in config files
+        shell: bash
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          cd src-tauri
+          # Update Cargo.toml
+          sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
+          rm -f Cargo.toml.bak
+          # Update tauri.conf.json
+          node -e "
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('tauri.conf.json'));
+            config.version = '$VERSION';
+            fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2));
+          "
+          echo "Updated version to $VERSION"
+          echo "--- Cargo.toml ---"
+          head -5 Cargo.toml
+          echo "--- tauri.conf.json ---"
+          head -5 tauri.conf.json
+
+      - name: Generate release notes
+        id: release_notes
+        shell: bash
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 ${{ github.ref_name }}^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name=${{ github.ref_name }} \
+              --jq '.body')
+          else
+            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name=${{ github.ref_name }} \
+              -f previous_tag_name=$PREV_TAG \
+              --jq '.body')
+          fi
+          echo "$NOTES"
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Cavin Tools ${{ github.ref_name }}"
+          releaseBody: ${{ steps.release_notes.outputs.NOTES }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}

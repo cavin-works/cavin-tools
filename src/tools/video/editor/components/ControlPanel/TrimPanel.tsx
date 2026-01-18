@@ -3,7 +3,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from '../../store/videoStore';
 import { useOperationQueue } from '../../contexts/OperationQueueContext';
 import { formatDuration } from '../../utils/fileValidation';
-import { themeColors } from '@/core/theme/themeConfig';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
 export function TrimPanel() {
@@ -52,51 +55,59 @@ export function TrimPanel() {
   };
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4 text-neutral-900 dark:text-neutral-100">截断视频</h3>
-
-      <div className="space-y-4">
-        <div className="bg-neutral-50 dark:bg-neutral-700 p-4 rounded-lg">
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            开始时间: {formatDuration(timelineStart)}
-          </p>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            结束时间: {formatDuration(timelineEnd)}
-          </p>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            时长: {formatDuration(timelineEnd - timelineStart)}
-          </p>
+    <Card>
+      <CardHeader>
+        <CardTitle>截断视频</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* 时间信息展示 */}
+        <div className="bg-muted/50 dark:bg-muted/20 p-4 rounded-lg">
+          <div className="space-y-1">
+            <p className="text-sm text-neutral-600 dark:text-neutral-300">
+              开始时间: {formatDuration(timelineStart)}
+            </p>
+            <p className="text-sm text-neutral-700 dark:text-neutral-200">
+              结束时间: {formatDuration(timelineEnd)}
+            </p>
+            <p className="text-sm text-neutral-700 dark:text-neutral-200">
+              时长: {formatDuration(timelineEnd - timelineStart)}
+            </p>
+          </div>
         </div>
 
-        <label className="flex items-center">
-          <input
-            type="checkbox"
+        {/* 精确截断开关 */}
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="precise"
             checked={precise}
-            onChange={(e) => setPrecise(e.target.checked)}
-            className="mr-2 accent-black dark:accent-neutral-400"
+            onCheckedChange={setPrecise}
           />
-          <span className="text-sm text-neutral-700 dark:text-neutral-300">精确截断(重新编码,较慢)</span>
-        </label>
+          <Label htmlFor="precise" className="text-sm cursor-pointer">
+            精确截断(重新编码,较慢)
+          </Label>
+        </div>
 
+        {/* 操作按钮 */}
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={handleTrim}
             disabled={isProcessing}
-            className={themeColors.button.primary + " flex-1"}
+            className="flex-1"
           >
             {isProcessing ? '截断中...' : '立即执行'}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleAddToQueue}
             disabled={!currentVideo}
-            className={themeColors.button.secondary + " px-4 flex items-center gap-2"}
+            variant="secondary"
+            size="icon"
             title="添加到操作队列"
           >
             <Plus className="w-4 h-4" />
             队列
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

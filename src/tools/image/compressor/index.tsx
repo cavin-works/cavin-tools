@@ -6,7 +6,9 @@ import { FileUploadZone } from './components/FileUploadZone';
 import { FileList } from './components/FileList';
 import { CompressSettings } from './components/CompressSettings';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
-import { themeColors } from '@/core/theme/themeConfig';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import type { ImageInfo, CompressTask, BatchProgressEvent } from './types';
 
 // 复用 ConvertResult 类型作为 CompressResult
@@ -226,28 +228,26 @@ export function ImageCompressor() {
           <div className="space-y-6">
             <CompressSettings />
 
-            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-              <button
-                onClick={handleCompress}
-                disabled={isBatchProcessing || pendingCount === 0}
-                className={themeColors.button.primary}
-              >
-                {isBatchProcessing
-                  ? `压缩中... ${Math.round(useImageCompressorStore.getState().batchProgress)}%`
-                  : `开始压缩 (${pendingCount} 个文件)`}
-              </button>
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  onClick={handleCompress}
+                  disabled={isBatchProcessing || pendingCount === 0}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isBatchProcessing
+                    ? `压缩中... ${Math.round(useImageCompressorStore.getState().batchProgress)}%`
+                    : `开始压缩 (${pendingCount} 个文件)`}
+                </Button>
 
-              {isBatchProcessing && (
-                <div className="mt-4">
-                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-                    <div
-                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
-                      style={{ width: `${useImageCompressorStore.getState().batchProgress}%` }}
-                    />
+                {isBatchProcessing && (
+                  <div className="mt-4">
+                    <Progress value={useImageCompressorStore.getState().batchProgress} className="h-2" />
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

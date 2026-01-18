@@ -6,7 +6,9 @@ import { FileUploadZone } from './components/FileUploadZone';
 import { FileList } from './components/FileList';
 import { ConvertSettings } from './components/ConvertSettings';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
-import { themeColors } from '@/core/theme/themeConfig';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import type { ImageInfo, ConvertTask, ConvertResult, BatchProgressEvent } from './types';
 
 export function ImageConverter() {
@@ -182,28 +184,26 @@ export function ImageConverter() {
           <div className="space-y-6">
             <ConvertSettings />
 
-            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-              <button
-                onClick={handleConvert}
-                disabled={isBatchProcessing || pendingCount === 0}
-                className={themeColors.button.primary}
-              >
-                {isBatchProcessing
-                  ? `转换中... ${Math.round(useImageConverterStore.getState().batchProgress)}%`
-                  : `开始转换 (${pendingCount} 个文件)`}
-              </button>
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  onClick={handleConvert}
+                  disabled={isBatchProcessing || pendingCount === 0}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isBatchProcessing
+                    ? `转换中... ${Math.round(useImageConverterStore.getState().batchProgress)}%`
+                    : `开始转换 (${pendingCount} 个文件)`}
+                </Button>
 
-              {isBatchProcessing && (
-                <div className="mt-4">
-                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-                    <div
-                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
-                      style={{ width: `${useImageConverterStore.getState().batchProgress}%` }}
-                    />
+                {isBatchProcessing && (
+                  <div className="mt-4">
+                    <Progress value={useImageConverterStore.getState().batchProgress} className="h-2" />
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Loader2, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface FfmpegInfo {
   available: boolean;
@@ -75,21 +76,20 @@ export function FfmpegChecker({
     <div className="flex flex-col items-center gap-4 py-12">
       <AlertCircle className="w-12 h-12 text-amber-500" />
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+        <h3 className="text-lg font-semibold mb-2">
           需要安装 FFmpeg
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+        <p className="text-muted-foreground text-sm mb-4">
           应用需要 FFmpeg 来处理视频文件
         </p>
         {error && (
-          <p className="text-red-500 dark:text-red-400 text-sm mb-4">
+          <p className="text-destructive text-sm mb-4">
             {error}
           </p>
         )}
-        <button
+        <Button
           onClick={handleDownload}
           disabled={downloading}
-          className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {downloading ? (
             <>
@@ -102,8 +102,8 @@ export function FfmpegChecker({
               自动下载 FFmpeg
             </>
           )}
-        </button>
-        <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
+        </Button>
+        <p className="text-muted-foreground text-xs mt-2">
           支持 Windows 和 macOS，或手动安装后重启应用
         </p>
       </div>

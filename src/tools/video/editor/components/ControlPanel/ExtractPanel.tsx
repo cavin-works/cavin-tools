@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from '../../store/videoStore';
-import { themeColors } from '@/core/theme/themeConfig';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 type ExtractMode = 'single' | 'interval' | 'uniform';
 
@@ -39,67 +44,64 @@ export function ExtractPanel() {
   };
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4 text-neutral-900 dark:text-neutral-100">提取帧</h3>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            提取模式
-          </label>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as ExtractMode)}
-            className="w-full border border-neutral-200 dark:border-neutral-600 rounded-lg px-3 py-2 bg-white dark:bg-neutral-700 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-neutral-400 focus:border-black dark:focus:border-neutral-400"
-            disabled={isProcessing}
-          >
-            <option value="single">单帧</option>
-            <option value="interval">间隔提取</option>
-            <option value="uniform">均匀提取</option>
-          </select>
+    <Card>
+      <CardHeader>
+        <CardTitle>提取帧</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="mode">提取模式</Label>
+          <Select value={mode} onValueChange={(value) => setMode(value as ExtractMode)} disabled={isProcessing}>
+            <SelectTrigger id="mode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="single">单帧</SelectItem>
+                <SelectItem value="interval">间隔提取</SelectItem>
+                <SelectItem value="uniform">均匀提取</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            输出格式
-          </label>
-          <select
-            value={format}
-            onChange={(e) => setFormat(e.target.value as 'jpg' | 'png' | 'webp')}
-            className="w-full border border-neutral-200 dark:border-neutral-600 rounded-lg px-3 py-2 bg-white dark:bg-neutral-700 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-neutral-400 focus:border-black dark:focus:border-neutral-400"
-            disabled={isProcessing}
-          >
-            <option value="jpg">JPG</option>
-            <option value="png">PNG</option>
-            <option value="webp">WebP</option>
-          </select>
+        <div className="space-y-2">
+          <Label htmlFor="format">输出格式</Label>
+          <Select value={format} onValueChange={(value) => setFormat(value as 'jpg' | 'png' | 'webp')} disabled={isProcessing}>
+            <SelectTrigger id="format">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="jpg">JPG</SelectItem>
+                <SelectItem value="png">PNG</SelectItem>
+                <SelectItem value="webp">WebP</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            质量: {quality}
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="100"
-            value={quality}
-            onChange={(e) => setQuality(parseInt(e.target.value))}
-            className="w-full accent-black dark:accent-neutral-400"
+        <div className="space-y-3">
+          <Label htmlFor="quality">质量: {quality}</Label>
+          <Slider
+            id="quality"
+            min={1}
+            max={100}
+            step={1}
+            value={[quality]}
+            onValueChange={(value) => setQuality(value[0])}
             disabled={isProcessing}
           />
         </div>
 
         {mode === 'interval' && (
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              间隔(秒)
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="interval">间隔(秒)</Label>
+            <Input
+              id="interval"
               type="number"
               value={interval}
               onChange={(e) => setInterval(parseFloat(e.target.value))}
-              className="w-full border border-neutral-200 dark:border-neutral-600 rounded-lg px-3 py-2 bg-white dark:bg-neutral-700 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-neutral-400 focus:border-black dark:focus:border-neutral-400"
               min="0.1"
               step="0.1"
               disabled={isProcessing}
@@ -108,29 +110,27 @@ export function ExtractPanel() {
         )}
 
         {mode === 'uniform' && (
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-              提取帧数
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="count">提取帧数</Label>
+            <Input
+              id="count"
               type="number"
               value={count}
               onChange={(e) => setCount(parseInt(e.target.value))}
-              className="w-full border border-neutral-200 dark:border-neutral-600 rounded-lg px-3 py-2 bg-white dark:bg-neutral-700 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-neutral-400 focus:border-black dark:focus:border-neutral-400"
               min="1"
               disabled={isProcessing}
             />
           </div>
         )}
 
-        <button
+        <Button
           onClick={handleExtract}
           disabled={isProcessing}
-          className={themeColors.button.primary + " w-full"}
+          className="w-full"
         >
           {isProcessing ? '提取中...' : '开始提取'}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

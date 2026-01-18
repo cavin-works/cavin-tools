@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from '../../store/videoStore';
-import { themeColors } from '@/core/theme/themeConfig';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 
 export function GifPanel() {
   const { currentVideo, timelineStart, timelineEnd } = useVideoStore();
@@ -32,60 +35,54 @@ export function GifPanel() {
   };
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4 text-neutral-900 dark:text-neutral-100">转换为GIF</h3>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            帧率: {fps} fps
-          </label>
-          <input
-            type="range"
-            min="5"
-            max="30"
-            value={fps}
-            onChange={(e) => setFps(parseInt(e.target.value))}
-            className="w-full accent-black dark:accent-neutral-400"
+    <Card>
+      <CardHeader>
+        <CardTitle>转换为GIF</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <Label htmlFor="fps">帧率: {fps} fps</Label>
+          <Slider
+            id="fps"
+            min={5}
+            max={30}
+            step={1}
+            value={[fps]}
+            onValueChange={(value) => setFps(value[0])}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            宽度: {width}px
-          </label>
-          <input
-            type="range"
-            min="200"
-            max="800"
-            step="50"
-            value={width}
-            onChange={(e) => setWidth(parseInt(e.target.value))}
-            className="w-full accent-black dark:accent-neutral-400"
+        <div className="space-y-3">
+          <Label htmlFor="width">宽度: {width}px</Label>
+          <Slider
+            id="width"
+            min={200}
+            max={800}
+            step={50}
+            value={[width]}
+            onValueChange={(value) => setWidth(value[0])}
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            颜色数: {colors}
-          </label>
-          <input
-            type="range"
-            min="16"
-            max="256"
-            value={colors}
-            onChange={(e) => setColors(parseInt(e.target.value))}
-            className="w-full accent-black dark:accent-neutral-400"
+        <div className="space-y-3">
+          <Label htmlFor="colors">颜色数: {colors}</Label>
+          <Slider
+            id="colors"
+            min={16}
+            max={256}
+            step={1}
+            value={[colors]}
+            onValueChange={(value) => setColors(value[0])}
           />
         </div>
 
-        <button
+        <Button
           onClick={handleConvert}
-          className={themeColors.button.primary + " w-full"}
+          className="w-full"
         >
           开始转换
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

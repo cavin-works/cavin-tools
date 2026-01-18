@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, HardDrive, AlertCircle, Network, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Activity, HardDrive, AlertCircle, Network, ChevronDown, ChevronRight } from 'lucide-react';
 import type { ProcessInfo, PortInfo } from '../types';
 import { useProcessManagerStore } from '../store/processManagerStore';
 

@@ -1,5 +1,11 @@
 import { useImageCompressorStore } from '../store/imageCompressorStore';
 import { Minimize2, Zap } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 export function CompressSettings() {
   const {
@@ -18,108 +24,108 @@ export function CompressSettings() {
   } = useImageCompressorStore();
 
   return (
-    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">压缩设置</h3>
-
-      <div className="space-y-5">
+    <Card>
+      <CardHeader>
+        <CardTitle>压缩设置</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
         {/* 压缩优化区域 */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-4">
             <Zap className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
             <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">压缩优化</h4>
           </div>
 
-          <div className="space-y-4 pl-6">
+          <div className="space-y-6 pl-6">
             {/* 质量设置 */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                压缩质量: {quality}%
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="100"
-                value={quality}
-                onChange={(e) => setQuality(Number(e.target.value))}
-                className="w-full accent-neutral-900 dark:accent-white"
+            <div className="space-y-3">
+              <Label htmlFor="quality">压缩质量: {quality}%</Label>
+              <Slider
+                id="quality"
+                min={1}
+                max={100}
+                step={1}
+                value={[quality]}
+                onValueChange={(value) => setQuality(value[0])}
               />
-              <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-500 mt-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>高压缩 (体积小，质量低)</span>
                 <span>低压缩 (体积大，质量高)</span>
               </div>
             </div>
 
             {/* 去除元数据 */}
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="metadata"
                 checked={!preserveMetadata}
-                onChange={(e) => setPreserveMetadata(!e.target.checked)}
-                className="rounded mt-0.5 accent-neutral-900 dark:accent-white"
+                onCheckedChange={() => setPreserveMetadata(false)}
               />
-              <div>
+              <Label htmlFor="metadata" className="cursor-pointer">
                 <div className="font-medium text-neutral-700 dark:text-neutral-300">去除元数据</div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-500">删除 EXIF、位置等信息以减小体积</div>
-              </div>
-            </label>
+                <div className="text-xs text-muted-foreground">删除 EXIF、位置等信息以减小体积</div>
+              </Label>
+            </div>
           </div>
         </div>
 
         {/* 尺寸调整区域 */}
-        <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-          <div className="flex items-center gap-2 mb-3">
+        <Separator />
+
+        <div>
+          <div className="flex items-center gap-2 mb-4">
             <Minimize2 className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
-            <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Switch
+                id="resize"
                 checked={enableResize}
-                onChange={(e) => setEnableResize(e.target.checked)}
-                className="rounded accent-neutral-900 dark:accent-white"
+                onCheckedChange={(checked) => setEnableResize(checked)}
               />
-              调整尺寸
-            </label>
+              <Label htmlFor="resize" className="cursor-pointer">调整尺寸</Label>
+            </div>
           </div>
 
           {enableResize && (
-            <div className="space-y-3 pl-6">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">宽度(px)</label>
-                  <input
+            <div className="space-y-4 pl-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="width">宽度(px)</Label>
+                  <Input
+                    id="width"
                     type="number"
                     min="1"
+                    placeholder="auto"
                     value={resizeWidth || ''}
                     onChange={(e) => setResizeWidth(e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="auto"
-                    className="w-full px-3 py-2 bg-neutral-100 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-neutral-500 dark:text-neutral-400 mb-1">高度(px)</label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="height">高度(px)</Label>
+                  <Input
+                    id="height"
                     type="number"
                     min="1"
+                    placeholder="auto"
                     value={resizeHeight || ''}
                     onChange={(e) => setResizeHeight(e.target.value ? Number(e.target.value) : undefined)}
-                    placeholder="auto"
-                    className="w-full px-3 py-2 bg-neutral-100 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500"
                   />
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                <input
-                  type="checkbox"
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="aspect"
                   checked={maintainAspectRatio}
-                  onChange={(e) => setMaintainAspectRatio(e.target.checked)}
-                  className="rounded accent-neutral-900 dark:accent-white"
+                  onCheckedChange={(checked) => setMaintainAspectRatio(checked)}
                 />
-                保持宽高比
-              </label>
+                <Label htmlFor="aspect" className="text-sm text-muted-foreground">
+                  保持宽高比
+                </Label>
+              </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
