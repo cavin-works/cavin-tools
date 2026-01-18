@@ -1,3 +1,12 @@
+## [0.0.8](https://github.com/cavin-works/cavin-tools/compare/v0.0.7...v0.0.8) (2026-01-18)
+
+
+### 🐛 Bug 修复
+
+* **ci:** 修复 Windows 临时目录路径 + 移除不支持的 x86_64 macOS 构建 ([403362d](https://github.com/cavin-works/cavin-tools/commit/403362d19be14a0d56f8eb04df35cfd923ab3e4e))
+
+
+
 ## [0.0.7](https://github.com/cavin-works/cavin-tools/compare/v0.0.6...v0.0.7) (2026-01-18)
 
 
