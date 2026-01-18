@@ -1,4 +1,5 @@
 name: Release
+
 on:
   push:
     tags:
@@ -27,20 +28,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies (Linux)
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf pkg-config libsoup-3.0-dev javascriptcoregtk-4.1 libjavascriptcoregtk-4.1-dev
-          # Tauri 2 可能需要 libnm-dev
           sudo apt-get install -y libnm-dev xdg-utils
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Install both targets for macOS to allow cross-compilation and universal build
-          # And install Linux ARM target if needed
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || (contains(matrix.args, 'aarch64') && 'aarch64-unknown-linux-gnu' || '') }}
 
       - name: Install pnpm
@@ -68,8 +68,15 @@ jobs:
         shell: bash
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          cd src-tauri
+          # Update package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json'));
+            pkg.version = '$VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
           # Update Cargo.toml
+          cd src-tauri
           sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
           rm -f Cargo.toml.bak
           # Update tauri.conf.json
@@ -77,35 +84,82 @@ jobs:
             const fs = require('fs');
             const config = JSON.parse(fs.readFileSync('tauri.conf.json'));
             config.version = '$VERSION';
-            fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2));
+            fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
           "
           echo "Updated version to $VERSION"
-          echo "--- Cargo.toml ---"
-          head -5 Cargo.toml
-          echo "--- tauri.conf.json ---"
-          head -5 tauri.conf.json
 
-      - name: Generate release notes
-        id: release_notes
+      - name: Generate CHANGELOG
+        id: changelog
         shell: bash
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 ${{ github.ref_name }}^ 2>/dev/null || echo "")
-          if [ -z "$PREV_TAG" ]; then
-            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
-              -f tag_name=${{ github.ref_name }} \
-              --jq '.body')
-          else
-            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
-              -f tag_name=${{ github.ref_name }} \
-              -f previous_tag_name=$PREV_TAG \
-              --jq '.body')
-          fi
-          echo "$NOTES"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+
+          # 安装 changelog 生成工具
+          pnpm add -D -W conventional-changelog-cli conventional-changelog-conventionalcommits
+
+          # 生成 CHANGELOG（如果不存在则创建）
+          pnpm conventional-changelog -p angular -i CHANGELOG.md -s -r 0 2>/dev/null || true
+
+          # 翻译为中文并提取当前版本的 notes
+          python3 << EOF
+          import re
+          import os
+
+          version = "${VERSION}"
+
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          # 翻译类型为中文
+          translations = {
+              '### Features': '### ✨ 新功能',
+              '### Bug Fixes': '### 🐛 Bug 修复',
+              '### Performance Improvements': '### ⚡ 性能优化',
+              '### Documentation': '### 📝 文档',
+              '### Tests': '### ✅ 测试',
+              '### Build': '### 🔧 构建/工具',
+              '### Refactor': '### ♻️ 重构',
+              '### Styles': '### 💄 样式',
+              '### Reverts': '### ⏪ 回退'
+          }
+
+          for en, zh in translations.items():
+              content = content.replace(en, zh)
+
+          # 提取当前版本部分
+          pattern = r'## \\[v?' + re.escape(version) + r'.*?\\n(.*?)(?=\\n## \\[|\$)'
+          match = re.search(pattern, content, re.DOTALL)
+
+          if match:
+              current_notes = match.group(1).strip()
+          else:
+              # 如果没有找到当前版本，使用通用消息
+              current_notes = "查看完整更新日志请访问 [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md)"
+
+          # 保存更新后的 CHANGELOG
+          with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
+              f.write(content)
+
+          # 保存当前版本的 notes
+          with open('/tmp/release_notes.txt', 'w', encoding='utf-8') as f:
+              f.write(current_notes)
+
+          print(current_notes)
+          EOF
+
+          # 提交 CHANGELOG 更新
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+          git diff --staged --quiet || git commit -m "docs: 更新 CHANGELOG 和版本号 [skip ci]"
+          git push
+
+          # 保存 notes 到 output
           echo "NOTES<<EOF" >> $GITHUB_OUTPUT
-          echo "$NOTES" >> $GITHUB_OUTPUT
+          cat /tmp/release_notes.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
@@ -114,7 +168,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Cavin Tools ${{ github.ref_name }}"
-          releaseBody: ${{ steps.release_notes.outputs.NOTES }}
+          releaseBody: ${{ steps.changelog.outputs.NOTES }}
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
