@@ -94,56 +94,8 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
 
-          # 生成 CHANGELOG（如果不存在则创建）
-          # conventional-changelog-cli 已在 package.json 中安装
-          pnpm conventional-changelog -p angular -i CHANGELOG.md -s -r 0 2>/dev/null || true
-
-          # 翻译为中文并提取当前版本的 notes
-          python3 << EOF
-          import re
-          import os
-
-          version = "${VERSION}"
-
-          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
-              content = f.read()
-
-          # 翻译类型为中文
-          translations = {
-              '### Features': '### ✨ 新功能',
-              '### Bug Fixes': '### 🐛 Bug 修复',
-              '### Performance Improvements': '### ⚡ 性能优化',
-              '### Documentation': '### 📝 文档',
-              '### Tests': '### ✅ 测试',
-              '### Build': '### 🔧 构建/工具',
-              '### Refactor': '### ♻️ 重构',
-              '### Styles': '### 💄 样式',
-              '### Reverts': '### ⏪ 回退'
-          }
-
-          for en, zh in translations.items():
-              content = content.replace(en, zh)
-
-          # 提取当前版本部分
-          pattern = r'## \\[v?' + re.escape(version) + r'.*?\\n(.*?)(?=\\n## \\[|\$)'
-          match = re.search(pattern, content, re.DOTALL)
-
-          if match:
-              current_notes = match.group(1).strip()
-          else:
-              # 如果没有找到当前版本，使用通用消息
-              current_notes = "查看完整更新日志请访问 [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md)"
-
-          # 保存更新后的 CHANGELOG
-          with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
-              f.write(content)
-
-          # 保存当前版本的 notes
-          with open('/tmp/release_notes.txt', 'w', encoding='utf-8') as f:
-              f.write(current_notes)
-
-          print(current_notes)
-          EOF
+          # 使用 Node.js 脚本生成 CHANGELOG 并提取 release notes
+          node scripts/generate-changelog.cjs $VERSION
 
           # 提交 CHANGELOG 更新
           git config user.name "github-actions[bot]"
@@ -158,6 +110,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
