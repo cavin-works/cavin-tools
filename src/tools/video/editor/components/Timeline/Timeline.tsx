@@ -82,19 +82,19 @@ export function Timeline() {
   return (
     <div
       ref={timelineRef}
-      className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 mb-4 relative"
+      className="bg-card border border-border rounded-lg shadow-sm p-6 mb-4 relative"
     >
       <div className="flex items-center gap-3 mb-4">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">时间轴</h2>
-        <span className="text-sm text-gray-400 dark:text-gray-500">Shift + 滚轮可以缩放时间轴</span>
+        <h2 className="text-xl font-semibold text-foreground">时间轴</h2>
+        <span className="text-sm text-muted-foreground">Shift + 滚轮可以缩放时间轴</span>
       </div>
 
       <div
         ref={containerRef}
-        className="overflow-x-auto border border-gray-300 dark:border-neutral-600 rounded"
+        className="overflow-x-auto border border-border rounded"
       >
         <div
-          className="relative bg-gray-100 dark:bg-neutral-700 rounded overflow-hidden transition-all duration-300"
+          className="relative bg-muted rounded overflow-hidden transition-all duration-300"
           style={{ width: `${timelineDimensions.actualWidth}px`, height: '120px', minWidth: '100%' }}
         >
           {/* Video thumbnails */}
@@ -108,11 +108,11 @@ export function Timeline() {
           </div>
 
           {/* Time scale */}
-          <div className="absolute top-0 left-0 right-0 h-6 border-b border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 bg-opacity-90 dark:bg-opacity-90">
+          <div className="absolute top-0 left-0 right-0 h-6 border-b border-border bg-card/90">
             {Array.from({ length: Math.ceil(duration) }, (_, i) => (
               <div
                 key={i}
-                className="absolute top-0 text-xs text-gray-600 dark:text-gray-400"
+                className="absolute top-0 text-xs text-muted-foreground"
                 style={{ left: `${(i / duration) * 100}%` }}
               >
                 {formatDuration(i)}
@@ -123,7 +123,7 @@ export function Timeline() {
           {/* Selection region */}
           {timelineEnd > 0 && (
             <div
-              className="absolute top-6 bottom-0 bg-blue-200 dark:bg-blue-900 bg-opacity-50 dark:bg-opacity-50 border-2 border-blue-500 dark:border-blue-400 pointer-events-none"
+              className="absolute top-6 bottom-0 bg-primary/30 border-2 border-primary pointer-events-none"
               style={{
                 left: `${(timelineStart / duration) * 100}%`,
                 width: `${((timelineEnd - timelineStart) / duration) * 100}%`
@@ -139,7 +139,7 @@ export function Timeline() {
       </div>
 
       {/* Time information */}
-      <div className="mt-4 flex justify-between text-sm text-gray-600 dark:text-gray-400">
+      <div className="mt-4 flex justify-between text-sm text-muted-foreground">
         <span>开始: {formatDuration(timelineStart)}</span>
         <span>时长: {formatDuration(duration)}</span>
         <span>结束: {timelineEnd > 0 ? formatDuration(timelineEnd) : formatDuration(duration)}</span>

@@ -3,10 +3,15 @@ import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Download, Upload, Trash2, CheckCircle, XCircle, Loader2, ImageIcon, FolderOpen } from 'lucide-react';
+import { Download, Trash2, CheckCircle, XCircle, Loader2, ImageIcon, FolderOpen, Image as ImageIconLucide } from 'lucide-react';
 import { useBackgroundRemoverStore } from './store/backgroundRemoverStore';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
-import { themeColors } from '@/core/theme/themeConfig';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileUploadZone } from '@/components/ui/file-upload-zone';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
 import type { BackgroundRemoveTask, RemoveBackgroundResult, BatchProgressEvent, ModelInfo, DownloadProgress } from './types';
 
 // 复用 ImageInfo 类型（与 Rust 返回的 snake_case 匹配）
@@ -222,170 +227,160 @@ export function BackgroundRemover() {
   // 模型未下载时显示下载界面
   if (!modelInfo?.downloaded) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center">
-        <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-8 max-w-md w-full mx-4 text-center">
-          <div className="w-16 h-16 bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Download className="w-8 h-8 text-neutral-500 dark:text-neutral-400" />
-          </div>
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">需要下载 AI 模型</h2>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            背景去除功能需要下载 RMBG-1.4 模型（约 176MB），模型将保存在本地，仅需下载一次。
-          </p>
-          {isDownloading ? (
-            <div className="space-y-3">
-              <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-                <div
-                  className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
-                  style={{ width: `${downloadProgress}%` }}
-                />
-              </div>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">下载中... {Math.round(downloadProgress)}%</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="pt-6 text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+              <Download className="w-8 h-8 text-muted-foreground" />
             </div>
-          ) : (
-            <button
-              onClick={handleDownloadModel}
-              className={themeColors.button.primary + " w-full py-3 rounded-lg font-medium"}
-            >
-              开始下载模型
-            </button>
-          )}
-        </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">需要下载 AI 模型</h2>
+            <p className="text-muted-foreground mb-6">
+              背景去除功能需要下载 RMBG-1.4 模型（约 176MB），模型将保存在本地，仅需下载一次。
+            </p>
+            {isDownloading ? (
+              <div className="space-y-3">
+                <Progress value={downloadProgress} className="h-2" />
+                <p className="text-sm text-muted-foreground">下载中... {Math.round(downloadProgress)}%</p>
+              </div>
+            ) : (
+              <Button onClick={handleDownloadModel} className="w-full">
+                开始下载模型
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8">图片背景去除</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8">图片背景去除</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧: 上传和文件列表 */}
           <div className="lg:col-span-2 space-y-6">
             {/* 上传区域 */}
-            <div
-              onClick={handleSelectFiles}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                isDragging
-                  ? 'border-neutral-400 dark:border-white bg-neutral-100 dark:bg-neutral-800'
-                  : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500 bg-white dark:bg-neutral-800'
-              }`}
-            >
-              <Upload className="w-12 h-12 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-              <p className="text-neutral-700 dark:text-neutral-300 mb-2">点击或拖拽图片到此处</p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-500">支持 PNG, JPG, WebP 格式</p>
+            <div onClick={handleSelectFiles}>
+              <FileUploadZone
+                title="拖拽图片到此处"
+                description="或点击按钮选择文件"
+                formats="支持 PNG, JPG, WebP 格式"
+                icon={<ImageIconLucide className="w-6 h-6 text-primary" />}
+                disabled={isBatchProcessing}
+                showButton={false}
+              />
             </div>
 
             {/* 文件列表 */}
             {tasks.length > 0 && (
-              <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
-                  <span className="font-medium text-neutral-900 dark:text-white">{tasks.length} 个文件</span>
-                  <button
-                    onClick={clearTasks}
-                    className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
-                  >
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between py-3">
+                  <CardTitle className="text-base">{tasks.length} 个文件</CardTitle>
+                  <Button variant="ghost" size="sm" onClick={clearTasks}>
                     清空列表
-                  </button>
-                </div>
-                <div className="divide-y divide-neutral-200 dark:divide-neutral-700 max-h-96 overflow-y-auto">
-                  {tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => setSelectedTask(task.id)}
-                      className={`flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors ${
-                        selectedTaskId === task.id
-                          ? 'bg-neutral-100 dark:bg-neutral-700'
-                          : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50'
-                      }`}
-                    >
-                      <div className="w-10 h-10 bg-neutral-200 dark:bg-neutral-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img
-                          src={convertFileSrc(task.inputPath)}
-                          alt={task.filename}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                        <ImageIcon className="w-5 h-5 text-neutral-500 hidden" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate">{task.filename}</p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                          {task.width} × {task.height} · {(task.originalSize / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        {task.status === 'pending' && (
-                          <span className="text-sm text-neutral-500">待处理</span>
-                        )}
-                        {task.status === 'processing' && (
-                          <Loader2 className="w-5 h-5 text-neutral-500 dark:text-neutral-400 animate-spin" />
-                        )}
-                        {task.status === 'completed' && (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        )}
-                        {task.status === 'failed' && (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); removeTask(task.id); }}
-                        className="p-1 text-neutral-500 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border max-h-96 overflow-y-auto">
+                    {tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        onClick={() => setSelectedTask(task.id)}
+                        className={`flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors ${
+                          selectedTaskId === task.id
+                            ? 'bg-accent'
+                            : 'hover:bg-accent/50'
+                        }`}
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <img
+                            src={convertFileSrc(task.inputPath)}
+                            alt={task.filename}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                          <ImageIcon className="w-5 h-5 text-muted-foreground hidden" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">{task.filename}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {task.width} × {task.height} · {(task.originalSize / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {task.status === 'pending' && (
+                            <span className="text-sm text-muted-foreground">待处理</span>
+                          )}
+                          {task.status === 'processing' && (
+                            <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                          )}
+                          {task.status === 'completed' && (
+                            <CheckCircle className="w-5 h-5 text-primary" />
+                          )}
+                          {task.status === 'failed' && (
+                            <XCircle className="w-5 h-5 text-destructive" />
+                          )}
+                        </div>
+                        <Button
+                          onClick={(e) => { e.stopPropagation(); removeTask(task.id); }}
+                          variant="ghost"
+                          size="icon"
+                          className="flex-shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
 
           {/* 右侧: 设置和操作 */}
           <div className="space-y-6">
             {/* 输出设置 */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">输出设置</h3>
-
-              <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>输出设置</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">输出格式</label>
+                  <Label className="mb-2 block">输出格式</Label>
                   <div className="flex gap-2">
                     {(['png', 'webp'] as const).map((fmt) => (
-                      <button
+                      <Button
                         key={fmt}
                         onClick={() => setOutputFormat(fmt)}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          outputFormat === fmt
-                            ? themeColors.primary.bg + ' text-white dark:text-white'
-                            : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
-                        }`}
+                        variant={outputFormat === fmt ? 'default' : 'secondary'}
+                        className="flex-1"
                       >
                         {fmt.toUpperCase()}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  <Label className="mb-2 block">
                     边缘羽化: {feather}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    value={feather}
-                    onChange={(e) => setFeather(Number(e.target.value))}
-                    className="w-full accent-neutral-900 dark:accent-white"
+                  </Label>
+                  <Slider
+                    min={0}
+                    max={10}
+                    step={1}
+                    value={[feather]}
+                    onValueChange={(value) => setFeather(value[0])}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">背景颜色</label>
+                  <Label className="mb-2 block">背景颜色</Label>
                   <div className="flex gap-2">
                     {['transparent', '#ffffff', '#000000'].map((color) => (
                       <button
@@ -393,12 +388,12 @@ export function BackgroundRemover() {
                         onClick={() => setBackgroundColor(color)}
                         className={`w-8 h-8 rounded-lg border-2 transition-colors ${
                           backgroundColor === color
-                            ? 'border-neutral-900 dark:border-white'
-                            : 'border-neutral-300 dark:border-neutral-600'
+                            ? 'border-primary'
+                            : 'border-border'
                         }`}
                         style={{
                           background: color === 'transparent'
-                            ? 'repeating-conic-gradient(#d4d4d4 0% 25%, #a3a3a3 0% 50%) 50% / 10px 10px'
+                            ? 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--muted-foreground) / 0.2) 0% 50%) 50% / 10px 10px'
                             : color,
                         }}
                         title={color === 'transparent' ? '透明' : color}
@@ -406,58 +401,60 @@ export function BackgroundRemover() {
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* 预览 */}
             {selectedTask?.status === 'completed' && selectedTask.result && (
-              <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">处理结果</h3>
-                <div className="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
-                  <p>处理耗时: {selectedTask.result.processingTimeMs}ms</p>
-                  <p>输出大小: {(selectedTask.result.processedSize / 1024).toFixed(1)} KB</p>
-                </div>
-                <button
-                  onClick={() => invoke('shell_open', { path: selectedTask.result!.outputPath })}
-                  className={themeColors.button.ghost + " mt-4 w-full flex items-center justify-center gap-2 py-2 rounded-lg"}
-                >
-                  <FolderOpen className="w-4 h-4" />
-                  打开文件位置
-                </button>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>处理结果</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>处理耗时: {selectedTask.result.processingTimeMs}ms</p>
+                    <p>输出大小: {(selectedTask.result.processedSize / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <Button
+                    onClick={() => invoke('shell_open', { path: selectedTask.result!.outputPath })}
+                    variant="outline"
+                    className="mt-4 w-full"
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    打开文件位置
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             {/* 操作按钮 */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-              <button
-                onClick={handleRemoveBackgrounds}
-                disabled={isBatchProcessing || pendingCount === 0}
-                className={themeColors.button.primary + " w-full py-3 rounded-lg font-medium"}
-              >
-                {isBatchProcessing
-                  ? `处理中... ${Math.round(batchProgress)}%`
-                  : `开始去背景 (${pendingCount} 个文件)`}
-              </button>
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  onClick={handleRemoveBackgrounds}
+                  disabled={isBatchProcessing || pendingCount === 0}
+                  className="w-full"
+                >
+                  {isBatchProcessing
+                    ? `处理中... ${Math.round(batchProgress)}%`
+                    : `开始去背景 (${pendingCount} 个文件)`}
+                </Button>
 
-              {isBatchProcessing && (
-                <div className="mt-4">
-                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-                    <div
-                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
-                      style={{ width: `${batchProgress}%` }}
-                    />
+                {isBatchProcessing && (
+                  <div className="mt-4">
+                    <Progress value={batchProgress} className="h-2" />
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
 
       {/* 拖拽遮罩 */}
       {isDragging && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pointer-events-none z-50">
-          <p className="text-2xl font-semibold text-white">松开以导入图片</p>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center pointer-events-none z-50">
+          <p className="text-2xl font-semibold text-foreground">松开以导入图片</p>
         </div>
       )}
     </div>

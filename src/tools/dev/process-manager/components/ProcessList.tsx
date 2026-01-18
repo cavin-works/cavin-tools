@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Activity, HardDrive, AlertCircle, Network, ChevronDown, ChevronRight } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { Activity, Network, ChevronDown, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 import type { ProcessInfo, PortInfo } from '../types';
-import { useProcessManagerStore } from '../store/processManagerStore';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface ProcessListProps {
   processes: ProcessInfo[];
@@ -9,27 +11,10 @@ interface ProcessListProps {
 }
 
 export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) => {
-  const { killProcess, queryPortsByPid, isLoading } = useProcessManagerStore();
-  const [expandedPorts, setExpandedPorts] = useState<Record<number, PortInfo[]>>({});
+  const [expandedPorts, setExpandedPorts] = useState<Record<number, PortInfo[] | undefined>>({});
   const [loadingPorts, setLoadingPorts] = useState<Record<number, boolean>>({});
 
-  const handleKill = async (pid: number, name: string, isSystem: boolean) => {
-    if (isSystem) {
-      alert(`警告: ${name} 是系统进程,终止它可能导致系统不稳定!\n\n确定要继续吗?`);
-    }
-
-    const confirmed = confirm(`确定要终止进程 "${name}" (PID: ${pid}) 吗?`);
-    if (!confirmed) return;
-
-    try {
-      await killProcess(pid);
-    } catch (err) {
-      console.error('终止进程失败:', err);
-    }
-  };
-
   const handleViewPorts = async (pid: number) => {
-    // 如果已经展开，则收起
     if (expandedPorts[pid]) {
       setExpandedPorts(prev => {
         const newState = { ...prev };
@@ -39,22 +24,37 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
       return;
     }
 
-    // 查询端口
     setLoadingPorts(prev => ({ ...prev, [pid]: true }));
     try {
-      const ports = await queryPortsByPid(pid);
+      const ports = await invoke<PortInfo[]>('get_process_ports', { pid });
       setExpandedPorts(prev => ({ ...prev, [pid]: ports }));
-    } catch (err) {
-      console.error('查询端口失败:', err);
-      // 不显示错误，因为有些进程确实没有端口
+    } catch (error) {
+      console.error('获取端口失败:', error);
     } finally {
       setLoadingPorts(prev => ({ ...prev, [pid]: false }));
     }
   };
 
+  const handleKillProcess = async (pid: number, name: string) => {
+    if (!confirm(`确定要终止进程 "${name}" (PID: ${pid}) 吗？`)) return;
+
+    try {
+      await invoke('kill_process', { pid });
+    } catch (error) {
+      alert(`终止失败: ${error}`);
+    }
+  };
+
+  const formatMemory = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+  };
+
   if (processes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <Activity className="w-16 h-16 mb-4 opacity-50" />
         <p className="text-lg">暂无进程数据</p>
       </div>
@@ -64,22 +64,22 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
   return (
     <div className="space-y-4">
       {title && (
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {title} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({processes.length} 个进程)</span>
+        <h2 className="text-xl font-semibold text-foreground">
+          {title} <span className="text-sm font-normal text-muted-foreground">({processes.length} 个进程)</span>
         </h2>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 w-16"></th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">PID</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">进程名称</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">内存使用</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">端口占用</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">类型</th>
-              <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">操作</th>
+            <tr className="border-b border-border bg-muted/50">
+              <th className="text-left py-3 px-4 font-semibold text-foreground w-16"></th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">PID</th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">进程名称</th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">内存使用</th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">端口占用</th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">类型</th>
+              <th className="text-right py-3 px-4 font-semibold text-foreground">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -90,126 +90,71 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
               return (
                 <React.Fragment key={process.pid}>
                   <tr
-                    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="border-b border-border hover:bg-accent transition-colors"
                   >
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleViewPorts(process.pid)}
                         disabled={isLoadingPorts}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                        className="p-1 hover:bg-muted rounded transition-colors"
                         title="查看/隐藏端口"
                       >
                         {isLoadingPorts ? (
-                          <Network className="w-4 h-4 text-gray-400 animate-pulse" />
+                          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
                         ) : ports ? (
-                          <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
                         ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         )}
                       </button>
                     </td>
-                    <td className="py-3 px-4 text-gray-900 dark:text-white font-mono">
-                      {process.pid}
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-sm text-foreground">{process.pid}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-blue-500" />
-                        <span className="text-gray-900 dark:text-white font-medium">
-                          {process.name}
-                        </span>
-                        {process.is_system && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs rounded-full">
-                            <AlertCircle className="w-3 h-3" />
-                            系统
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-medium text-foreground">{process.name}</span>
                     </td>
-                    <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
-                      {process.memory_usage !== undefined ? (
-                        <div className="flex items-center gap-1">
-                          <HardDrive className="w-4 h-4" />
-                          <span>{process.memory_usage.toFixed(1)} MB</span>
-                        </div>
+                    <td className="py-3 px-4">
+                      <span className="text-muted-foreground">{formatMemory(process.memory)}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {ports ? (
+                        <span className="text-primary font-medium">{ports.length} 个端口</span>
                       ) : (
-                        '-'
+                        <span className="text-muted-foreground">点击查看</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleViewPorts(process.pid)}
-                        disabled={isLoadingPorts}
-                        className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded transition-colors group"
-                        title="点击查看端口详情"
-                      >
-                        <Network className="w-4 h-4 text-blue-500" />
-                        {ports ? (
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {ports.length}个端口
-                          </span>
-                        ) : (
-                          <span className="text-sm text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400">
-                            点击查看
-                          </span>
-                        )}
-                      </button>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          process.is_system
-                            ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
-                            : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-                        }`}
-                      >
-                        {process.is_system ? '系统进程' : '用户进程'}
-                      </span>
+                      <Badge variant={process.is_system ? 'secondary' : 'outline'}>
+                        {process.is_system ? '系统' : '用户'}
+                      </Badge>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => handleKill(process.pid, process.name, process.is_system)}
-                        disabled={isLoading}
-                        className="px-3 py-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white text-sm rounded-lg transition-colors"
+                      <Button
+                        onClick={() => handleKillProcess(process.pid, process.name)}
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="终止进程"
                       >
-                        终止
-                      </button>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </td>
                   </tr>
-
-                  {/* 端口展开行 */}
-                  {ports && (
-                    <tr className="bg-gray-50 dark:bg-gray-800/50">
-                      <td colSpan={7} className="py-4 px-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                            <Network className="w-4 h-4" />
-                            <span>占用端口 ({ports.length})</span>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {ports.map((port, index) => (
-                              <div
-                                key={`${port.port}-${port.protocol}-${index}`}
-                                className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                                      {port.port}
-                                    </span>
-                                    <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-xs rounded">
-                                      {port.protocol}
-                                    </span>
-                                    <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded">
-                                      {port.state}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                    {port.local_address}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                  {ports && ports.length > 0 && (
+                    <tr>
+                      <td colSpan={7} className="bg-muted/30 px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          {ports.map((port, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border rounded-md text-sm"
+                            >
+                              <Network className="w-3.5 h-3.5 text-primary" />
+                              <span className="font-mono text-foreground">{port.port}</span>
+                              <span className="text-muted-foreground">({port.protocol})</span>
+                            </div>
+                          ))}
                         </div>
                       </td>
                     </tr>

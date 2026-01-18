@@ -1,7 +1,12 @@
-import { X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Image as ImageIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useWatermarkRemoverStore } from '../store/watermarkRemoverStore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { cn } from '@/lib/utils';
 import type { RemoveTask } from '../types';
 
 function formatFileSize(bytes: number): string {
@@ -26,41 +31,6 @@ function TaskItem({ task }: { task: RemoveTask }) {
 
   const isSelected = selectedTaskId === task.id;
 
-  const getStatusIcon = () => {
-    switch (task.status) {
-      case 'completed':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'failed':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
-      case 'processing':
-        return <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusText = () => {
-    switch (task.status) {
-      case 'completed':
-        return task.result ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              水印尺寸: {task.result.watermarkInfo?.watermarkSize}×{task.result.watermarkInfo?.watermarkSize}
-            </span>
-            <span className="text-xs font-medium text-green-500">
-              ✓ 已去除
-            </span>
-          </div>
-        ) : '处理完成';
-      case 'failed':
-        return <span className="text-xs text-red-500">{task.error || '处理失败'}</span>;
-      case 'processing':
-        return <span className="text-xs text-blue-400">处理中...</span>;
-      default:
-        return <span className="text-xs text-neutral-500">等待中</span>;
-    }
-  };
-
   const handleClick = () => {
     if (task.status === 'completed') {
       setSelectedTask(isSelected ? null : task.id);
@@ -70,14 +40,14 @@ function TaskItem({ task }: { task: RemoveTask }) {
   return (
     <div
       onClick={handleClick}
-      className={`flex items-center gap-3 p-3 bg-neutral-100 dark:bg-neutral-800 border rounded-lg transition-colors cursor-pointer ${
-        isSelected
-          ? 'border-neutral-900 dark:border-white ring-1 ring-neutral-900 dark:ring-white'
-          : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-      }`}
+      className={cn(
+        "flex items-center gap-3 p-3 bg-card border rounded-lg transition-colors",
+        task.status === 'completed' && "cursor-pointer hover:border-primary/50",
+        isSelected && "border-primary ring-2 ring-primary/20"
+      )}
     >
       {/* 图片预览 */}
-      <div className="w-16 h-16 rounded-lg overflow-hidden bg-neutral-200 dark:bg-neutral-700 flex-shrink-0">
+      <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
@@ -85,42 +55,48 @@ function TaskItem({ task }: { task: RemoveTask }) {
             className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                parent.innerHTML = `<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>`;
+              }
             }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-500 text-xs">
-            预览
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon className="w-6 h-6 text-muted-foreground" />
           </div>
         )}
       </div>
 
-      {/* 状态图标 */}
-      <div className="flex-shrink-0">
-        {getStatusIcon()}
-      </div>
-
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+        <p className="text-sm font-medium text-foreground truncate">
           {task.filename}
         </p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="text-xs text-muted-foreground">
           {task.format.toUpperCase()} • {formatFileSize(task.originalSize)} • {task.width}×{task.height}
         </p>
-        <div className="mt-1">
-          {getStatusText()}
+        <div className="mt-2">
+          <StatusBadge status={task.status}>
+            {task.status === 'completed' && task.result ? (
+              `水印 ${task.result.watermarkInfo?.watermarkSize}×${task.result.watermarkInfo?.watermarkSize}`
+            ) : task.status === 'failed' && task.error ? (
+              task.error
+            ) : null}
+          </StatusBadge>
         </div>
       </div>
 
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={(e) => {
           e.stopPropagation();
           removeTask(task.id);
         }}
-        className="p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded transition-colors flex-shrink-0"
-        title="移除"
+        className="flex-shrink-0"
       >
-        <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-      </button>
+        <X className="w-4 h-4" />
+      </Button>
     </div>
   );
 }
@@ -133,24 +109,28 @@ export function FileList() {
   }
 
   return (
-    <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-          文件列表 ({tasks.length})
-        </h3>
-        <button
-          onClick={clearTasks}
-          className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-        >
-          清空列表
-        </button>
-      </div>
-
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {tasks.map((task) => (
-          <TaskItem key={task.id} task={task} />
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>文件列表 ({tasks.length})</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearTasks}
+          >
+            清空列表
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-2 pr-4">
+            {tasks.map((task) => (
+              <TaskItem key={task.id} task={task} />
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }

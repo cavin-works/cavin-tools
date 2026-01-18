@@ -21,19 +21,19 @@ export function ControlPanel() {
   ];
 
   return (
-    <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">操作面板</h2>
+    <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+      <h2 className="text-xl font-semibold mb-4 text-foreground">操作面板</h2>
 
       {/* 标签页 */}
-      <div className="flex border-b border-neutral-200 dark:border-neutral-700 mb-4 overflow-x-auto">
+      <div className="flex border-b border-border mb-4 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <span className="mr-1">{tab.icon}</span>

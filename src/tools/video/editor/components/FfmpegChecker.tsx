@@ -56,7 +56,7 @@ export function FfmpegChecker({
 
   if (checking) {
     return (
-      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+      <div className="flex items-center gap-2 text-muted-foreground">
         <Loader2 className="w-4 h-4 animate-spin" />
         <span>正在检查 FFmpeg...</span>
       </div>
@@ -65,7 +65,7 @@ export function FfmpegChecker({
 
   if (ffmpegInfo?.available) {
     return (
-      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+      <div className="flex items-center gap-2 text-primary text-sm">
         <CheckCircle2 className="w-4 h-4" />
         <span>FFmpeg {ffmpegInfo.version} 已就绪</span>
       </div>

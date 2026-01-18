@@ -2,11 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useWatermarkRemoverStore } from './store/watermarkRemoverStore';
-import { FileUploadZone } from './components/FileUploadZone';
 import { FileList } from './components/FileList';
 import { PreviewPanel } from './components/PreviewPanel';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
-import { themeColors } from '@/core/theme/themeConfig';
+import { open } from '@tauri-apps/plugin-dialog';
+import { FileUploadZone } from '@/components/ui/file-upload-zone';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Image as ImageIcon } from 'lucide-react';
 import type { RemoveTask, RemoveResult, BatchProgressEvent } from './types';
 
 // 复用 ImageInfo 类型（与 Rust 返回的 snake_case 匹配）
@@ -171,20 +175,41 @@ export function WatermarkRemover() {
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
 
+  const handleSelectFiles = async () => {
+    try {
+      const selected = await open({
+        multiple: true,
+        filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+      });
+      if (selected) {
+        const paths = Array.isArray(selected) ? selected : [selected];
+        handleFilesSelected(paths);
+      }
+    } catch (error) {
+      console.log('文件选择被取消');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-8">
           Gemini 水印去除
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧: 上传和文件列表 */}
           <div className="lg:col-span-2 space-y-6">
-            <FileUploadZone
-              onFilesSelected={handleFilesSelected}
-              disabled={isBatchProcessing}
-            />
+            <div onClick={handleSelectFiles}>
+              <FileUploadZone
+                title="拖拽图片到此处"
+                description="或点击按钮选择文件"
+                formats="支持 PNG, JPG, WebP, GIF 格式"
+                icon={<ImageIcon className="w-6 h-6 text-primary" />}
+                disabled={isBatchProcessing}
+                showButton={false}
+              />
+            </div>
 
             <FileList />
           </div>
@@ -197,45 +222,40 @@ export function WatermarkRemover() {
             )}
 
             {/* 操作按钮 */}
-            <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                  去水印说明
-                </h3>
-                <p className="text-sm text-neutral-400">
+            <Card>
+              <CardHeader>
+                <CardTitle>去水印说明</CardTitle>
+                <CardDescription>
                   自动检测 Gemini AI 生成图片的水印位置并无损去除。使用反向 Alpha 混合算法，完全本地处理，保护您的隐私。
-                </p>
-              </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={handleRemoveWatermarks}
+                  disabled={isBatchProcessing || pendingCount === 0}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isBatchProcessing
+                    ? `处理中... ${Math.round(useWatermarkRemoverStore.getState().batchProgress)}%`
+                    : `开始去水印 (${pendingCount} 个文件)`}
+                </Button>
 
-              <button
-                onClick={handleRemoveWatermarks}
-                disabled={isBatchProcessing || pendingCount === 0}
-                className={themeColors.button.primary + " w-full py-3 rounded-lg font-medium"}
-              >
-                {isBatchProcessing
-                  ? `处理中... ${Math.round(useWatermarkRemoverStore.getState().batchProgress)}%`
-                  : `开始去水印 (${pendingCount} 个文件)`}
-              </button>
-
-              {isBatchProcessing && (
-                <div className="mt-4">
-                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
-                    <div
-                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
-                      style={{ width: `${useWatermarkRemoverStore.getState().batchProgress}%` }}
-                    />
+                {isBatchProcessing && (
+                  <div className="mt-4">
+                    <Progress value={useWatermarkRemoverStore.getState().batchProgress} className="h-2" />
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
 
       {/* 拖拽遮罩 */}
       {isDragging && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pointer-events-none z-50">
-          <p className="text-2xl font-semibold text-white">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center pointer-events-none z-50">
+          <p className="text-2xl font-semibold text-foreground">
             松开以导入图片
           </p>
         </div>

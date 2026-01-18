@@ -1,11 +1,12 @@
 /**
- * 统一主题颜色配置
+ * 统一主题配色系统
  * 所有工具页面都应使用此配置中的颜色
  *
  * 核心设计原则:
  * - DRY: 避免在多个组件中重复定义颜色
  * - SOLID-S: 单一职责 - 颜色配置由专门的模块管理
  * - KISS: 使用简单直观的 Tailwind CSS 类名映射
+ * - 主题切换: 支持多套配色方案和深浅模式
  */
 
 /**
@@ -140,3 +141,148 @@ export const getStatusClass = (status: 'success' | 'warning' | 'error' | 'info')
  */
 export type ThemeColorVariant = keyof typeof themeColors.button;
 export type ThemeStatus = keyof typeof themeColors.status;
+
+/* ============================================
+   多主题配色系统
+   ============================================ */
+
+/**
+ * 可用的配色主题 ID
+ */
+export type ColorThemeId = 'blue' | 'green' | 'orange' | 'purple' | 'gray';
+
+/**
+ * 主题元数据接口
+ */
+export interface ColorThemeMetadata {
+  /** 主题唯一标识 */
+  id: ColorThemeId;
+  /** 主题显示名称 */
+  name: string;
+  /** 主题描述 */
+  description: string;
+  /** 预览色 (用于主题选择器显示) */
+  previewColor: {
+    light: string;  // 浅色模式的主色调
+    dark: string;   // 深色模式的主色调
+  };
+  /** 主题特点标签 */
+  tags: string[];
+}
+
+/**
+ * 所有可用主题的元数据
+ */
+export const COLOR_THEMES: Record<ColorThemeId, ColorThemeMetadata> = {
+  blue: {
+    id: 'blue',
+    name: '现代蓝',
+    description: '蓝紫渐变，现代专业，科技感十足',
+    previewColor: {
+      light: 'oklch(0.488 0.243 264.376)',
+      dark: 'oklch(0.488 0.243 264.376)',
+    },
+    tags: ['默认', '现代', '科技'],
+  },
+  green: {
+    id: 'green',
+    name: '自然绿',
+    description: '森林绿调，清新自然，舒适护眼',
+    previewColor: {
+      light: 'oklch(0.55 0.18 150)',
+      dark: 'oklch(0.58 0.18 150)',
+    },
+    tags: ['护眼', '自然', '清新'],
+  },
+  orange: {
+    id: 'orange',
+    name: '暖橙',
+    description: '暖色调橙，温暖活力，激发创意',
+    previewColor: {
+      light: 'oklch(0.65 0.20 45)',
+      dark: 'oklch(0.68 0.20 45)',
+    },
+    tags: ['温暖', '活力', '创意'],
+  },
+  purple: {
+    id: 'purple',
+    name: '高贵紫',
+    description: '皇家紫调，优雅神秘，彰显高端',
+    previewColor: {
+      light: 'oklch(0.50 0.22 300)',
+      dark: 'oklch(0.55 0.22 300)',
+    },
+    tags: ['优雅', '高端', '神秘'],
+  },
+  gray: {
+    id: 'gray',
+    name: '极简灰',
+    description: '中性灰调，专业极简，内容为王',
+    previewColor: {
+      light: 'oklch(0.40 0.02 260)',
+      dark: 'oklch(0.55 0.02 260)',
+    },
+    tags: ['极简', '专业', '中性'],
+  },
+};
+
+/**
+ * 默认配色主题
+ */
+export const DEFAULT_COLOR_THEME: ColorThemeId = 'blue';
+
+/**
+ * 应用配色主题到 DOM
+ * @param themeId 主题 ID
+ */
+export function applyColorTheme(themeId: ColorThemeId): void {
+  const root = document.documentElement;
+
+  // 如果是默认主题，移除 data-theme 属性
+  if (themeId === 'blue') {
+    root.removeAttribute('data-theme');
+  } else {
+    root.setAttribute('data-theme', themeId);
+  }
+}
+
+/**
+ * 获取当前应用的配色主题
+ * @returns 当前主题 ID
+ */
+export function getCurrentColorTheme(): ColorThemeId {
+  const root = document.documentElement;
+  const themeAttr = root.getAttribute('data-theme');
+
+  if (!themeAttr || !isValidColorTheme(themeAttr)) {
+    return DEFAULT_COLOR_THEME;
+  }
+
+  return themeAttr as ColorThemeId;
+}
+
+/**
+ * 验证主题 ID 是否有效
+ * @param themeId 待验证的主题 ID
+ * @returns 是否有效
+ */
+export function isValidColorTheme(themeId: string): themeId is ColorThemeId {
+  return themeId in COLOR_THEMES;
+}
+
+/**
+ * 获取所有可用主题列表
+ * @returns 主题元数据数组
+ */
+export function getAllColorThemes(): ColorThemeMetadata[] {
+  return Object.values(COLOR_THEMES);
+}
+
+/**
+ * 根据 ID 获取主题元数据
+ * @param themeId 主题 ID
+ * @returns 主题元数据，如果不存在则返回默认主题
+ */
+export function getColorThemeMetadata(themeId: ColorThemeId): ColorThemeMetadata {
+  return COLOR_THEMES[themeId] || COLOR_THEMES[DEFAULT_COLOR_THEME];
+}

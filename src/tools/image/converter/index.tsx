@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useImageConverterStore } from './store/imageConverterStore';
-import { FileUploadZone } from './components/FileUploadZone';
+import { FileUploadZone } from '@/components/ui/file-upload-zone';
 import { FileList } from './components/FileList';
 import { ConvertSettings } from './components/ConvertSettings';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
+import { Image as ImageIcon } from 'lucide-react';
 import type { ImageInfo, ConvertTask, ConvertResult, BatchProgressEvent } from './types';
 
 export function ImageConverter() {
@@ -162,20 +164,41 @@ export function ImageConverter() {
 
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
 
+  const handleSelectFiles = async () => {
+    try {
+      const selected = await open({
+        multiple: true,
+        filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff'] }],
+      });
+      if (selected) {
+        const paths = Array.isArray(selected) ? selected : [selected];
+        handleFilesSelected(paths);
+      }
+    } catch (error) {
+      console.log('文件选择被取消');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-8">
           图片格式转换
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧: 上传和文件列表 */}
           <div className="lg:col-span-2 space-y-6">
-            <FileUploadZone
-              onFilesSelected={handleFilesSelected}
-              disabled={isBatchProcessing}
-            />
+            <div onClick={handleSelectFiles}>
+              <FileUploadZone
+                title="拖拽图片到此处"
+                description="或点击按钮选择文件"
+                formats="支持 PNG, JPG, WebP, GIF, BMP, TIFF 格式"
+                icon={<ImageIcon className="w-6 h-6 text-primary" />}
+                disabled={isBatchProcessing}
+                showButton={false}
+              />
+            </div>
 
             <FileList />
           </div>
@@ -210,8 +233,8 @@ export function ImageConverter() {
 
       {/* 拖拽遮罩 */}
       {isDragging && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center pointer-events-none z-50">
-          <p className="text-2xl font-semibold text-white">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center pointer-events-none z-50">
+          <p className="text-2xl font-semibold text-foreground">
             松开以导入图片
           </p>
         </div>

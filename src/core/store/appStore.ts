@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+  type ColorThemeId,
+  DEFAULT_COLOR_THEME,
+  applyColorTheme,
+  getCurrentColorTheme
+} from '../theme/themeConfig';
 
 /**
  * 应用设置
@@ -27,10 +33,15 @@ interface AppState {
   /** 添加最近使用的工具 */
   addRecentTool: (toolId: string) => void;
 
-  /** 主题设置 */
+  /** 主题模式 (亮/暗/跟随系统) */
   theme: 'light' | 'dark' | 'system';
-  /** 设置主题 */
+  /** 设置主题模式 */
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+
+  /** 配色主题 (独立于明暗模式) */
+  colorTheme: ColorThemeId;
+  /** 设置配色主题 */
+  setColorTheme: (colorTheme: ColorThemeId) => void;
 
   /** 侧边栏是否折叠 */
   sidebarCollapsed: boolean;
@@ -77,9 +88,17 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      // 主题
+      // 主题模式 (亮/暗)
       theme: 'system',
       setTheme: (theme) => set({ theme }),
+
+      // 配色主题
+      colorTheme: DEFAULT_COLOR_THEME,
+      setColorTheme: (colorTheme) => {
+        set({ colorTheme });
+        // 立即应用到 DOM
+        applyColorTheme(colorTheme);
+      },
 
       // 侧边栏
       sidebarCollapsed: false,
@@ -106,8 +125,17 @@ export const useAppStore = create<AppState>()(
         // 只持久化这些字段
         recentTools: state.recentTools,
         theme: state.theme,
+        colorTheme: state.colorTheme,
         settings: state.settings,
       }),
+      onRehydrateStorage: () => {
+        // 状态恢复后，应用保存的配色主题
+        return (state) => {
+          if (state?.colorTheme) {
+            applyColorTheme(state.colorTheme);
+          }
+        };
+      },
     }
   )
 );

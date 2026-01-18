@@ -61,15 +61,15 @@ export function TrimPanel() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 时间信息展示 */}
-        <div className="bg-muted/50 dark:bg-muted/20 p-4 rounded-lg">
+        <div className="bg-muted p-4 rounded-lg">
           <div className="space-y-1">
-            <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            <p className="text-sm text-muted-foreground">
               开始时间: {formatDuration(timelineStart)}
             </p>
-            <p className="text-sm text-neutral-700 dark:text-neutral-200">
+            <p className="text-sm text-foreground">
               结束时间: {formatDuration(timelineEnd)}
             </p>
-            <p className="text-sm text-neutral-700 dark:text-neutral-200">
+            <p className="text-sm text-foreground">
               时长: {formatDuration(timelineEnd - timelineStart)}
             </p>
           </div>

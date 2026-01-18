@@ -129,14 +129,14 @@ export function VideoEditor() {
   }, [handleFileSelect]);
 
   if (!appReady) {
-    return <div className="flex items-center justify-center h-screen text-neutral-900 dark:text-neutral-100">加载中...</div>;
+    return <div className="flex items-center justify-center h-screen text-foreground">加载中...</div>;
   }
 
   return (
     <OperationQueueProvider>
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-8">
             视频编辑器
           </h1>
 
@@ -147,20 +147,20 @@ export function VideoEditor() {
           {ffmpegReady && !currentVideo ? (
             <div className="text-center py-20">
               {/* 拖拽区域 */}
-              <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-xl p-12 mb-8 hover:border-black dark:hover:border-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-200">
+              <div className="border-2 border-dashed border-border rounded-xl p-12 mb-8 hover:border-primary/50 hover:bg-accent transition-all duration-200">
                 <div className="flex flex-col items-center justify-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-black dark:bg-neutral-100 flex items-center justify-center">
-                    <Video className="w-8 h-8 text-white dark:text-neutral-900" />
+                  <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+                    <Video className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <div>
-                    <p className="text-neutral-700 dark:text-neutral-300 text-lg font-semibold mb-2">
+                    <p className="text-foreground text-lg font-semibold mb-2">
                       拖拽视频文件到此处导入
                     </p>
-                    <p className="text-neutral-400 dark:text-neutral-500 text-sm">
+                    <p className="text-muted-foreground text-sm">
                       或点击下方按钮选择文件
                     </p>
                   </div>
-                  <p className="text-neutral-400 dark:text-neutral-500 text-xs">
+                  <p className="text-muted-foreground text-xs">
                     支持 MP4, MOV, AVI, WMV, MKV, FLV, WebM 格式
                   </p>
                 </div>
@@ -169,7 +169,7 @@ export function VideoEditor() {
               {/* 选择文件按钮 */}
               <button
                 onClick={handleSelectFileButtonClick}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-black dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
               >
                 <Upload className="w-5 h-5" />
                 选择视频文件
@@ -184,8 +184,8 @@ export function VideoEditor() {
           ) : null}
 
           {isDragging && (
-            <div className="fixed inset-0 bg-black bg-opacity-10 dark:bg-opacity-30 flex items-center justify-center pointer-events-none z-50">
-              <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center pointer-events-none z-50">
+              <p className="text-2xl font-semibold text-foreground">
                 松开以导入视频
               </p>
             </div>
