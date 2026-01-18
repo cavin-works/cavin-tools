@@ -4,7 +4,6 @@ import {
   type ColorThemeId,
   DEFAULT_COLOR_THEME,
   applyColorTheme,
-  getCurrentColorTheme
 } from '../theme/themeConfig';
 
 /**

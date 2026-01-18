@@ -62,7 +62,7 @@ const FileUploadZone = React.forwardRef<HTMLDivElement, FileUploadZoneProps>(
 
       if (disabled) return
 
-      const files = Array.from(e.dataTransfer.files).map(file => file.path || file.name)
+      const files = Array.from(e.dataTransfer.files).map(file => (file as File & { path?: string }).path || file.name)
       onFilesSelected?.(files)
     }
 

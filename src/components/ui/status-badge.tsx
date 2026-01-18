@@ -37,7 +37,7 @@ export interface StatusBadgeProps
  * pending(待处理) | processing(处理中) | completed(已完成) | failed(失败)
  */
 const StatusBadge = React.forwardRef<HTMLDivElement, StatusBadgeProps>(
-  ({ className, status, showIcon = true, icon, children, ...props }, ref) => {
+  ({ className, status, showIcon = true, icon, children, ...props }, _ref) => {
     const getIcon = () => {
       if (icon) return icon
       if (!showIcon) return null
@@ -75,7 +75,6 @@ const StatusBadge = React.forwardRef<HTMLDivElement, StatusBadgeProps>(
 
     return (
       <Badge
-        ref={ref}
         className={cn(statusBadgeVariants({ status }), className)}
         {...props}
       >

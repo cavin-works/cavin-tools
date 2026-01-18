@@ -115,7 +115,7 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
                       <span className="font-medium text-foreground">{process.name}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-muted-foreground">{formatMemory(process.memory)}</span>
+                      <span className="text-muted-foreground">{formatMemory(process.memory_usage ?? 0)}</span>
                     </td>
                     <td className="py-3 px-4">
                       {ports ? (

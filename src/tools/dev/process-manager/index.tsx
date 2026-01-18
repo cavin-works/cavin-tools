@@ -5,7 +5,6 @@ import { SearchBar } from './components/SearchBar';
 import { ProcessList } from './components/ProcessList';
 import { PortList } from './components/PortList';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 
 export const ProcessManager: React.FC = () => {
   const {
