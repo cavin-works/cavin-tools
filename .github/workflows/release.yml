@@ -111,9 +111,12 @@ jobs:
           fi
 
           # 保存 notes 到 output（所有平台都需要）
-          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          # 使用随机 delimiter 避免内容冲突
+          DELIMITER="RELEASE_NOTES_$(date +%s)"
+          echo "NOTES<<${DELIMITER}" >> $GITHUB_OUTPUT
           cat /tmp/release_notes.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "${DELIMITER}" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
