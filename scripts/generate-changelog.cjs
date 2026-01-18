@@ -61,25 +61,46 @@ try {
   // 5. 提取当前版本部分
   console.log(`\n🔍 提取 v${version} 的 release notes...`);
 
-  // 匹配版本号格式：## [0.2.0] 或 ## [0.2.0] - 2025-01-18
-  const versionPattern = new RegExp(
-    `^##\\s+\\[${version.replace(/\./g, '\\.')}(\\s*-.*?|)\\]([\\s\\S]*?)(?=^##\\s+\\[|$)`,
-    'm'
-  );
+  // 简化版本：直接查找版本标题位置，然后提取到下一个标题之间的内容
+  const lines = content.split('\n');
+  let startIndex = -1;
+  let endIndex = lines.length;
 
-  const match = content.match(versionPattern);
+  // 查找当前版本的标题行（支持 # 或 ##）
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // 匹配 # [0.0.4] 或 ## [0.0.4] 格式
+    if ((line.match(/^#\s+\[/) || line.match(/^##\s+\[/)) && line.includes(`[${version}]`)) {
+      startIndex = i;
+      console.log(`✅ 找到版本标题在第 ${i + 1} 行: ${line.trim()}`);
+      break;
+    }
+  }
 
   let releaseNotes = '';
   let commitLink = '';
 
-  if (match) {
-    releaseNotes = match[2].trim();
+  if (startIndex !== -1) {
+    // 查找下一个版本标题的位置
+    for (let i = startIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.match(/^#\s+\[/) || line.match(/^##\s+\[/)) {
+        endIndex = i;
+        break;
+      }
+    }
+
+    // 提取两个版本之间的内容
+    const contentLines = lines.slice(startIndex + 1, endIndex);
+    releaseNotes = contentLines.join('\n').trim();
+
+    console.log(`✅ 提取了 ${endIndex - startIndex - 1} 行内容`);
 
     // 提取 commit hash 链接
-    const lines = releaseNotes.split('\n').filter(line => line.trim());
-    if (lines.length > 0) {
+    const noteLines = releaseNotes.split('\n').filter(line => line.trim());
+    if (noteLines.length > 0) {
       // 获取最后一行，通常包含链接信息
-      const lastLine = lines[lines.length - 1];
+      const lastLine = noteLines[noteLines.length - 1];
       if (lastLine.includes('https://github.com/')) {
         commitLink = lastLine.trim();
       }
