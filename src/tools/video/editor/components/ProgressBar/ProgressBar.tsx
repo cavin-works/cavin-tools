@@ -1,4 +1,5 @@
 import { useVideoStore } from '../../store/videoStore';
+import { themeColors } from '@/core/theme/themeConfig';
 
 export function ProgressBar() {
   const { isProcessing, progress, currentOperation } = useVideoStore();
@@ -19,7 +20,7 @@ export function ProgressBar() {
 
         <div className="w-full bg-gray-200 dark:bg-neutral-700 rounded-full h-2">
           <div
-            className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
+            className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
             style={{ width: `${progress}%` }}
           />
         </div>

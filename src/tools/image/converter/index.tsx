@@ -6,6 +6,7 @@ import { FileUploadZone } from './components/FileUploadZone';
 import { FileList } from './components/FileList';
 import { ConvertSettings } from './components/ConvertSettings';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { themeColors } from '@/core/theme/themeConfig';
 import type { ImageInfo, ConvertTask, ConvertResult, BatchProgressEvent } from './types';
 
 export function ImageConverter() {
@@ -185,7 +186,7 @@ export function ImageConverter() {
               <button
                 onClick={handleConvert}
                 disabled={isBatchProcessing || pendingCount === 0}
-                className="w-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400 transition-colors"
+                className={themeColors.button.primary}
               >
                 {isBatchProcessing
                   ? `转换中... ${Math.round(useImageConverterStore.getState().batchProgress)}%`
@@ -196,7 +197,7 @@ export function ImageConverter() {
                 <div className="mt-4">
                   <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                     <div
-                      className="bg-neutral-900 dark:bg-white h-2 rounded-full transition-all duration-300"
+                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
                       style={{ width: `${useImageConverterStore.getState().batchProgress}%` }}
                     />
                   </div>

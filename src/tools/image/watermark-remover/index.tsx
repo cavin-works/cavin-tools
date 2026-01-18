@@ -6,6 +6,7 @@ import { FileUploadZone } from './components/FileUploadZone';
 import { FileList } from './components/FileList';
 import { PreviewPanel } from './components/PreviewPanel';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { themeColors } from '@/core/theme/themeConfig';
 import type { RemoveTask, RemoveResult, BatchProgressEvent } from './types';
 
 // 复用 ImageInfo 类型（与 Rust 返回的 snake_case 匹配）
@@ -209,7 +210,7 @@ export function WatermarkRemover() {
               <button
                 onClick={handleRemoveWatermarks}
                 disabled={isBatchProcessing || pendingCount === 0}
-                className="w-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400 transition-colors"
+                className={themeColors.button.primary + " w-full py-3 rounded-lg font-medium"}
               >
                 {isBatchProcessing
                   ? `处理中... ${Math.round(useWatermarkRemoverStore.getState().batchProgress)}%`
@@ -220,7 +221,7 @@ export function WatermarkRemover() {
                 <div className="mt-4">
                   <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                     <div
-                      className="bg-neutral-900 dark:bg-white h-2 rounded-full transition-all duration-300"
+                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
                       style={{ width: `${useWatermarkRemoverStore.getState().batchProgress}%` }}
                     />
                   </div>

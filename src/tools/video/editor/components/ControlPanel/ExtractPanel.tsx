@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from '../../store/videoStore';
+import { themeColors } from '@/core/theme/themeConfig';
 
 type ExtractMode = 'single' | 'interval' | 'uniform';
 
@@ -125,7 +126,7 @@ export function ExtractPanel() {
         <button
           onClick={handleExtract}
           disabled={isProcessing}
-          className="w-full bg-black dark:bg-neutral-100 text-white dark:text-neutral-900 py-2 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400"
+          className={themeColors.button.primary + " w-full"}
         >
           {isProcessing ? '提取中...' : '开始提取'}
         </button>

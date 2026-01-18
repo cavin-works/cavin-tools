@@ -6,6 +6,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { Download, Upload, Trash2, CheckCircle, XCircle, Loader2, ImageIcon, FolderOpen } from 'lucide-react';
 import { useBackgroundRemoverStore } from './store/backgroundRemoverStore';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { themeColors } from '@/core/theme/themeConfig';
 import type { BackgroundRemoveTask, RemoveBackgroundResult, BatchProgressEvent, ModelInfo, DownloadProgress } from './types';
 
 // 复用 ImageInfo 类型（与 Rust 返回的 snake_case 匹配）
@@ -234,7 +235,7 @@ export function BackgroundRemover() {
             <div className="space-y-3">
               <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                 <div
-                  className="bg-neutral-900 dark:bg-white h-2 rounded-full transition-all duration-300"
+                  className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
                   style={{ width: `${downloadProgress}%` }}
                 />
               </div>
@@ -243,7 +244,7 @@ export function BackgroundRemover() {
           ) : (
             <button
               onClick={handleDownloadModel}
-              className="w-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+              className={themeColors.button.primary + " w-full py-3 rounded-lg font-medium"}
             >
               开始下载模型
             </button>
@@ -359,7 +360,7 @@ export function BackgroundRemover() {
                         onClick={() => setOutputFormat(fmt)}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                           outputFormat === fmt
-                            ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900'
+                            ? themeColors.primary.bg + ' text-white dark:text-white'
                             : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600'
                         }`}
                       >
@@ -418,7 +419,7 @@ export function BackgroundRemover() {
                 </div>
                 <button
                   onClick={() => invoke('shell_open', { path: selectedTask.result!.outputPath })}
-                  className="mt-4 w-full flex items-center justify-center gap-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-200 py-2 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
+                  className={themeColors.button.ghost + " mt-4 w-full flex items-center justify-center gap-2 py-2 rounded-lg"}
                 >
                   <FolderOpen className="w-4 h-4" />
                   打开文件位置
@@ -431,7 +432,7 @@ export function BackgroundRemover() {
               <button
                 onClick={handleRemoveBackgrounds}
                 disabled={isBatchProcessing || pendingCount === 0}
-                className="w-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 py-3 rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400 transition-colors"
+                className={themeColors.button.primary + " w-full py-3 rounded-lg font-medium"}
               >
                 {isBatchProcessing
                   ? `处理中... ${Math.round(batchProgress)}%`
@@ -442,7 +443,7 @@ export function BackgroundRemover() {
                 <div className="mt-4">
                   <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                     <div
-                      className="bg-neutral-900 dark:bg-white h-2 rounded-full transition-all duration-300"
+                      className={themeColors.primary.bg + " h-2 rounded-full transition-all duration-300"}
                       style={{ width: `${batchProgress}%` }}
                     />
                   </div>

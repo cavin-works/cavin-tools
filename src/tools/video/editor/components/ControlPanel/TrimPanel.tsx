@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useVideoStore } from '../../store/videoStore';
 import { useOperationQueue } from '../../contexts/OperationQueueContext';
 import { formatDuration } from '../../utils/fileValidation';
+import { themeColors } from '@/core/theme/themeConfig';
 import { Plus } from 'lucide-react';
 
 export function TrimPanel() {
@@ -81,14 +82,14 @@ export function TrimPanel() {
           <button
             onClick={handleTrim}
             disabled={isProcessing}
-            className="flex-1 bg-black dark:bg-neutral-100 text-white dark:text-neutral-900 py-2 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400"
+            className={themeColors.button.primary + " flex-1"}
           >
             {isProcessing ? '截断中...' : '立即执行'}
           </button>
           <button
             onClick={handleAddToQueue}
             disabled={!currentVideo}
-            className="px-4 bg-neutral-600 dark:bg-neutral-500 text-white py-2 rounded-lg hover:bg-neutral-700 dark:hover:bg-neutral-400 disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:text-neutral-500 dark:disabled:text-neutral-400 flex items-center gap-2"
+            className={themeColors.button.secondary + " px-4 flex items-center gap-2"}
             title="添加到操作队列"
           >
             <Plus className="w-4 h-4" />
