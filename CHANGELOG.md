@@ -1,3 +1,12 @@
+## [0.0.7](https://github.com/cavin-works/cavin-tools/compare/v0.0.6...v0.0.7) (2026-01-18)
+
+
+### 🐛 Bug 修复
+
+* 修复 TypeScript 编译错误 ([3e7bff4](https://github.com/cavin-works/cavin-tools/commit/3e7bff440220a297f9bc1e39a71e05c4898f251c))
+
+
+
 ## [0.0.6](https://github.com/cavin-works/cavin-tools/compare/v0.0.5...v0.0.6) (2026-01-18)
 
 
