@@ -1,3 +1,12 @@
+## [0.0.6](https://github.com/cavin-works/cavin-tools/compare/v0.0.5...v0.0.6) (2026-01-18)
+
+
+### 🐛 Bug 修复
+
+* **ci:** 修复 GitHub Actions multiline output EOF 解析错误 ([434716a](https://github.com/cavin-works/cavin-tools/commit/434716aee21c4140feb7eb8481969fc8281b69c9))
+
+
+
 ## [0.0.4](https://github.com/cavin-works/cavin-tools/compare/v0.0.3...v0.0.4) (2026-01-18)
 
 
