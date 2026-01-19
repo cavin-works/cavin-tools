@@ -1,4 +1,4 @@
-## [0.0.8](https://github.com/cavin-works/cavin-tools/compare/v0.0.7...v0.0.8) (2026-01-18)
+## [0.0.8](https://github.com/cavin-works/cavin-tools/compare/v0.0.7...v0.0.8) (2026-01-19)
 
 
 ### 🐛 Bug 修复
