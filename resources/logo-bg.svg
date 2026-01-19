@@ -1,0 +1,17 @@
+<svg width="1024" height="1024" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="100" height="100" rx="22" fill="#111111"/>
+
+    <!-- Top Segment (Lightest Orange) -->
+    <path d="M85 30L65 10H35L15 30V45L35 25H65L85 45V30Z" fill="#FF9E66"/>
+    
+    <!-- Middle Fold (Dark Red/Orange) -->
+    <path d="M15 30V70L35 90V25L15 30Z" fill="#D84315"/>
+    
+    <!-- Bottom Segment (Main Orange) -->
+    <path d="M85 70L65 90H35L15 70V55L35 75H65L85 55V70Z" fill="#FF6D00"/>
+    
+    <!-- Shadows for depth -->
+    <path d="M15 45L35 25V35L15 55V45Z" fill="black" fill-opacity="0.3"/>
+    <path d="M15 55V65L35 85V75L15 55Z" fill="black" fill-opacity="0.3"/>
+</svg>

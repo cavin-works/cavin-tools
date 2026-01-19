@@ -5,6 +5,7 @@ import imageCompressorToolConfig from '@/tools/image/compressor/tool.config';
 import watermarkRemoverToolConfig from '@/tools/image/watermark-remover/tool.config';
 import backgroundRemoverToolConfig from '@/tools/image/background-remover/tool.config';
 import processManagerToolConfig from '@/tools/dev/process-manager/tool.config';
+import characterToolsToolConfig from '@/tools/text/character-tools/tool.config';
 
 /**
  * 工具注册表
@@ -19,8 +20,7 @@ export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'watermark-remover': watermarkRemoverToolConfig,
   'background-remover': backgroundRemoverToolConfig,
   'process-manager': processManagerToolConfig,
-  // 未来添加更多工具:
-  // 'json-formatter': jsonFormatterToolConfig,
+  'character-tools': characterToolsToolConfig,
 };
 
 /**

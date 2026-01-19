@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, Video, Image, File, Code, Type, Wrench, Settings, Moon, Sun, Monitor, SmilePlus, Download, Activity } from 'lucide-react';
+import logo from '../../assets/logo.svg';
+import { ChevronLeft, ChevronRight, Video, Image, File, Code, Type, Wrench, Settings, Moon, Sun, Monitor, SmilePlus, Download, Activity } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
 import { TOOL_CATEGORIES } from '../tool-registry/toolRegistry';
 import type { ToolMetadata } from '../tool-registry/ToolMetadata';
@@ -23,7 +24,7 @@ function getToolIcon(iconName: string): React.ComponentType<{ className?: string
  * 侧边栏组件
  */
 export function Sidebar() {
-  const [expandedCategories] = useState<Set<string>>(new Set(['video', 'image', 'dev']));
+  const [expandedCategories] = useState<Set<string>>(new Set(['video', 'image', 'dev', 'text']));
   const { currentToolId, setCurrentToolId, sidebarCollapsed, toggleSidebar, showSettings, setShowSettings, theme, setTheme } = useAppStore();
 
   const handleToolClick = (tool: ToolMetadata) => {
@@ -72,9 +73,7 @@ export function Sidebar() {
           className={`flex items-center gap-3 hover:opacity-80 transition-opacity ${sidebarCollapsed ? 'justify-center w-full' : ''}`}
           title="返回首页"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src={logo} alt="Logo" className="w-10 h-10 flex-shrink-0" />
           {!sidebarCollapsed && (
             <div className="flex-1 min-w-0">
               <h1 className="text-base font-bold text-sidebar-foreground">Cavin Tools</h1>

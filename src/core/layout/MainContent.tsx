@@ -1,8 +1,9 @@
 import { Suspense, useMemo } from 'react';
+import logo from '../../assets/logo.svg';
 import type { ToolMetadata } from '../tool-registry/ToolMetadata';
 import { getAllTools } from '../tool-registry/toolRegistry';
 import { useAppStore } from '../store/appStore';
-import { Video, Image, File, Code, Type, Search, ArrowRight, Sparkles } from 'lucide-react';
+import { Video, Image, File, Code, Type, Search, ArrowRight } from 'lucide-react';
 import { SettingsPage } from '../settings/SettingsPage';
 
 interface MainContentProps {
@@ -55,8 +56,8 @@ function WelcomeScreen() {
         {/* Hero Section */}
         <div className="text-center mb-16 pt-8">
           {/* Logo and Title */}
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-neutral-900 dark:bg-white mb-6 shadow-lg">
-            <Sparkles className="w-8 h-8 text-white dark:text-neutral-900" />
+          <div className="inline-flex items-center justify-center w-16 h-16 mb-6">
+            <img src={logo} alt="Logo" className="w-full h-full" />
           </div>
 
           <h1 className="text-5xl font-bold text-neutral-900 dark:text-white mb-4 tracking-tight">

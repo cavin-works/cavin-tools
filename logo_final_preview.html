@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cavin Tools - Final Logo</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #111; /* Deep dark background */
+            color: white;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-weight: 300;
+            margin-bottom: 60px;
+            opacity: 0.8;
+        }
+        .section {
+            margin-bottom: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        /* App Icon Style */
+        .app-icon {
+            width: 160px;
+            height: 160px;
+            background: #000;
+            border-radius: 36px; /* Squircle */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        /* Horizontal Lockup */
+        .lockup {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px 40px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        .lockup-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 2rem;
+            letter-spacing: -0.02em;
+            color: white;
+        }
+        .lockup-text span {
+            color: #FF833A; /* Accent color matches logo top */
+        }
+
+        /* Large Showcase */
+        .showcase {
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Radial gradient background to highlight the logo */
+            background: radial-gradient(circle at center, #222 0%, #111 70%);
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Cavin Tools <span style="font-size: 0.5em; opacity: 0.5; vertical-align: middle; margin-left: 10px;">Final Concept</span></h1>
+
+    <!-- 1. App Icon -->
+    <div class="section">
+        <div class="section-title">App Icon (Dock / Taskbar)</div>
+        <div class="app-icon">
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Top Segment (Lightest Orange) -->
+                <path d="M85 30L65 10H35L15 30V45L35 25H65L85 45V30Z" fill="#FF9E66"/>
+                
+                <!-- Middle Fold (Dark Red/Orange - Slightly brightened for black bg) -->
+                <path d="M15 30V70L35 90V25L15 30Z" fill="#D84315"/>
+                
+                <!-- Bottom Segment (Main Orange) -->
+                <path d="M85 70L65 90H35L15 70V55L35 75H65L85 55V70Z" fill="#FF6D00"/>
+                
+                <!-- Shadows for depth -->
+                <path d="M15 45L35 25V35L15 55V45Z" fill="black" opacity="0.3"/>
+                <path d="M15 55V65L35 85V75L15 55Z" fill="black" opacity="0.3"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- 2. Brand Lockup -->
+    <div class="section">
+        <div class="section-title">Brand Lockup (Header / Web)</div>
+        <div class="lockup">
+            <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M85 30L65 10H35L15 30V45L35 25H65L85 45V30Z" fill="#FF9E66"/>
+                <path d="M15 30V70L35 90V25L15 30Z" fill="#D84315"/>
+                <path d="M85 70L65 90H35L15 70V55L35 75H65L85 55V70Z" fill="#FF6D00"/>
+                <path d="M15 45L35 25V35L15 55V45Z" fill="black" opacity="0.3"/>
+                <path d="M15 55V65L35 85V75L15 55Z" fill="black" opacity="0.3"/>
+            </svg>
+            <div class="lockup-text">Cavin <span>Tools</span></div>
+        </div>
+    </div>
+
+    <!-- 3. Large Detail -->
+    <div class="section">
+        <div class="section-title">Detail View</div>
+        <div class="showcase">
+            <svg width="240" height="240" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M85 30L65 10H35L15 30V45L35 25H65L85 45V30Z" fill="#FF9E66"/>
+                <path d="M15 30V70L35 90V25L15 30Z" fill="#D84315"/>
+                <path d="M85 70L65 90H35L15 70V55L35 75H65L85 55V70Z" fill="#FF6D00"/>
+                <path d="M15 45L35 25V35L15 55V45Z" fill="black" opacity="0.3"/>
+                <path d="M15 55V65L35 85V75L15 55Z" fill="black" opacity="0.3"/>
+            </svg>
+        </div>
+    </div>
+
+</body>
+</html>

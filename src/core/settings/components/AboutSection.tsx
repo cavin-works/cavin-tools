@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logo from '../../../assets/logo.svg';
 import { ExternalLink, RefreshCw, CheckCircle, Github, Heart } from 'lucide-react';
 
 const APP_VERSION = '0.1.0';
@@ -48,8 +49,8 @@ export function AboutSection() {
       {/* 应用信息卡片 */}
       <div className="p-5 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-neutral-900 dark:bg-white flex items-center justify-center flex-shrink-0">
-            <span className="text-xl font-bold text-white dark:text-neutral-900">C</span>
+          <div className="w-14 h-14 flex-shrink-0">
+            <img src={logo} alt="Logo" className="w-full h-full" />
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-1">Cavin Tools</h3>
