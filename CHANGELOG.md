@@ -1,4 +1,13 @@
-## [0.0.8](https://github.com/cavin-works/cavin-tools/compare/v0.0.7...v0.0.8) (2026-01-19)
+# [0.1.0](https://github.com/cavin-works/cavin-tools/compare/v0.0.9...v0.1.0) (2026-01-20)
+
+
+### 🐛 Bug 修复
+
+* 修复 macOS 平台进程管理和端口查询问题 ([b2f3fef](https://github.com/cavin-works/cavin-tools/commit/b2f3fef59627bae7a2c2d801b66137e9a6fb5500))
+
+
+
+## [0.0.9](https://github.com/cavin-works/cavin-tools/compare/v0.0.8...v0.0.9) (2026-01-19)
 
 
 ### 🐛 Bug 修复
