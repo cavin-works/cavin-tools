@@ -71,7 +71,7 @@ function WelcomeScreen() {
           {/* Stats */}
           <div className="flex items-center justify-center gap-6 text-sm text-neutral-500 dark:text-neutral-400">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
               <span>{allTools.length} 个工具</span>
             </div>
             <span>·</span>
@@ -160,12 +160,12 @@ function ToolCard({ tool, onClick }: ToolCardProps) {
   return (
     <button
       onClick={onClick}
-      className="group relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 p-6 text-left shadow-sm transition-all hover:shadow-md hover:border-neutral-300 dark:hover:border-neutral-700 hover:-translate-y-0.5"
+      className="group relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 p-6 text-left shadow-sm transition-all hover:shadow-md hover:border-primary/50 hover:-translate-y-0.5"
     >
       {/* Icon Container */}
       <div className="mb-4">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-700 group-hover:bg-neutral-900 dark:group-hover:bg-white transition-colors duration-200">
-          <IconComponent className="w-6 h-6 text-neutral-600 dark:text-neutral-300 group-hover:text-white dark:group-hover:text-neutral-900 transition-colors duration-200" />
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-700 group-hover:bg-primary transition-colors duration-200">
+          <IconComponent className="w-6 h-6 text-neutral-600 dark:text-neutral-300 group-hover:text-primary-foreground transition-colors duration-200" />
         </div>
       </div>
 
@@ -187,7 +187,7 @@ function ToolCard({ tool, onClick }: ToolCardProps) {
       </p>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors">
+      <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 group-hover:text-primary transition-colors">
         <span className="font-medium">开始使用</span>
         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
       </div>
