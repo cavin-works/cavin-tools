@@ -237,31 +237,50 @@ fn query_port_unix(port: u16) -> Result<Vec<PortInfo>, String> {
 
                 // lsof 输出格式示例:
                 // COMMAND   PID USER   FD   TYPE  DEVICE SIZE/OFF NODE NAME
-                // node    12345 user   21u  IPv4  123456      0t0  TCP *:3000 (LISTEN)
+                // node    12345 user   21u  IPv4  123456      0t0  TCP [::1]:3000 (LISTEN)
+                // node    12345 user   37u  IPv4  123456      0t0  TCP [::1]:3000->[::1]:58109 (ESTABLISHED)
                 let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() < 8 {
+                if parts.len() < 9 {
                     continue;
                 }
 
                 let process_name = parts[0].to_string();
                 let pid = parts[1].parse::<u32>().unwrap_or(0);
-                let protocol = if parts.len() > 4 { parts[4].to_string() } else { "TCP".to_string() };
-                let address_part = parts.last().unwrap_or(&"");
 
-                // 从地址中提取端口
-                if let Some(port_str) = address_part.split(':').last() {
-                    if let Ok(local_port) = port_str.parse::<u16>() {
-                        if local_port == port {
-                            ports.push(PortInfo {
-                                port: local_port,
-                                protocol,
-                                local_address: address_part.to_string(),
-                                remote_address: None,
-                                pid,
-                                process_name,
-                                state: "LISTENING".to_string(),
-                            });
-                        }
+                // 找到协议字段（TCP 或 UDP）的索引
+                let protocol_idx = parts.iter()
+                    .position(|&p| p == "TCP" || p == "UDP")
+                    .unwrap_or(7);
+
+                let protocol = parts.get(protocol_idx).unwrap_or(&"TCP").to_string();
+
+                // 从协议字段之后的所有内容组成完整地址字符串
+                // 因为 NAME 字段可能包含空格，如 (ESTABLISHED)
+                let address_str = parts[protocol_idx + 1..].join(" ");
+
+                // 从地址字符串中提取本地端口
+                // 格式: [::1]:1421 (LISTEN) 或 [::1]:1421->[::1]:49224 (ESTABLISHED)
+                let local_port: Option<u16> = extract_local_port(&address_str);
+
+                if let Some(parsed_port) = local_port {
+                    if parsed_port == port {
+                        let state = if address_str.contains("LISTEN") {
+                            "LISTENING".to_string()
+                        } else if address_str.contains("ESTABLISHED") {
+                            "ESTABLISHED".to_string()
+                        } else {
+                            "UNKNOWN".to_string()
+                        };
+
+                        ports.push(PortInfo {
+                            port: parsed_port,
+                            protocol,
+                            local_address: address_str.clone(),
+                            remote_address: None,
+                            pid,
+                            process_name,
+                            state,
+                        });
                     }
                 }
             }
@@ -330,6 +349,32 @@ pub fn kill_port_process(port: u16) -> Result<Vec<String>, String> {
         Err("未能成功终止任何进程".to_string())
     } else {
         Ok(results)
+    }
+}
+
+/// 从地址字符串中提取本地端口
+/// 格式: [::1]:1421 (LISTEN) 或 [::1]:1421->[::1]:49224 (ESTABLISHED)
+fn extract_local_port(address_str: &str) -> Option<u16> {
+    if let Some(bracket_start) = address_str.find('[') {
+        let addr_part = &address_str[bracket_start..];
+
+        let addr_end = if let Some(space_pos) = addr_part.find(' ') {
+            space_pos
+        } else if let Some(paren_pos) = addr_part.find('(') {
+            paren_pos
+        } else {
+            addr_part.len()
+        };
+
+        let addr = &addr_part[..addr_end];
+
+        if addr.contains("->") {
+            addr.split("->").next()?.split(':').last()?.parse::<u16>().ok()
+        } else {
+            addr.split(':').last()?.parse::<u16>().ok()
+        }
+    } else {
+        None
     }
 }
 

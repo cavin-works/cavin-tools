@@ -76,8 +76,9 @@ fn list_processes_windows() -> Result<Vec<ProcessInfo>, String> {
 /// Unix平台获取进程列表
 #[cfg(not(target_os = "windows"))]
 fn list_processes_unix() -> Result<Vec<ProcessInfo>, String> {
+    // 使用兼容 Mac 和 Linux 的 ps 命令格式
     let output = Command::new("sh")
-        .args(["-c", "ps -eo pid,comm,rss --no-headers"])
+        .args(["-c", "ps -e -o pid,comm,rss"])
         .output()
         .map_err(|e| format!("执行 ps 命令失败: {}", e))?;
 
@@ -88,8 +89,13 @@ fn list_processes_unix() -> Result<Vec<ProcessInfo>, String> {
     let content = String::from_utf8_lossy(&output.stdout);
     let mut processes = Vec::new();
 
-    for line in content.lines() {
+    for (index, line) in content.lines().enumerate() {
         if line.trim().is_empty() {
+            continue;
+        }
+
+        // 跳过第一行 header
+        if index == 0 {
             continue;
         }
 
