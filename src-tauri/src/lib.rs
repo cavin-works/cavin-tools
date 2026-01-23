@@ -1,15 +1,12 @@
-// Prevents additional console window on Windows in release
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-use tauri::Emitter;
-
-// 导出模块
-pub mod ffmpeg;
-pub mod models;
-pub mod image_converter;
-pub mod watermark_remover;
-pub mod background_remover;
 pub mod process_manager;
+pub mod network_capture;
+    pub mod certificate;
+    pub mod proxy;
+    pub mod store;
+    pub mod types;
+    pub mod process_list;
+    pub mod redirector;
+    pub mod windivert_download;
 
 // 导入进程管理命令
 use process_manager::{get_processes, search_processes, kill_process_command, query_port_command, kill_port_command, query_ports_by_pid_command};
