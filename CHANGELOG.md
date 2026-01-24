@@ -1,6 +1,11 @@
 # [0.1.0](https://github.com/cavin-works/cavin-tools/compare/v0.1.2...v0.1.0) (2026-01-24)
 
 
+### 🐛 Bug 修复
+
+* 删除对已删除的 packet-capture 工具的引用 ([d7667a7](https://github.com/cavin-works/cavin-tools/commit/d7667a7ffeba00fc4a39b3441d6e0f07590b6163))
+
+
 
 ## [0.1.2](https://github.com/cavin-works/cavin-tools/compare/v0.1.1...v0.1.2) (2026-01-24)
 
