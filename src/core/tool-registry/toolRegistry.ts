@@ -6,7 +6,6 @@ import watermarkRemoverToolConfig from '@/tools/image/watermark-remover/tool.con
 import backgroundRemoverToolConfig from '@/tools/image/background-remover/tool.config';
 import processManagerToolConfig from '@/tools/dev/process-manager/tool.config';
 import characterToolsToolConfig from '@/tools/text/character-tools/tool.config';
-import packetCaptureToolConfig from '@/tools/network/packet-capture/tool.config';
 
 /**
  * 工具注册表
@@ -22,7 +21,6 @@ export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'background-remover': backgroundRemoverToolConfig,
   'process-manager': processManagerToolConfig,
   'character-tools': characterToolsToolConfig,
-  'packet-capture': packetCaptureToolConfig,
 };
 
 /**
