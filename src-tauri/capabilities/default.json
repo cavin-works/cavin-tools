@@ -10,7 +10,6 @@
     "updater:allow-check",
     "updater:allow-download",
     "updater:allow-install",
-    "updater:allow-download-and-install",
-    "process:allow-relaunch"
+    "updater:allow-download-and-install"
   ]
 }
