@@ -1,3 +1,22 @@
+## [0.1.2](https://github.com/cavin-works/cavin-tools/compare/v0.1.1...v0.1.2) (2026-01-24)
+
+
+### 🐛 Bug 修复
+
+* 修复 release.yml 版本更新语法错误 ([95bbd60](https://github.com/cavin-works/cavin-tools/commit/95bbd60deabdba0478851a5240dba846ed39f6bd))
+
+
+
+## [0.1.1](https://github.com/cavin-works/cavin-tools/compare/v0.1.0...v0.1.1) (2026-01-24)
+
+
+### ✨ 新功能
+
+* 添加 Tauri 2 自动更新功能 ([d46220e](https://github.com/cavin-works/cavin-tools/commit/d46220edf8116572fef73a1aad05b2764bb005c3))
+* 添加网络捕获工具模块 ([a2ca980](https://github.com/cavin-works/cavin-tools/commit/a2ca9804ca17eb4969c1fd1538de2d0e1c7545cb))
+
+
+
 # [0.1.0](https://github.com/cavin-works/cavin-tools/compare/v0.0.9...v0.1.0) (2026-01-20)
 
 
