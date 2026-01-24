@@ -128,15 +128,15 @@ jobs:
         run: |
           node -e "
             const fs = require('fs');
-            
+
             const VERSION = process.env.VERSION;
             const NOTES = process.env.NOTES || '暂无更新内容';
             const repoOwner = process.env.REPO_OWNER;
             const repoName = process.env.REPO_NAME;
-            
+
             console.log('Generating latest.json for version:', VERSION);
             console.log('Release notes length:', NOTES ? NOTES.length : 0);
-            
+
             const latest = {
               version: VERSION,
               notes: NOTES,
@@ -152,7 +152,7 @@ jobs:
                 }
               }
             };
-            
+
             fs.writeFileSync('latest.json', JSON.stringify(latest, null, 2));
             console.log('Generated latest.json');
           "
