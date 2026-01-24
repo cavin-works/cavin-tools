@@ -1,6 +1,6 @@
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager};
-use tauri_plugin_updater::{Update, UpdaterExt};
+use tauri::{AppHandle, Emitter};
+use tauri_plugin_updater::UpdaterExt;
 
 #[derive(Debug, thiserror::Error)]
 pub enum UpdateError {
@@ -62,7 +62,7 @@ pub async fn check_update_impl(app: &AppHandle) -> UpdateResult<Option<UpdateInf
             let info = UpdateInfo {
                 version: update.version.clone(),
                 body: update.body.clone().unwrap_or_default(),
-                date: update.date.clone().unwrap_or_default(),
+                date: update.date.as_ref().map(|d| d.to_string()).unwrap_or_default(),
                 current_version: update.current_version.clone(),
             };
             Ok(Some(info))
@@ -93,7 +93,7 @@ pub async fn download_and_install_update(
             if !has_started {
                 let _ = window.emit(
                     "update-download",
-                    serde_json::to_string(&DownloadEvent::Started { content_length })
+                    DownloadEvent::Started { content_length }
                 );
                 has_started = true;
             }
@@ -104,7 +104,7 @@ pub async fn download_and_install_update(
                 }
             }
             
-            downloaded += chunk_length;
+            downloaded += chunk_length as u64;
             let percentage = if total > 0 {
                 (downloaded as f64 / total as f64) * 100.0
             } else {
@@ -113,17 +113,17 @@ pub async fn download_and_install_update(
             
             let _ = window.emit(
                 "update-download",
-                serde_json::to_string(&DownloadEvent::Progress {
+                DownloadEvent::Progress {
                     downloaded,
                     total,
                     percentage,
-                })
+                }
             );
         },
         || {
             let _ = window.emit(
                 "update-download",
-                serde_json::to_string(&DownloadEvent::Finished)
+                DownloadEvent::Finished
             );
         },
     ).await?;
