@@ -73,23 +73,11 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
           # Update package.json
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json'));
-            pkg.version = '$VERSION';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
+          node scripts/update-version.cjs $VERSION
           # Update Cargo.toml
           cd src-tauri
           sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
           rm -f Cargo.toml.bak
-          # Update tauri.conf.json
-          node -e "
-            const fs = require('fs');
-            const config = JSON.parse(fs.readFileSync('tauri.conf.json'));
-            config.version = '$VERSION';
-            fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2) + '\n';
-          "
           echo "Updated version to $VERSION"
 
       - name: Generate CHANGELOG
