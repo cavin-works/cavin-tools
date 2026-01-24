@@ -3,7 +3,13 @@
 
 ### 🐛 Bug 修复
 
+* 临时禁用 updater 构件以避免签名错误 ([ffd265b](https://github.com/cavin-works/cavin-tools/commit/ffd265b7d07c1b0e10b16df2178853dba2aa6f81))
+* 修复 Tauri 插件版本不匹配和编译错误 ([4d6b8a6](https://github.com/cavin-works/cavin-tools/commit/4d6b8a618f1b8a4c81586a5dd80939d8aa142782))
 * 删除对已删除的 packet-capture 工具的引用 ([d7667a7](https://github.com/cavin-works/cavin-tools/commit/d7667a7ffeba00fc4a39b3441d6e0f07590b6163))
+* 启用 tauri.conf.json 中的 createUpdaterArtifacts 选项 ([e47f290](https://github.com/cavin-works/cavin-tools/commit/e47f2900ec57767823588baf16f465aea208a6e0))
+* 更新 release.yml 和 tauri.conf.json 配置 ([0ab7097](https://github.com/cavin-works/cavin-tools/commit/0ab70973150f0f927220b0feab89788edc591ba2))
+* 添加 process:allow-restart 权限以支持重启功能 ([316a727](https://github.com/cavin-works/cavin-tools/commit/316a7270c420e0d353d9975890abc552482bc19c))
+* 移除 process 插件的 relaunch 权限 ([70b2636](https://github.com/cavin-works/cavin-tools/commit/70b2636a3db88fabd3869704e4fd8862f9417ce6))
 
 
 
