@@ -118,12 +118,21 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
+  # 单独的 job 上传 latest.json，等待所有构建完成后执行
+  upload-latest:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Generate latest.json
-        if: matrix.generate-changelog == true
         shell: bash
         env:
-          VERSION: ${{ steps.get_version.outputs.VERSION }}
-          NOTES: ${{ steps.changelog.outputs.NOTES }}
+          VERSION: ${{ needs.release.outputs.version }}
+          NOTES: ${{ needs.release.outputs.notes }}
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
@@ -159,10 +168,9 @@ jobs:
           "
 
       - name: Upload latest.json to Release
-        if: matrix.generate-changelog == true
         uses: softprops/action-gh-release@v2
         with:
           files: latest.json
-          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
