@@ -34,6 +34,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/icon.png",
@@ -43,6 +44,15 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA5MkM0MUNDODg5MkIzODQKUldTRXM1S0l6RUVzQ2M3UG9Bby9NS0dQakJUamozTUVlZWRjR3FPSXgrUW1sT21hc3hvTjhPVmwK",
+      "endpoints": [
+        "https://github.com/cavin-works/cavin-tools/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

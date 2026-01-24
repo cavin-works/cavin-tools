@@ -1,12 +1,12 @@
+use tauri::Emitter;
+
 pub mod process_manager;
-pub mod network_capture;
-    pub mod certificate;
-    pub mod proxy;
-    pub mod store;
-    pub mod types;
-    pub mod process_list;
-    pub mod redirector;
-    pub mod windivert_download;
+pub mod ffmpeg;
+pub mod image_converter;
+pub mod watermark_remover;
+pub mod background_remover;
+pub mod models;
+pub mod updater;
 
 // 导入进程管理命令
 use process_manager::{get_processes, search_processes, kill_process_command, query_port_command, kill_port_command, query_ports_by_pid_command};
@@ -408,6 +408,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             check_ffmpeg,
             download_ffmpeg,
@@ -433,7 +435,9 @@ pub fn run() {
             kill_process_command,
             query_port_command,
             kill_port_command,
-            query_ports_by_pid_command
+            query_ports_by_pid_command,
+            updater::check_update,
+            updater::download_and_install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

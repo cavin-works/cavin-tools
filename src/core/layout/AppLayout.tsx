@@ -3,6 +3,9 @@ import { useAppStore } from '../store/appStore';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { getToolById } from '../tool-registry/toolRegistry';
+import { checkUpdate } from '@/lib/updateUtils';
+import { UpdateDialog } from '@/components/UpdateDialog';
+import { UpdateCompleteDialog } from '@/components/UpdateCompleteDialog';
 
 /**
  * 主应用布局
@@ -10,7 +13,17 @@ import { getToolById } from '../tool-registry/toolRegistry';
  * 侧边栏 + 主内容区的整体布局
  */
 export function AppLayout() {
-  const { currentToolId, setCurrentToolId, settings, theme } = useAppStore();
+  const { 
+    currentToolId, 
+    setCurrentToolId, 
+    settings, 
+    theme,
+    showUpdateDialog,
+    showUpdateCompleteDialog,
+    setShowUpdateDialog,
+    setShowUpdateCompleteDialog,
+    setUpdateAvailable
+  } = useAppStore();
 
   // 初始化默认工具
   useEffect(() => {
@@ -21,6 +34,26 @@ export function AppLayout() {
       }
     }
   }, [currentToolId, settings.defaultTool, setCurrentToolId]);
+
+  // 启动时静默检查更新
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const update = await checkUpdate();
+        
+        if (update) {
+          setUpdateAvailable(true, update);
+          setShowUpdateDialog(true);
+        }
+      } catch (err) {
+        console.error('检查更新失败:', err);
+      }
+    };
+
+    const timer = setTimeout(checkForUpdates, 2000);
+    
+    return () => clearTimeout(timer);
+  }, [setUpdateAvailable, setShowUpdateDialog]);
 
   // 应用主题到 document
   useEffect(() => {
@@ -47,6 +80,14 @@ export function AppLayout() {
     <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden">
       <Sidebar />
       <MainContent tool={currentTool} />
+      <UpdateDialog 
+        open={showUpdateDialog} 
+        onOpenChange={setShowUpdateDialog} 
+      />
+      <UpdateCompleteDialog 
+        open={showUpdateCompleteDialog} 
+        onOpenChange={setShowUpdateCompleteDialog} 
+      />
     </div>
   );
 }

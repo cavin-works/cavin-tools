@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import logo from '../../../assets/logo.svg';
 import { ExternalLink, RefreshCw, CheckCircle, Github, Heart } from 'lucide-react';
+import { checkUpdate } from '@/lib/updateUtils';
+import { useAppStore } from '@/core/store/appStore';
 
 const APP_VERSION = '0.1.0';
 const BUILD_DATE = '2026-01';
@@ -15,14 +17,30 @@ const isTauri = () => '__TAURI__' in window;
 export function AboutSection() {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'latest' | 'available'>('idle');
+  const { setUpdateAvailable, setShowUpdateDialog } = useAppStore();
 
   // 检查更新
   const handleCheckUpdate = async () => {
     setIsCheckingUpdate(true);
     setUpdateStatus('idle');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsCheckingUpdate(false);
-    setUpdateStatus('latest');
+    
+    try {
+      const update = await checkUpdate();
+      
+      setIsCheckingUpdate(false);
+      
+      if (update) {
+        setUpdateStatus('available');
+        setUpdateAvailable(true, update);
+        setShowUpdateDialog(true);
+      } else {
+        setUpdateStatus('latest');
+      }
+    } catch (err) {
+      console.error('检查更新失败:', err);
+      setIsCheckingUpdate(false);
+      setUpdateStatus('latest');
+    }
   };
 
   // 打开外部链接

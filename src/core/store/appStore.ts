@@ -5,6 +5,7 @@ import {
   DEFAULT_COLOR_THEME,
   applyColorTheme,
 } from '../theme/themeConfig';
+import type { UpdateInfo, DownloadProgress, UpdateStatus } from '@/lib/updateUtils';
 
 /**
  * 应用设置
@@ -26,6 +27,25 @@ interface AppState {
   currentToolId: string | null;
   /** 设置当前工具 */
   setCurrentToolId: (toolId: string | null) => void;
+
+  /** 更新状态 */
+  updateAvailable: boolean;
+  updateInfo: UpdateInfo | null;
+  updateStatus: UpdateStatus;
+  updateProgress: DownloadProgress;
+
+  /** 对话框状态 */
+  showUpdateDialog: boolean;
+  showUpdateCompleteDialog: boolean;
+
+  /** 更新操作 */
+  setUpdateAvailable: (available: boolean, info?: UpdateInfo) => void;
+  setUpdateStatus: (status: UpdateStatus) => void;
+  setUpdateProgress: (progress: DownloadProgress) => void;
+  setShowUpdateDialog: (show: boolean) => void;
+  setShowUpdateCompleteDialog: (show: boolean) => void;
+  clearUpdate: () => void;
+  skipCurrentVersion: () => void;
 
   /** 最近使用的工具 ID 列表 */
   recentTools: string[];
@@ -73,6 +93,44 @@ export const useAppStore = create<AppState>()(
         // 自动添加到最近使用
         if (toolId) {
           get().addRecentTool(toolId);
+        }
+      },
+
+      // 更新状态
+      updateAvailable: false,
+      updateInfo: null,
+      updateStatus: 'idle',
+      updateProgress: { downloaded: 0, total: 0, percentage: 0 },
+
+      // 对话框状态
+      showUpdateDialog: false,
+      showUpdateCompleteDialog: false,
+
+      // 更新操作
+      setUpdateAvailable: (available, info) =>
+        set({ updateAvailable: available, updateInfo: info || null }),
+      setUpdateStatus: (status) => set({ updateStatus: status }),
+      setUpdateProgress: (progress) => set({ updateProgress: progress }),
+      setShowUpdateDialog: (show) => set({ showUpdateDialog: show }),
+      setShowUpdateCompleteDialog: (show) => set({ showUpdateCompleteDialog: show }),
+      clearUpdate: () => set({
+        updateAvailable: false,
+        updateInfo: null,
+        updateStatus: 'idle',
+        updateProgress: { downloaded: 0, total: 0, percentage: 0 },
+      }),
+      skipCurrentVersion: () => {
+        const { updateInfo } = get();
+        if (updateInfo) {
+          try {
+            localStorage.setItem('cavin-tools-skipped-version', updateInfo.version);
+          } catch (error) {
+            console.error('保存跳过版本失败:', error);
+          }
+          set({
+            showUpdateDialog: false,
+            updateAvailable: false,
+          });
         }
       },
 

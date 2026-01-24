@@ -25,6 +25,9 @@ jobs:
             args: ""
 
     runs-on: ${{ matrix.platform }}
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+      notes: ${{ steps.changelog.outputs.NOTES }}
 
     steps:
       - name: Checkout repository
@@ -85,7 +88,7 @@ jobs:
             const fs = require('fs');
             const config = JSON.parse(fs.readFileSync('tauri.conf.json'));
             config.version = '$VERSION';
-            fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
+            fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2) + '\n';
           "
           echo "Updated version to $VERSION"
 
@@ -109,24 +112,15 @@ jobs:
           else
             echo "⏭️  跳过提交（由第一个平台处理）"
           fi
-
-          # 保存 notes 到 output（所有平台都需要）
-          # 使用 RUNNER_TEMP 获取跨平台临时目录
-          NOTES_FILE="${RUNNER_TEMP}/release_notes.txt"
-          # 使用随机 delimiter 避免内容冲突
-          DELIMITER="RELEASE_NOTES_$(date +%s)"
-          echo "NOTES<<${DELIMITER}" >> $GITHUB_OUTPUT
-          cat "$NOTES_FILE" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "${DELIMITER}" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      - name: Build the app
+      - name: Build app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Cavin Tools ${{ github.ref_name }}"
@@ -134,3 +128,52 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Generate latest.json
+        if: matrix.generate-changelog == true
+        shell: bash
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+          NOTES: ${{ steps.changelog.outputs.NOTES }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            
+            const VERSION = process.env.VERSION;
+            const NOTES = process.env.NOTES || '暂无更新内容';
+            const repoOwner = process.env.REPO_OWNER;
+            const repoName = process.env.REPO_NAME;
+            
+            console.log('Generating latest.json for version:', VERSION);
+            console.log('Release notes length:', NOTES ? NOTES.length : 0);
+            
+            const latest = {
+              version: VERSION,
+              notes: NOTES,
+              pub_date: new Date().toISOString(),
+              platforms: {
+                'windows-x86_64': {
+                  url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Cavin-Tools_' + VERSION + '_x64-setup.nsis.zip',
+                  signature: ''
+                },
+                'darwin-aarch64': {
+                  url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Cavin Tools_' + VERSION + '_aarch64.app.tar.gz',
+                  signature: ''
+                }
+              }
+            };
+            
+            fs.writeFileSync('latest.json', JSON.stringify(latest, null, 2));
+            console.log('Generated latest.json');
+          "
+
+      - name: Upload latest.json to Release
+        if: matrix.generate-changelog == true
+        uses: softprops/action-gh-release@v2
+        with:
+          files: latest.json
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
