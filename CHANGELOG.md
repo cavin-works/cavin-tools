@@ -9,6 +9,7 @@
 * 启用 tauri.conf.json 中的 createUpdaterArtifacts 选项 ([e47f290](https://github.com/cavin-works/cavin-tools/commit/e47f2900ec57767823588baf16f465aea208a6e0))
 * 更新 release.yml 和 tauri.conf.json 配置 ([0ab7097](https://github.com/cavin-works/cavin-tools/commit/0ab70973150f0f927220b0feab89788edc591ba2))
 * 添加 process:allow-restart 权限以支持重启功能 ([316a727](https://github.com/cavin-works/cavin-tools/commit/316a7270c420e0d353d9975890abc552482bc19c))
+* 添加 TAURI_SIGNING_PRIVATE_KEY_PASSWORD 环境变量以支持签名 ([a921b7c](https://github.com/cavin-works/cavin-tools/commit/a921b7c9474217d11b1fa8e596074272089358d9))
 * 移除 process 插件的 relaunch 权限 ([70b2636](https://github.com/cavin-works/cavin-tools/commit/70b2636a3db88fabd3869704e4fd8862f9417ce6))
 
 
