@@ -168,9 +168,8 @@ jobs:
           "
 
       - name: Upload latest.json to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: latest.json
-          tag_name: ${{ github.ref_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 如果文件已存在，先删除再上传
+          gh release upload ${{ github.ref_name }} latest.json --clobber
