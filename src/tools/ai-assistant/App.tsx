@@ -64,9 +64,9 @@ type View =
   | "agents"
   | "universal";
 
-// When used as a tool inside cavin-tools, we don't need window drag regions
+// When used as a tool inside cavin-tools, we use a compact header
 // The parent AppLayout handles the window chrome
-const HEADER_HEIGHT = 64; // px
+const HEADER_HEIGHT = 52; // px - compact header for tool mode
 
 function App() {
   const { t } = useTranslation();
@@ -647,7 +647,7 @@ function App() {
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden bg-background text-foreground selection:bg-primary/30"
+      className="flex flex-col h-full overflow-hidden text-neutral-900 dark:text-neutral-100 selection:bg-primary/30"
       style={{ overflowX: "hidden" }}
     >
       {/* 环境变量警告横幅 */}
@@ -678,15 +678,15 @@ function App() {
       )}
 
       <header
-        className="sticky top-0 z-50 w-full transition-all duration-300 bg-background/80 backdrop-blur-md"
+        className="sticky top-0 z-40 w-full pt-3"
         style={{ height: HEADER_HEIGHT }}
       >
-        <div className="flex h-full items-center justify-between gap-2 px-6">
+        <div className="flex h-full items-center justify-between gap-3 px-4 pb-3">
           <div className="flex items-center gap-1">
             {currentView !== "providers" ? (
               <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={() =>
                     setCurrentView(
@@ -695,11 +695,11 @@ function App() {
                         : "providers",
                     )
                   }
-                  className="mr-2 rounded-lg"
+                  className="mr-2 rounded-lg hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50"
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
-                <h1 className="text-lg font-semibold">
+                <h1 className="text-lg font-semibold text-foreground">
                   {currentView === "settings" && t("settings.title")}
                   {currentView === "prompts" &&
                     t("prompts.title", { appName: t(`apps.${activeApp}`) })}
@@ -724,10 +724,10 @@ function App() {
                       "text-xl font-semibold transition-colors",
                       isProxyRunning && isCurrentAppTakeoverActive
                         ? "text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
-                        : "text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300",
+                        : "text-foreground hover:text-foreground/80",
                     )}
                   >
-                    CC Switch
+                    AI 助手
                   </a>
                 </div>
                 <Button
@@ -738,7 +738,7 @@ function App() {
                     setCurrentView("settings");
                   }}
                   title={t("common.settings")}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
@@ -759,7 +759,7 @@ function App() {
                     title={t("settings.usage.title", {
                       defaultValue: "使用统计",
                     })}
-                    className="hover:bg-black/5 dark:hover:bg-white/5"
+                    className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                   >
                     <BarChart2 className="w-4 h-4" />
                   </Button>
@@ -774,7 +774,7 @@ function App() {
                 variant="ghost"
                 size="sm"
                 onClick={() => promptPanelRef.current?.openAdd()}
-                className="hover:bg-black/5 dark:hover:bg-white/5"
+                className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {t("prompts.add")}
@@ -786,7 +786,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => mcpPanelRef.current?.openImport()}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {t("mcp.importExisting")}
@@ -795,7 +795,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => mcpPanelRef.current?.openAdd()}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   {t("mcp.addMcp")}
@@ -808,7 +808,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => unifiedSkillsPanelRef.current?.openImport()}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   {t("skills.import")}
@@ -817,7 +817,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setCurrentView("skillsDiscovery")}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <Search className="w-4 h-4 mr-2" />
                   {t("skills.discover")}
@@ -830,7 +830,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => skillsPageRef.current?.refresh()}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   {t("skills.refresh")}
@@ -839,7 +839,7 @@ function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => skillsPageRef.current?.openRepoManager()}
-                  className="hover:bg-black/5 dark:hover:bg-white/5"
+                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   {t("skills.repoManager")}
@@ -880,7 +880,7 @@ function App() {
                     size="sm"
                     onClick={() => setCurrentView("skills")}
                     className={cn(
-                      "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                      "text-muted-foreground hover:text-foreground hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30",
                       "transition-all duration-200 ease-in-out overflow-hidden",
                       hasSkillsSupport
                         ? "opacity-100 w-8 scale-100 px-2"
@@ -896,7 +896,7 @@ function App() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setCurrentView("agents")}
-                        className="text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                        className="text-muted-foreground hover:text-foreground hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                         title="Agents"
                       >
                         <Bot className="w-4 h-4" />
@@ -906,7 +906,7 @@ function App() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setCurrentView("prompts")}
-                    className="text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                    className="text-muted-foreground hover:text-foreground hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                     title={t("prompts.manage")}
                   >
                     <Book className="w-4 h-4" />
@@ -915,7 +915,7 @@ function App() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setCurrentView("mcp")}
-                    className="text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                    className="text-muted-foreground hover:text-foreground hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
                     title={t("mcp.title")}
                   >
                     <McpIcon size={16} />

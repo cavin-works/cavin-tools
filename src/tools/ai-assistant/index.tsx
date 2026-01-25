@@ -12,14 +12,14 @@ import './i18n';
  * AI Assistant Tool Entry Point
  * 
  * This component wraps the CC Switch application as a tool
- * in the Cavin Tools toolkit.
+ * in the Cavin Tools toolkit. It follows the parent app's theme.
  */
 export default function AIAssistant() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="cc-switch-theme">
+      <ThemeProvider defaultTheme="system" storageKey="ai-assistant-theme">
         <UpdateProvider>
-          <div className="ai-assistant-root ai-assistant-container h-full overflow-auto">
+          <div className="ai-assistant-root h-full">
             <App />
             <Toaster />
           </div>

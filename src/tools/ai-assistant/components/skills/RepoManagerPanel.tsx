@@ -145,7 +145,7 @@ export function RepoManagerPanel({
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 glass-card rounded-xl p-4">
             {repos.map((repo) => (
               <div
                 key={`${repo.owner}/${repo.name}`}

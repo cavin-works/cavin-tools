@@ -17,91 +17,75 @@ interface ThemeProviderProps {
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  resolvedTheme: "light" | "dark";
 }
 
 const ThemeProviderContext = createContext<ThemeContextValue | undefined>(
   undefined,
 );
 
+/**
+ * ThemeProvider for AI Assistant
+ * 
+ * When running inside Cavin Tools, we observe the parent app's theme
+ * by watching the `dark` class on document.documentElement.
+ * We don't actively modify the theme - we follow the main app's theme.
+ */
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "cc-switch-theme",
 }: ThemeProviderProps) {
-  const getInitialTheme = () => {
-    if (typeof window === "undefined") {
-      return defaultTheme;
-    }
-
-    const stored = window.localStorage.getItem(storageKey) as Theme | null;
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      return stored;
-    }
-
-    return defaultTheme;
+  // Observe the current theme from document.documentElement
+  const getResolvedTheme = (): "light" | "dark" => {
+    if (typeof window === "undefined") return "light";
+    return document.documentElement.classList.contains("dark") ? "dark" : "light";
   };
 
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(getResolvedTheme);
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return defaultTheme;
+    const stored = localStorage.getItem(storageKey) as Theme | null;
+    return stored || defaultTheme;
+  });
 
+  // Watch for theme changes from the main app
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
-    window.localStorage.setItem(storageKey, theme);
-  }, [theme, storageKey]);
+    const observer = new MutationObserver(() => {
+      setResolvedTheme(getResolvedTheme());
+    });
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const isDark =
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.add(isDark ? "dark" : "light");
-      return;
-    }
-
-    root.classList.add(theme);
-  }, [theme]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    // Also listen for system preference changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => {
-      if (theme !== "system") {
-        return;
-      }
-
-      const root = window.document.documentElement;
-      root.classList.toggle("dark", mediaQuery.matches);
-      root.classList.toggle("light", !mediaQuery.matches);
-    };
-
-    if (theme === "system") {
-      handleChange();
-    }
-
+    const handleChange = () => setResolvedTheme(getResolvedTheme());
     mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
+
+    return () => {
+      observer.disconnect();
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
+  // Save theme preference (for AI Assistant's own settings)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(storageKey, theme);
+  }, [theme, storageKey]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
-      setTheme: (nextTheme: Theme) => {
-        setThemeState(nextTheme);
-      },
+      setTheme: setThemeState,
+      resolvedTheme,
     }),
-    [theme],
+    [theme, resolvedTheme],
   );
 
   return (

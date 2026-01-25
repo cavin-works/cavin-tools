@@ -98,7 +98,7 @@ export function RepoManager({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0">
+      <DialogContent className="max-w-xl max-h-[80vh] flex flex-col p-0">
         {/* 固定头部 */}
         <DialogHeader className="flex-shrink-0 border-b border-border-default px-6 py-4">
           <DialogTitle>{t("skills.repo.title")}</DialogTitle>

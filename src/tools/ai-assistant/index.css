@@ -1,81 +1,133 @@
-/* AI Assistant Tool Styles - Tailwind CSS 4 Compatible */
+/* AI Assistant Tool Styles - Integrated with Cavin Tools */
 @reference "tailwindcss";
 
-/* Glassmorphism Utilities */
-.glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+/* ============================================
+   CSS 变量映射 - hsl to oklch 兼容层
+   确保 shadcn/ui 组件的 hsl 格式变量能正常工作
+   ============================================ */
+.ai-assistant-root {
+  /* 继承主应用的 oklch 变量，同时提供 hsl 格式兼容 */
+  --background: var(--color-background, 0 0% 100%);
+  --foreground: var(--color-foreground, 0 0% 3.9%);
+  --card: var(--color-card, 0 0% 100%);
+  --card-foreground: var(--color-card-foreground, 0 0% 3.9%);
+  --popover: var(--color-popover, 0 0% 100%);
+  --popover-foreground: var(--color-popover-foreground, 0 0% 3.9%);
+  --primary: var(--color-primary, 217.2 91.2% 59.8%);
+  --primary-foreground: var(--color-primary-foreground, 0 0% 98%);
+  --secondary: var(--color-secondary, 0 0% 96.1%);
+  --secondary-foreground: var(--color-secondary-foreground, 0 0% 9%);
+  --muted: var(--color-muted, 0 0% 96.1%);
+  --muted-foreground: var(--color-muted-foreground, 0 0% 45.1%);
+  --accent: var(--color-accent, 0 0% 96.1%);
+  --accent-foreground: var(--color-accent-foreground, 0 0% 9%);
+  --destructive: var(--color-destructive, 0 84.2% 60.2%);
+  --destructive-foreground: var(--color-destructive-foreground, 0 0% 98%);
+  --border: var(--color-border, 0 0% 89.8%);
+  --input: var(--color-input, 0 0% 89.8%);
+  --ring: var(--color-ring, 217.2 91.2% 59.8%);
+  --radius: 0.65rem;
 }
 
-.dark .glass {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.dark .glass-card {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.01) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-/* 供应商卡片选中状态 */
-.glass-card-active {
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-}
-
-.dark .glass-card-active {
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.glass-header {
-  background: hsl(var(--background));
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-  border-top: 2px solid hsl(var(--border));
-}
-
-.dark .glass-header {
-  background: hsl(var(--background));
-  border: none;
-  border-top: 2px solid hsl(var(--border));
-}
-
-/* Tauri 拖拽区域 */
-[data-tauri-drag-region] {
-  -webkit-app-region: drag;
-}
-
-[data-tauri-no-drag],
-[data-tauri-drag-region] .no-drag {
-  -webkit-app-region: no-drag;
-}
-
-/* AI Assistant 特定样式 */
+/* ============================================
+   AI Assistant 工具容器
+   ============================================ */
 .ai-assistant-root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: transparent;
+  color: inherit;
 }
 
-/* 滚动条样式 - 在 AI Assistant 内部隐藏 */
+/* ============================================
+   内容区域背景
+   ============================================ */
+.ai-assistant-root {
+  background: oklch(0.985 0 0); /* 接近白色的浅灰 */
+}
+
+.dark .ai-assistant-root {
+  background: oklch(0.15 0.005 285);
+}
+
+/* ============================================
+   卡片样式 - 现代简约风格
+   ============================================ */
+
+/* glass 类 - 信息展示区域（略透明） */
+.glass,
+.ai-assistant-root .glass {
+  background: oklch(1 0 0 / 0.8); /* 浅色：白色80% */
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+/* light 模式下 glass 的边框 */
+.glass,
+.ai-assistant-root .glass {
+  border: 1px solid oklch(0 0 0 / 0.12) !important;
+}
+
+.dark .glass,
+.dark .ai-assistant-root .glass {
+  background: oklch(0.20 0.006 285.885 / 0.95); /* 深色：次一级黑色95% */
+  border: 1px solid oklch(1 0 0 / 0.08) !important;
+  color: oklch(0.985 0 0); /* 白色字 */
+}
+
+/* glass 内的文字颜色确保可见 */
+.dark .glass .text-muted-foreground,
+.dark .ai-assistant-root .glass .text-muted-foreground {
+  color: oklch(0.8 0.01 286) !important; /* 明亮的灰色 */
+}
+
+/* glass-card 类 - 卡片元素（不透明） */
+.glass-card,
+.ai-assistant-root .bg-card {
+  background: oklch(1 0 0); /* 纯白 */
+  border: 1px solid oklch(0 0 0 / 0.1);
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.03);
+}
+
+.glass-card:hover,
+.ai-assistant-root .bg-card:hover {
+  border-color: oklch(0 0 0 / 0.15);
+  box-shadow: 0 2px 6px oklch(0 0 0 / 0.06);
+}
+
+.dark .glass-card,
+.dark .ai-assistant-root .bg-card {
+  background: oklch(0.21 0.006 285.885); /* 次一级黑色 */
+  border-color: oklch(1 0 0 / 0.08);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
+}
+
+.dark .glass-card:hover,
+.dark .ai-assistant-root .bg-card:hover {
+  border-color: oklch(1 0 0 / 0.12);
+  box-shadow: 0 2px 6px oklch(0 0 0 / 0.3);
+}
+
+/* 卡片选中状态 */
+.glass-card-active {
+  background: oklch(0.623 0.214 259.815 / 0.08) !important;
+  border-color: oklch(0.623 0.214 259.815 / 0.4) !important;
+}
+
+.dark .glass-card-active {
+  background: oklch(0.623 0.214 259.815 / 0.12) !important;
+  border-color: oklch(0.623 0.214 259.815 / 0.3) !important;
+}
+
+/* ============================================
+   滚动条样式 - 统一隐藏
+   ============================================ */
 .ai-assistant-root ::-webkit-scrollbar {
-  display: none;
+  width: 0px;
+  background: transparent;
 }
 
 .ai-assistant-root * {
@@ -83,47 +135,171 @@
   -ms-overflow-style: none;
 }
 
-/* 焦点样式 */
+/* ============================================
+   焦点样式 - 使用主题色
+   ============================================ */
 .ai-assistant-root *:focus-visible {
-  outline: 2px solid rgb(59, 130, 246);
+  outline: 2px solid oklch(0.623 0.214 259.815);
   outline-offset: 2px;
 }
 
-/* 统一边框设计系统 */
-.scroll-overlay {
-  scrollbar-gutter: stable both-edges;
-  padding-right: 0.5rem;
-  margin-right: -0.5rem;
-  overflow-x: hidden;
+/* ============================================
+   按钮和交互元素
+   ============================================ */
+.ai-assistant-root button:not([disabled]):hover {
+  opacity: 0.9;
 }
 
+/* Ghost 按钮悬停效果 */
+.ai-assistant-root [class*="variant-ghost"]:hover,
+.ai-assistant-root .hover\:bg-black\/5:hover {
+  background: oklch(0 0 0 / 0.04);
+}
+
+.dark .ai-assistant-root [class*="variant-ghost"]:hover,
+.dark .ai-assistant-root .hover\:bg-white\/5:hover {
+  background: oklch(1 0 0 / 0.04);
+}
+
+/* ============================================
+   输入框样式
+   ============================================ */
+.ai-assistant-root input,
+.ai-assistant-root textarea,
+.ai-assistant-root select {
+  background: oklch(0 0 0 / 0.02);
+  border: 1px solid oklch(0 0 0 / 0.1);
+  border-radius: 0.5rem;
+}
+
+.dark .ai-assistant-root input,
+.dark .ai-assistant-root textarea,
+.dark .ai-assistant-root select {
+  background: oklch(1 0 0 / 0.02);
+  border-color: oklch(1 0 0 / 0.1);
+}
+
+.ai-assistant-root input:focus,
+.ai-assistant-root textarea:focus,
+.ai-assistant-root select:focus {
+  border-color: oklch(0.623 0.214 259.815);
+  outline: none;
+  box-shadow: 0 0 0 2px oklch(0.623 0.214 259.815 / 0.2);
+}
+
+/* ============================================
+   边框工具类
+   ============================================ */
 .border-default {
   border-width: 1px;
-  border-color: hsl(var(--border));
+  border-color: oklch(0 0 0 / 0.08);
+}
+
+.dark .border-default {
+  border-color: oklch(1 0 0 / 0.08);
 }
 
 .border-active {
   border-width: 2px;
+  border-color: oklch(0.623 0.214 259.815);
 }
 
 .border-border-default {
-  border-color: hsl(var(--border));
+  border-color: oklch(0 0 0 / 0.08);
+}
+
+.dark .border-border-default {
+  border-color: oklch(1 0 0 / 0.08);
 }
 
 .border-border-active {
-  border-color: hsl(var(--primary));
+  border-color: oklch(0.623 0.214 259.815);
 }
 
 .border-border-hover {
-  border-color: hsl(var(--primary) / 0.4);
+  border-color: oklch(0.623 0.214 259.815 / 0.4);
 }
 
-.border-border-dragging {
-  border-color: hsl(var(--primary) / 0.6);
+/* ============================================
+   滚动区域优化
+   ============================================ */
+.scroll-overlay {
+  scrollbar-gutter: stable both-edges;
+  overflow-x: hidden;
 }
 
-/* 禁用 Edge / IE 的密码显示按钮 */
+/* ============================================
+   动画
+   ============================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ============================================
+   文本颜色兼容
+   ============================================ */
+.ai-assistant-root .text-foreground {
+  color: oklch(0.141 0.005 285.823);
+}
+
+.dark .ai-assistant-root .text-foreground {
+  color: oklch(0.985 0 0);
+}
+
+.ai-assistant-root .text-muted-foreground {
+  color: oklch(0.552 0.016 285.938);
+}
+
+.dark .ai-assistant-root .text-muted-foreground {
+  color: oklch(0.705 0.015 286.067);
+}
+
+/* ============================================
+   背景色兼容
+   ============================================ */
+.ai-assistant-root .bg-background {
+  background: oklch(0.985 0 0); /* 浅灰背景 */
+}
+
+.dark .ai-assistant-root .bg-background {
+  background: oklch(0.15 0.005 285);
+}
+
+.ai-assistant-root .bg-muted {
+  background: oklch(0.97 0.001 286);
+}
+
+.dark .ai-assistant-root .bg-muted {
+  background: oklch(0.274 0.006 286.033);
+}
+
+/* ============================================
+   禁用密码显示按钮 (Edge/IE)
+   ============================================ */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none;
+}
+
+/* ============================================
+   Tauri 拖拽区域（保留兼容性）
+   ============================================ */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+[data-tauri-no-drag],
+[data-tauri-drag-region] .no-drag {
+  -webkit-app-region: no-drag;
 }

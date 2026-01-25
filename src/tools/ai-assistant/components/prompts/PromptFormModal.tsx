@@ -97,7 +97,7 @@ const PromptFormModal: React.FC<PromptFormModalProps> = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {editingId
