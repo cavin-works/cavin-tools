@@ -23,7 +23,8 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ai-assistant/*": ["./src/tools/ai-assistant/*"]
     }
   },
   "include": ["src"],

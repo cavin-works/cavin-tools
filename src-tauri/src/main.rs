@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    video_editor_lib::run()
+    cavin_tools_lib::run()
 }

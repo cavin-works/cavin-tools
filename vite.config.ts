@@ -1,15 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { codeInspectorPlugin } from "code-inspector-plugin";
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
-  plugins: [react()],
+export default defineConfig(async ({ command }) => ({
+  plugins: [
+    command === "serve" &&
+      codeInspectorPlugin({
+        bundler: "vite",
+      }),
+    react(),
+  ].filter(Boolean),
 
   // 路径别名配置
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@ai-assistant": path.resolve(__dirname, "./src/tools/ai-assistant"),
     },
   },
 
