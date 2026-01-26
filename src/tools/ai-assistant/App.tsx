@@ -647,7 +647,7 @@ function App() {
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden text-neutral-900 dark:text-neutral-100 selection:bg-primary/30"
+      className="flex flex-col h-full overflow-hidden text-neutral-900 dark:text-neutral-100 selection:bg-primary/30 relative"
       style={{ overflowX: "hidden" }}
     >
       {/* 环境变量警告横幅 */}

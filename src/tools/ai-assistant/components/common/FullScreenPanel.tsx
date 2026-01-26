@@ -79,7 +79,7 @@ export const FullScreenPanel: React.FC<FullScreenPanelProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[60] flex flex-col"
+          className="fixed inset-0 z-[60] flex flex-col bg-background"
           style={{ backgroundColor: "hsl(var(--background))" }}
         >
           {/* Drag region - match App.tsx */}
