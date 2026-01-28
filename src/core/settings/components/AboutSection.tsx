@@ -71,7 +71,7 @@ export function AboutSection() {
             <img src={logo} alt="Logo" className="w-full h-full" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-1">Cavin Tools</h3>
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-1">Mnemosyne</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">专业的多媒体处理工具集</p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded">
@@ -161,7 +161,7 @@ export function AboutSection() {
       {/* 版权信息 */}
       <div className="pt-4 text-center">
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          © 2024-2026 Cavin Tools
+          © 2024-2026 Mnemosyne
         </p>
       </div>
     </div>

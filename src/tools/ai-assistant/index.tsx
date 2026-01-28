@@ -12,7 +12,7 @@ import './i18n';
  * AI Assistant Tool Entry Point
  * 
  * This component wraps the CC Switch application as a tool
- * in the Cavin Tools toolkit. It follows the parent app's theme.
+ * in the Mnemosyne toolkit. It follows the parent app's theme.
  */
 export default function AIAssistant() {
   return (

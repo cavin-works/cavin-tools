@@ -27,7 +27,7 @@ const ThemeProviderContext = createContext<ThemeContextValue | undefined>(
 /**
  * ThemeProvider for AI Assistant
  * 
- * When running inside Cavin Tools, we observe the parent app's theme
+ * When running inside Mnemosyne, we observe the parent app's theme
  * by watching the `dark` class on document.documentElement.
  * We don't actively modify the theme - we follow the main app's theme.
  */

@@ -76,7 +76,7 @@ export function JSONFormatter() {
 
   const handleLoadExample = () => {
     const example = {
-      name: "Cavin Tools",
+      name: "Mnemosyne",
       version: "1.0.0",
       features: ["视频编辑", "图片处理", "文本工具"],
       settings: {

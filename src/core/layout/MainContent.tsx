@@ -61,7 +61,7 @@ function WelcomeScreen() {
           </div>
 
           <h1 className="text-5xl font-bold text-neutral-900 dark:text-white mb-4 tracking-tight">
-            Cavin Tools
+            Mnemosyne
           </h1>
 
           <p className="text-lg text-neutral-600 dark:text-neutral-300 max-w-2xl mx-auto mb-8">
@@ -127,7 +127,7 @@ function WelcomeScreen() {
 
         {/* Footer */}
         <div className="mt-16 pt-8 border-t border-neutral-200 dark:border-neutral-800 text-center text-sm text-neutral-500 dark:text-neutral-400">
-          <p>© 2024 Cavin Tools · Built with Tauri & React</p>
+          <p>© 2024 Mnemosyne · Built with Tauri & React</p>
         </div>
       </div>
     </div>

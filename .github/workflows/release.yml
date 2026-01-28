@@ -112,7 +112,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Cavin Tools ${{ github.ref_name }}"
+          releaseName: "Mnemosyne ${{ github.ref_name }}"
           releaseBody: ${{ steps.changelog.outputs.NOTES }}
           releaseDraft: false
           prerelease: false
@@ -157,7 +157,7 @@ jobs:
                   signature: ''
                 },
                 'darwin-aarch64': {
-                  url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Cavin Tools_' + VERSION + '_aarch64.app.tar.gz',
+                  url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_aarch64.app.tar.gz',
                   signature: ''
                 }
               }

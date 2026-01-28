@@ -1,4 +1,4 @@
-//! Cavin Tools - All-in-One Toolkit with AI Assistant
+//! Mnemosyne - All-in-One Toolkit with AI Assistant
 //!
 //! This application combines:
 //! - Video/Image processing tools (FFmpeg, image converter, background remover, etc.)
@@ -10,7 +10,7 @@ use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::{Manager, RunEvent};
 
 // ============================================================
-// Cavin Tools modules (video/image processing)
+// Mnemosyne modules (video/image processing)
 // ============================================================
 pub mod background_remover;
 pub mod ffmpeg;
@@ -37,7 +37,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 // ============================================================
-// Cavin Tools Commands (Video/Image Processing)
+// Mnemosyne Commands (Video/Image Processing)
 // ============================================================
 
 #[tauri::command]
@@ -1036,7 +1036,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             // ============================================================
-            // Cavin Tools Commands (Video/Image Processing)
+            // Mnemosyne Commands (Video/Image Processing)
             // ============================================================
             check_ffmpeg,
             download_ffmpeg,

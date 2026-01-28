@@ -51,7 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v${{ inputs.version }}
-          releaseName: "Cavin Tools v${{ inputs.version }}"
+          releaseName: "Mnemosyne v${{ inputs.version }}"
           releaseBody: ${{ inputs.release-body }}
           releaseDraft: false
           prerelease: false
