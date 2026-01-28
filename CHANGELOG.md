@@ -1,3 +1,21 @@
+## [0.1.3](https://github.com/cavin-works/cavin-tools/compare/v0.1.0...v0.1.3) (2026-01-28)
+
+
+### 🐛 Bug 修复
+
+* **ci:** use pnpm version from packageManager in workflows ([5bcf323](https://github.com/cavin-works/cavin-tools/commit/5bcf323d85f8919d4d361e85d82f4ccefd8c4e8d))
+* **deps:** downgrade @tauri-apps/api to 2.8.0 to match rust crate ([b4e5c78](https://github.com/cavin-works/cavin-tools/commit/b4e5c78fc659b79ed0214d3973096126df4c9cde))
+* 优化 AI 助手在 Cavin Tools 中的集成体验 ([1091c1b](https://github.com/cavin-works/cavin-tools/commit/1091c1b160ca7721deb8521f4ebff471401feb6a))
+
+
+### ✨ 新功能
+
+* **ui:** update application logo and icons ([d4a6fa6](https://github.com/cavin-works/cavin-tools/commit/d4a6fa6009db79195a1a0985cd697cd98df3cbc3))
+* 将工具箱重命名为 Mnemosyne ([792c44c](https://github.com/cavin-works/cavin-tools/commit/792c44c4c99c5d047cf820aa37aa8ace5fbd33e7))
+* 添加 AI 助手工具 ([1537d64](https://github.com/cavin-works/cavin-tools/commit/1537d64d41f7a6a61b530f9bb695eea97b2b08fa))
+
+
+
 # [0.1.0](https://github.com/cavin-works/cavin-tools/compare/v0.1.2...v0.1.0) (2026-01-25)
 
 
