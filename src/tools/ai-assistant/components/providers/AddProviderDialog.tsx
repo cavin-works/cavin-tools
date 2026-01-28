@@ -4,7 +4,13 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@ai-assistant/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-assistant/components/ui/tabs";
-import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@ai-assistant/components/ui/dialog";
 import type { Provider, CustomEndpoint, UniversalProvider } from "@ai-assistant/types";
 import type { AppId } from "@ai-assistant/lib/api";
 import { universalProvidersApi } from "@ai-assistant/lib/api";
@@ -221,67 +227,48 @@ export function AddProviderDialog({
     [appId, onSubmit, onOpenChange],
   );
 
-  // 动态 footer：根据当前 Tab 显示不同按钮
-  const footer =
-    !showUniversalTab || activeTab === "app-specific" ? (
-      <>
-        <Button
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-          className="border-border/20 hover:bg-accent hover:text-accent-foreground"
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          type="submit"
-          form="provider-form"
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t("common.add")}
-        </Button>
-      </>
-    ) : (
-      <>
-        <Button
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-          className="border-border/20 hover:bg-accent hover:text-accent-foreground"
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          onClick={() => setUniversalFormOpen(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t("universalProvider.add")}
-        </Button>
-      </>
-    );
-
   return (
-    <FullScreenPanel
-      isOpen={open}
-      title={t("provider.addNewProvider")}
-      onClose={() => onOpenChange(false)}
-      footer={footer}
-    >
-      {showUniversalTab ? (
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "app-specific" | "universal")}
-        >
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="app-specific">
-              {t(`apps.${appId}`)} {t("provider.tabProvider")}
-            </TabsTrigger>
-            <TabsTrigger value="universal">
-              {t("provider.tabUniversal")}
-            </TabsTrigger>
-          </TabsList>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        variant="default"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>{t("provider.addNewProvider")}</DialogTitle>
+        </DialogHeader>
 
-          <TabsContent value="app-specific" className="mt-0">
+        <div className="flex-1 overflow-y-auto px-1">
+          {showUniversalTab ? (
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "app-specific" | "universal")}
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="app-specific">
+                  {t(`apps.${appId}`)} {t("provider.tabProvider")}
+                </TabsTrigger>
+                <TabsTrigger value="universal">
+                  {t("provider.tabUniversal")}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="app-specific" className="mt-0">
+                <ProviderForm
+                  appId={appId}
+                  submitLabel={t("common.add")}
+                  onSubmit={handleSubmit}
+                  onCancel={() => onOpenChange(false)}
+                  showButtons={false}
+                />
+              </TabsContent>
+
+              <TabsContent value="universal" className="mt-0">
+                <UniversalProviderPanel />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            // OpenCode: directly show form without tabs
             <ProviderForm
               appId={appId}
               submitLabel={t("common.add")}
@@ -289,32 +276,58 @@ export function AddProviderDialog({
               onCancel={() => onOpenChange(false)}
               showButtons={false}
             />
-          </TabsContent>
+          )}
+        </div>
 
-          <TabsContent value="universal" className="mt-0">
-            <UniversalProviderPanel />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        // OpenCode: directly show form without tabs
-        <ProviderForm
-          appId={appId}
-          submitLabel={t("common.add")}
-          onSubmit={handleSubmit}
-          onCancel={() => onOpenChange(false)}
-          showButtons={false}
-        />
-      )}
+        <DialogFooter>
+          {!showUniversalTab || activeTab === "app-specific" ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="border-border/20 hover:bg-accent hover:text-accent-foreground"
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="submit"
+                form="provider-form"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t("common.add")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="border-border/20 hover:bg-accent hover:text-accent-foreground"
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={() => setUniversalFormOpen(true)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t("universalProvider.add")}
+              </Button>
+            </>
+          )}
+        </DialogFooter>
 
-      {/* Universal Provider Form Modal */}
-      {showUniversalTab && (
-        <UniversalProviderFormModal
-          isOpen={universalFormOpen}
-          onClose={handleUniversalFormClose}
-          onSave={handleUniversalProviderSave}
-          initialPreset={selectedUniversalPreset}
-        />
-      )}
-    </FullScreenPanel>
+        {/* Universal Provider Form Modal */}
+        {showUniversalTab && (
+          <UniversalProviderFormModal
+            isOpen={universalFormOpen}
+            onClose={handleUniversalFormClose}
+            onSave={handleUniversalProviderSave}
+            initialPreset={selectedUniversalPreset}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

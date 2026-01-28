@@ -3,9 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@ai-assistant/components/ui/button";
 import { Input } from "@ai-assistant/components/ui/input";
 import { Label } from "@ai-assistant/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@ai-assistant/components/ui/dialog";
 import { Trash2, ExternalLink, Plus } from "lucide-react";
 import { settingsApi } from "@ai-assistant/lib/api";
-import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
 import type { DiscoverableSkill, SkillRepo } from "@ai-assistant/lib/api/skills";
 
 interface RepoManagerPanelProps {
@@ -84,113 +90,120 @@ export function RepoManagerPanel({
   };
 
   return (
-    <FullScreenPanel
-      isOpen={true}
-      title={t("skills.repo.title")}
-      onClose={onClose}
-    >
-      {/* 添加仓库表单 */}
-      <div className="space-y-4 glass-card rounded-xl p-6">
-        <h3 className="text-base font-semibold text-foreground">
-          {t("skills.addRepo")}
-        </h3>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="repo-url" className="text-foreground">
-              {t("skills.repo.url")}
-            </Label>
-            <Input
-              id="repo-url"
-              placeholder={t("skills.repo.urlPlaceholder")}
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-          <div>
-            <Label htmlFor="branch" className="text-foreground">
-              {t("skills.repo.branch")}
-            </Label>
-            <Input
-              id="branch"
-              placeholder={t("skills.repo.branchPlaceholder")}
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          )}
-          <Button
-            onClick={handleAdd}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-            type="button"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t("skills.repo.add")}
-          </Button>
-        </div>
-      </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader className="flex-shrink-0 border-b border-border-default px-6 py-4">
+          <DialogTitle>{t("skills.repo.title")}</DialogTitle>
+          <DialogDescription>{t("skills.repo.description")}</DialogDescription>
+        </DialogHeader>
 
-      {/* 仓库列表 */}
-      <div className="space-y-4">
-        <h3 className="text-base font-semibold text-foreground">
-          {t("skills.repo.list")}
-        </h3>
-        {repos.length === 0 ? (
-          <div className="text-center py-12 glass-card rounded-xl">
-            <p className="text-sm text-muted-foreground">
-              {t("skills.repo.empty")}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3 glass-card rounded-xl p-4">
-            {repos.map((repo) => (
-              <div
-                key={`${repo.owner}/${repo.name}`}
-                className="flex items-center justify-between glass-card rounded-xl px-4 py-3"
-              >
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+          {/* 添加仓库表单 */}
+          <div className="space-y-6">
+            <div className="space-y-4 glass-card rounded-xl p-6">
+              <h3 className="text-base font-semibold text-foreground">
+                {t("skills.addRepo")}
+              </h3>
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm font-medium text-foreground">
-                    {repo.owner}/{repo.name}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {t("skills.repo.branch")}: {repo.branch || "main"}
-                    <span className="ml-3 inline-flex items-center rounded-full border border-border-default px-2 py-0.5 text-[11px]">
-                      {t("skills.repo.skillCount", {
-                        count: getSkillCount(repo),
-                      })}
-                    </span>
-                  </div>
+                  <Label htmlFor="repo-url" className="text-foreground">
+                    {t("skills.repo.url")}
+                  </Label>
+                  <Input
+                    id="repo-url"
+                    placeholder={t("skills.repo.urlPlaceholder")}
+                    value={repoUrl}
+                    onChange={(e) => setRepoUrl(e.target.value)}
+                    className="mt-2"
+                  />
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    type="button"
-                    onClick={() => handleOpenRepo(repo.owner, repo.name)}
-                    title={t("common.view", { defaultValue: "查看" })}
-                    className="hover:bg-black/5 dark:hover:bg-white/5"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    type="button"
-                    onClick={() => onRemove(repo.owner, repo.name)}
-                    title={t("common.delete")}
-                    className="hover:text-red-500 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div>
+                  <Label htmlFor="branch" className="text-foreground">
+                    {t("skills.repo.branch")}
+                  </Label>
+                  <Input
+                    id="branch"
+                    placeholder={t("skills.repo.branchPlaceholder")}
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                    className="mt-2"
+                  />
                 </div>
+                {error && (
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                )}
+                <Button
+                  onClick={handleAdd}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  type="button"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("skills.repo.add")}
+                </Button>
               </div>
-            ))}
+            </div>
+
+            {/* 仓库列表 */}
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold text-foreground">
+                {t("skills.repo.list")}
+              </h3>
+              {repos.length === 0 ? (
+                <div className="text-center py-12 glass-card rounded-xl">
+                  <p className="text-sm text-muted-foreground">
+                    {t("skills.repo.empty")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 glass-card rounded-xl p-4">
+                  {repos.map((repo) => (
+                    <div
+                      key={`${repo.owner}/${repo.name}`}
+                      className="flex items-center justify-between glass-card rounded-xl px-4 py-3"
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-foreground">
+                          {repo.owner}/{repo.name}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {t("skills.repo.branch")}: {repo.branch || "main"}
+                          <span className="ml-3 inline-flex items-center rounded-full border border-border-default px-2 py-0.5 text-[11px]">
+                            {t("skills.repo.skillCount", {
+                              count: getSkillCount(repo),
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          type="button"
+                          onClick={() => handleOpenRepo(repo.owner, repo.name)}
+                          title={t("common.view", { defaultValue: "查看" })}
+                          className="hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          type="button"
+                          onClick={() => onRemove(repo.owner, repo.name)}
+                          title={t("common.delete")}
+                          className="hover:text-red-500 hover:bg-red-100 dark:hover:text-red-400 dark:hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    </FullScreenPanel>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

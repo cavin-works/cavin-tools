@@ -6,6 +6,13 @@ import { Button } from "@ai-assistant/components/ui/button";
 import { Checkbox } from "@ai-assistant/components/ui/checkbox";
 import { Input } from "@ai-assistant/components/ui/input";
 import JsonEditor from "@ai-assistant/components/JsonEditor";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ai-assistant/components/ui/dialog";
 import type { AppId } from "@ai-assistant/lib/api/types";
 import { McpServer, McpServerSpec } from "@ai-assistant/types";
 import { mcpPresets, getMcpPresetWithDescription } from "@ai-assistant/config/mcpPresets";
@@ -23,7 +30,6 @@ import { normalizeTomlText } from "@ai-assistant/utils/textNormalization";
 import { parseSmartMcpJson } from "@ai-assistant/utils/formatters";
 import { useMcpValidation } from "./useMcpValidation";
 import { useUpsertMcpServer } from "@ai-assistant/hooks/useMcp";
-import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
 
 interface McpFormModalProps {
   editingId?: string;
@@ -411,272 +417,281 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
 
   return (
     <>
-      <FullScreenPanel
-        isOpen={true}
-        title={getFormTitle()}
-        onClose={onClose}
-        footer={
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving || (!isEditing && !!idError)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isEditing ? <Save size={16} /> : <Plus size={16} />}
-            {saving
-              ? t("common.saving")
-              : isEditing
-                ? t("common.save")
-                : t("common.add")}
-          </Button>
-        }
-      >
-        <div className="flex flex-col h-full gap-6">
-          {/* 上半部分：表单字段 */}
-          <div className="glass rounded-xl p-6 border border-white/10 space-y-6 flex-shrink-0">
-            {/* 预设选择（仅新增时展示） */}
-            {!isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-3">
-                  {t("mcp.presets.title")}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={applyCustom}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedPreset === -1
-                        ? "bg-emerald-500 text-white dark:bg-emerald-600"
-                        : "bg-accent text-muted-foreground hover:bg-accent/80"
-                    }`}
-                  >
-                    {t("presetSelector.custom")}
-                  </button>
-                  {mcpPresets.map((preset, idx) => {
-                    const descriptionKey = `mcp.presets.${preset.id}.description`;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => applyPreset(idx)}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          selectedPreset === idx
-                            ? "bg-emerald-500 text-white dark:bg-emerald-600"
-                            : "bg-accent text-muted-foreground hover:bg-accent/80"
-                        }`}
-                        title={t(descriptionKey)}
-                      >
-                        {preset.id}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+      <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>{getFormTitle()}</DialogTitle>
+          </DialogHeader>
 
-            {/* ID (标题) */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground">
-                  {t("mcp.form.title")} <span className="text-red-500">*</span>
-                </label>
-                {!isEditing && idError && (
-                  <span className="text-xs text-red-500 dark:text-red-400">
-                    {idError}
-                  </span>
-                )}
-              </div>
-              <Input
-                type="text"
-                placeholder={t("mcp.form.titlePlaceholder")}
-                value={formId}
-                onChange={(e) => handleIdChange(e.target.value)}
-                disabled={isEditing}
-              />
-            </div>
-
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                {t("mcp.form.name")}
-              </label>
-              <Input
-                type="text"
-                placeholder={t("mcp.form.namePlaceholder")}
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
-
-            {/* 启用到哪些应用 */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-3">
-                {t("mcp.form.enabledApps")}
-              </label>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="enable-claude"
-                    checked={enabledApps.claude}
-                    onCheckedChange={(checked: boolean) =>
-                      setEnabledApps({ ...enabledApps, claude: checked })
-                    }
-                  />
-                  <label
-                    htmlFor="enable-claude"
-                    className="text-sm text-foreground cursor-pointer select-none"
-                  >
-                    {t("mcp.unifiedPanel.apps.claude")}
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="enable-codex"
-                    checked={enabledApps.codex}
-                    onCheckedChange={(checked: boolean) =>
-                      setEnabledApps({ ...enabledApps, codex: checked })
-                    }
-                  />
-                  <label
-                    htmlFor="enable-codex"
-                    className="text-sm text-foreground cursor-pointer select-none"
-                  >
-                    {t("mcp.unifiedPanel.apps.codex")}
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="enable-gemini"
-                    checked={enabledApps.gemini}
-                    onCheckedChange={(checked: boolean) =>
-                      setEnabledApps({ ...enabledApps, gemini: checked })
-                    }
-                  />
-                  <label
-                    htmlFor="enable-gemini"
-                    className="text-sm text-foreground cursor-pointer select-none"
-                  >
-                    {t("mcp.unifiedPanel.apps.gemini")}
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* 可折叠的附加信息按钮 */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowMetadata(!showMetadata)}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showMetadata ? (
-                  <ChevronUp size={16} />
-                ) : (
-                  <ChevronDown size={16} />
-                )}
-                {t("mcp.form.additionalInfo")}
-              </button>
-            </div>
-
-            {/* 附加信息区域（可折叠） */}
-            {showMetadata && (
-              <>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 flex flex-col gap-6">
+            <div className="rounded-xl p-6 border border-border-default space-y-6 flex-shrink-0">
+              {/* 预设选择（仅新增时展示） */}
+              {!isEditing && (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t("mcp.form.description")}
+                  <label className="block text-sm font-medium text-foreground mb-3">
+                    {t("mcp.presets.title")}
                   </label>
-                  <Input
-                    type="text"
-                    placeholder={t("mcp.form.descriptionPlaceholder")}
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={applyCustom}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedPreset === -1
+                          ? "bg-emerald-500 text-white dark:bg-emerald-600"
+                          : "bg-accent text-muted-foreground hover:bg-accent/80"
+                      }`}
+                    >
+                      {t("presetSelector.custom")}
+                    </button>
+                    {mcpPresets.map((preset, idx) => {
+                      const descriptionKey = `mcp.presets.${preset.id}.description`;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => applyPreset(idx)}
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            selectedPreset === idx
+                              ? "bg-emerald-500 text-white dark:bg-emerald-600"
+                              : "bg-accent text-muted-foreground hover:bg-accent/80"
+                          }`}
+                          title={t(descriptionKey)}
+                        >
+                          {preset.id}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t("mcp.form.tags")}
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder={t("mcp.form.tagsPlaceholder")}
-                    value={formTags}
-                    onChange={(e) => setFormTags(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t("mcp.form.homepage")}
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder={t("mcp.form.homepagePlaceholder")}
-                    value={formHomepage}
-                    onChange={(e) => setFormHomepage(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {t("mcp.form.docs")}
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder={t("mcp.form.docsPlaceholder")}
-                    value={formDocs}
-                    onChange={(e) => setFormDocs(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* 下半部分：JSON 配置编辑器 - 自适应剩余高度 */}
-          <div className="glass rounded-xl p-6 border border-white/10 flex flex-col flex-1 min-h-0">
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
-              <label className="text-sm font-medium text-foreground">
-                {useToml ? t("mcp.form.tomlConfig") : t("mcp.form.jsonConfig")}
-              </label>
-              {(isEditing || selectedPreset === -1) && (
-                <button
-                  type="button"
-                  onClick={() => setIsWizardOpen(true)}
-                  className="text-sm text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
-                >
-                  {t("mcp.form.useWizard")}
-                </button>
               )}
-            </div>
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 min-h-0">
-                <JsonEditor
-                  value={formConfig}
-                  onChange={handleConfigChange}
-                  placeholder={
-                    useToml
-                      ? t("mcp.form.tomlPlaceholder")
-                      : t("mcp.form.jsonPlaceholder")
-                  }
-                  darkMode={isDarkMode}
-                  rows={12}
-                  showValidation={!useToml}
-                  language={useToml ? "javascript" : "json"}
-                  height="100%"
+
+              {/* ID (标题) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    {t("mcp.form.title")} <span className="text-red-500">*</span>
+                  </label>
+                  {!isEditing && idError && (
+                    <span className="text-xs text-red-500 dark:text-red-400">
+                      {idError}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  type="text"
+                  placeholder={t("mcp.form.titlePlaceholder")}
+                  value={formId}
+                  onChange={(e) => handleIdChange(e.target.value)}
+                  disabled={isEditing}
                 />
               </div>
-              {configError && (
-                <div className="flex items-center gap-2 mt-2 text-red-500 dark:text-red-400 text-sm flex-shrink-0">
-                  <AlertCircle size={16} />
-                  <span>{configError}</span>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  {t("mcp.form.name")}
+                </label>
+                <Input
+                  type="text"
+                  placeholder={t("mcp.form.namePlaceholder")}
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                />
+              </div>
+
+              {/* 启用到哪些应用 */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  {t("mcp.form.enabledApps")}
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enable-claude"
+                      checked={enabledApps.claude}
+                      onCheckedChange={(checked: boolean) =>
+                        setEnabledApps({ ...enabledApps, claude: checked })
+                      }
+                    />
+                    <label
+                      htmlFor="enable-claude"
+                      className="text-sm text-foreground cursor-pointer select-none"
+                    >
+                      {t("mcp.unifiedPanel.apps.claude")}
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enable-codex"
+                      checked={enabledApps.codex}
+                      onCheckedChange={(checked: boolean) =>
+                        setEnabledApps({ ...enabledApps, codex: checked })
+                      }
+                    />
+                    <label
+                      htmlFor="enable-codex"
+                      className="text-sm text-foreground cursor-pointer select-none"
+                    >
+                      {t("mcp.unifiedPanel.apps.codex")}
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enable-gemini"
+                      checked={enabledApps.gemini}
+                      onCheckedChange={(checked: boolean) =>
+                        setEnabledApps({ ...enabledApps, gemini: checked })
+                      }
+                    />
+                    <label
+                      htmlFor="enable-gemini"
+                      className="text-sm text-foreground cursor-pointer select-none"
+                    >
+                      {t("mcp.unifiedPanel.apps.gemini")}
+                    </label>
+                  </div>
                 </div>
+              </div>
+
+              {/* 可折叠的附加信息按钮 */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowMetadata(!showMetadata)}
+                  className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showMetadata ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                  {t("mcp.form.additionalInfo")}
+                </button>
+              </div>
+
+              {/* 附加信息区域（可折叠） */}
+              {showMetadata && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("mcp.form.description")}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t("mcp.form.descriptionPlaceholder")}
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("mcp.form.tags")}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t("mcp.form.tagsPlaceholder")}
+                      value={formTags}
+                      onChange={(e) => setFormTags(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("mcp.form.homepage")}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t("mcp.form.homepagePlaceholder")}
+                      value={formHomepage}
+                      onChange={(e) => setFormHomepage(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      {t("mcp.form.docs")}
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder={t("mcp.form.docsPlaceholder")}
+                      value={formDocs}
+                      onChange={(e) => setFormDocs(e.target.value)}
+                    />
+                  </div>
+                </>
               )}
             </div>
+
+            {/* JSON 配置编辑器区域 */}
+            <div className="rounded-xl p-6 border border-border-default  flex flex-col flex-1 min-h-0">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <label className="text-sm font-medium text-foreground">
+                  {useToml ? t("mcp.form.tomlConfig") : t("mcp.form.jsonConfig")}
+                </label>
+                {(isEditing || selectedPreset === -1) && (
+                  <button
+                    type="button"
+                    onClick={() => setIsWizardOpen(true)}
+                    className="text-sm text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                  >
+                    {t("mcp.form.useWizard")}
+                  </button>
+                )}
+              </div>
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0">
+                  <JsonEditor
+                    value={formConfig}
+                    onChange={handleConfigChange}
+                    placeholder={
+                      useToml
+                        ? t("mcp.form.tomlPlaceholder")
+                        : t("mcp.form.jsonPlaceholder")
+                    }
+                    darkMode={isDarkMode}
+                    rows={12}
+                    showValidation={!useToml}
+                    language={useToml ? "javascript" : "json"}
+                    height="100%"
+                  />
+                </div>
+                {configError && (
+                  <div className="flex items-center gap-2 mt-2 text-red-500 dark:text-red-400 text-sm flex-shrink-0">
+                    <AlertCircle size={16} />
+                    <span>{configError}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </FullScreenPanel>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving || (!isEditing && !!idError)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEditing ? <Save size={16} /> : <Plus size={16} />}
+              {saving
+                ? t("common.saving")
+                : isEditing
+                  ? t("common.save")
+                  : t("common.add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Wizard Modal */}
       <McpWizardModal

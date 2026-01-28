@@ -4,6 +4,13 @@ import { Sparkles, Trash2, ExternalLink } from "lucide-react";
 import { Button } from "@ai-assistant/components/ui/button";
 import { Switch } from "@ai-assistant/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@ai-assistant/components/ui/dialog";
+import {
   useInstalledSkills,
   useToggleSkillApp,
   useUninstallSkill,
@@ -384,14 +391,14 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[80vh] flex flex-col">
-        <h2 className="text-lg font-semibold mb-2">{t("skills.import")}</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t("skills.importDescription")}
-        </p>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle>{t("skills.import")}</DialogTitle>
+          <DialogDescription>{t("skills.importDescription")}</DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-2 px-1">
           {skills.map((skill) => (
             <label
               key={skill.directory}
@@ -418,7 +425,7 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
           ))}
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 pt-4 border-t border-border-default">
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -426,8 +433,8 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
             {t("skills.importSelected", { count: selected.size })}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

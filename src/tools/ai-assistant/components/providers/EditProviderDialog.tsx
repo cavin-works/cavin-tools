@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Save } from "lucide-react";
 import { Button } from "@ai-assistant/components/ui/button";
-import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@ai-assistant/components/ui/dialog";
 import type { Provider } from "@ai-assistant/types";
 import {
   ProviderForm,
@@ -169,30 +175,39 @@ export function EditProviderDialog({
   }
 
   return (
-    <FullScreenPanel
-      isOpen={open}
-      title={t("provider.editProvider")}
-      onClose={() => onOpenChange(false)}
-      footer={
-        <Button
-          type="submit"
-          form="provider-form"
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {t("common.save")}
-        </Button>
-      }
-    >
-      <ProviderForm
-        appId={appId}
-        providerId={provider.id}
-        submitLabel={t("common.save")}
-        onSubmit={handleSubmit}
-        onCancel={() => onOpenChange(false)}
-        initialData={initialData}
-        showButtons={false}
-      />
-    </FullScreenPanel>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        variant="default"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>{t("provider.editProvider")}</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-1">
+          <ProviderForm
+            appId={appId}
+            providerId={provider.id}
+            submitLabel={t("common.save")}
+            onSubmit={handleSubmit}
+            onCancel={() => onOpenChange(false)}
+            initialData={initialData}
+            showButtons={false}
+          />
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="submit"
+            form="provider-form"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {t("common.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
