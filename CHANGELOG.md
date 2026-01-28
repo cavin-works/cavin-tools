@@ -5,6 +5,7 @@
 
 * **ci:** use pnpm version from packageManager in workflows ([5bcf323](https://github.com/cavin-works/cavin-tools/commit/5bcf323d85f8919d4d361e85d82f4ccefd8c4e8d))
 * **deps:** downgrade @tauri-apps/api to 2.8.0 to match rust crate ([b4e5c78](https://github.com/cavin-works/cavin-tools/commit/b4e5c78fc659b79ed0214d3973096126df4c9cde))
+* **deps:** upgrade @tauri-apps/api to 2.9.1 to match rust crate ([825cacb](https://github.com/cavin-works/cavin-tools/commit/825cacba3b82903b825e39de762c34bc0f3b287c))
 * 优化 AI 助手在 Cavin Tools 中的集成体验 ([1091c1b](https://github.com/cavin-works/cavin-tools/commit/1091c1b160ca7721deb8521f4ebff471401feb6a))
 
 
