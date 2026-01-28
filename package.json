@@ -1,7 +1,7 @@
 {
-  "name": "cavin-tools",
+  "name": "mnemosyne",
   "version": "0.1.0",
-  "description": "Cavin Tools - All-in-One Toolkit with AI Assistant",
+  "description": "Mnemosyne - All-in-One Toolkit with AI Assistant",
   "private": true,
   "type": "module",
   "scripts": {

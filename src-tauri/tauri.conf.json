@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Cavin Tools",
+  "productName": "Mnemosyne",
   "version": "0.1.0",
-  "identifier": "com.cavin.tools",
+  "identifier": "com.mnemosyne.tools",
   "build": {
     "beforeDevCommand": "pnpm run dev",
     "devUrl": "http://localhost:1421",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Cavin Tools",
+        "title": "Mnemosyne",
         "titleBarStyle": "Overlay",
         "width": 1400,
         "height": 900,

@@ -198,6 +198,9 @@ export function EditProviderDialog({
         </div>
 
         <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("common.cancel")}
+          </Button>
           <Button
             type="submit"
             form="provider-form"
