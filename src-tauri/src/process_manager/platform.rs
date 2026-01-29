@@ -17,8 +17,10 @@ pub fn list_processes() -> Result<Vec<ProcessInfo>, String> {
 /// Windows平台获取进程列表
 #[cfg(target_os = "windows")]
 fn list_processes_windows() -> Result<Vec<ProcessInfo>, String> {
+    // 使用 CREATE_NO_WINDOW 标志防止 cmd 窗口弹出
     let output = Command::new("cmd")
         .args(["/C", "tasklist", "/fo", "csv", "/nh"])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW 标志
         .output()
         .map_err(|e| format!("执行 tasklist 命令失败: {}", e))?;
 
@@ -30,29 +32,38 @@ fn list_processes_windows() -> Result<Vec<ProcessInfo>, String> {
     let mut processes = Vec::new();
 
     for line in content.lines() {
-        if line.trim().is_empty() {
+        let line = line.trim();
+        if line.is_empty() {
             continue;
         }
 
         // 解析CSV格式: "映像名称","PID","会话名","会话#","内存使用"
+        // 使用简单的 CSV 解析，处理带引号的字段
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() < 5 {
             continue;
         }
 
+        // 清理并提取名称（去掉引号）
         let name = parts.get(0)
-            .and_then(|s| s.trim().trim_matches('"').strip_prefix('"'))
-            .or_else(|| parts.get(0).map(|s| s.trim().trim_matches('"')))
+            .map(|s| s.trim().trim_matches('"'))
             .unwrap_or("")
             .to_string();
 
+        // 清理并提取 PID（去掉引号）
         let pid = parts.get(1)
             .and_then(|s| s.trim().trim_matches('"').parse::<u32>().ok())
             .unwrap_or(0);
 
+        if pid == 0 {
+            continue; // 跳过无效 PID
+        }
+
+        // 清理并提取内存使用（去掉引号和 " K" 后缀）
         let memory_str = parts.get(4)
-            .and_then(|s| s.trim().trim_matches('"').strip_suffix(" K"))
-            .and_then(|s| s.trim().trim_matches('"').replace(",", "").parse::<f64>().ok())
+            .map(|s| s.trim().trim_matches('"'))
+            .and_then(|s| s.strip_suffix(" K"))
+            .and_then(|s| s.replace(",", "").parse::<f64>().ok())
             .unwrap_or(0.0);
 
         let memory_usage = Some(memory_str / 1024.0); // 转换为MB
@@ -153,8 +164,10 @@ pub fn kill_process(pid: u32) -> Result<KillResult, String> {
 /// Windows平台杀进程
 #[cfg(target_os = "windows")]
 fn kill_process_windows(pid: u32) -> Result<KillResult, String> {
+    // 使用 CREATE_NO_WINDOW 标志防止窗口弹出
     let output = Command::new("taskkill")
         .args(["/F", "/PID", &pid.to_string()])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW 标志
         .output()
         .map_err(|e| format!("执行 taskkill 命令失败: {}", e))?;
 
