@@ -15,6 +15,8 @@ pub struct McpApps {
     pub gemini: bool,
     #[serde(default)]
     pub opencode: bool,
+    #[serde(default)]
+    pub cursor: bool,
 }
 
 impl McpApps {
@@ -25,6 +27,7 @@ impl McpApps {
             AppType::Codex => self.codex,
             AppType::Gemini => self.gemini,
             AppType::OpenCode => self.opencode,
+            AppType::Cursor => self.cursor,
         }
     }
 
@@ -35,6 +38,7 @@ impl McpApps {
             AppType::Codex => self.codex = enabled,
             AppType::Gemini => self.gemini = enabled,
             AppType::OpenCode => self.opencode = enabled,
+            AppType::Cursor => self.cursor = enabled,
         }
     }
 
@@ -53,12 +57,15 @@ impl McpApps {
         if self.opencode {
             apps.push(AppType::OpenCode);
         }
+        if self.cursor {
+            apps.push(AppType::Cursor);
+        }
         apps
     }
 
     /// 检查是否所有应用都未启用
     pub fn is_empty(&self) -> bool {
-        !self.claude && !self.codex && !self.gemini && !self.opencode
+        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.cursor
     }
 }
 
@@ -73,6 +80,8 @@ pub struct SkillApps {
     pub gemini: bool,
     #[serde(default)]
     pub opencode: bool,
+    #[serde(default)]
+    pub cursor: bool,
 }
 
 impl SkillApps {
@@ -83,6 +92,7 @@ impl SkillApps {
             AppType::Codex => self.codex,
             AppType::Gemini => self.gemini,
             AppType::OpenCode => self.opencode,
+            AppType::Cursor => self.cursor,
         }
     }
 
@@ -93,6 +103,7 @@ impl SkillApps {
             AppType::Codex => self.codex = enabled,
             AppType::Gemini => self.gemini = enabled,
             AppType::OpenCode => self.opencode = enabled,
+            AppType::Cursor => self.cursor = enabled,
         }
     }
 
@@ -111,12 +122,15 @@ impl SkillApps {
         if self.opencode {
             apps.push(AppType::OpenCode);
         }
+        if self.cursor {
+            apps.push(AppType::Cursor);
+        }
         apps
     }
 
     /// 检查是否所有应用都未启用
     pub fn is_empty(&self) -> bool {
-        !self.claude && !self.codex && !self.gemini && !self.opencode
+        !self.claude && !self.codex && !self.gemini && !self.opencode && !self.cursor
     }
 
     /// 仅启用指定应用（其他应用设为禁用）
@@ -222,6 +236,9 @@ pub struct McpRoot {
     /// OpenCode MCP 配置（v4.0.0+，实际使用 opencode.json）
     #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
     pub opencode: McpConfig,
+    /// Cursor MCP 配置
+    #[serde(default, skip_serializing_if = "McpConfig::is_empty")]
+    pub cursor: McpConfig,
 }
 
 impl Default for McpRoot {
@@ -234,6 +251,7 @@ impl Default for McpRoot {
             codex: McpConfig::default(),
             gemini: McpConfig::default(),
             opencode: McpConfig::default(),
+            cursor: McpConfig::default(),
         }
     }
 }
@@ -256,6 +274,8 @@ pub struct PromptRoot {
     pub gemini: PromptConfig,
     #[serde(default)]
     pub opencode: PromptConfig,
+    #[serde(default)]
+    pub cursor: PromptConfig,
 }
 
 use crate::cc_switch::config::{copy_file, get_app_config_dir, get_app_config_path, write_json_file};
@@ -271,6 +291,7 @@ pub enum AppType {
     Codex,
     Gemini,
     OpenCode,
+    Cursor,
 }
 
 impl AppType {
@@ -280,6 +301,7 @@ impl AppType {
             AppType::Codex => "codex",
             AppType::Gemini => "gemini",
             AppType::OpenCode => "opencode",
+            AppType::Cursor => "cursor",
         }
     }
 }
@@ -294,10 +316,11 @@ impl FromStr for AppType {
             "codex" => Ok(AppType::Codex),
             "gemini" => Ok(AppType::Gemini),
             "opencode" => Ok(AppType::OpenCode),
+            "cursor" => Ok(AppType::Cursor),
             other => Err(AppError::localized(
                 "unsupported_app",
-                format!("不支持的应用标识: '{other}'。可选值: claude, codex, gemini, opencode。"),
-                format!("Unsupported app id: '{other}'. Allowed: claude, codex, gemini, opencode."),
+                format!("不支持的应用标识: '{other}'。可选值: claude, codex, gemini, opencode, cursor。"),
+                format!("Unsupported app id: '{other}'. Allowed: claude, codex, gemini, opencode, cursor."),
             )),
         }
     }
@@ -317,6 +340,9 @@ pub struct CommonConfigSnippets {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub opencode: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
 }
 
 impl CommonConfigSnippets {
@@ -327,6 +353,7 @@ impl CommonConfigSnippets {
             AppType::Codex => self.codex.as_ref(),
             AppType::Gemini => self.gemini.as_ref(),
             AppType::OpenCode => self.opencode.as_ref(),
+            AppType::Cursor => self.cursor.as_ref(),
         }
     }
 
@@ -337,6 +364,7 @@ impl CommonConfigSnippets {
             AppType::Codex => self.codex = snippet,
             AppType::Gemini => self.gemini = snippet,
             AppType::OpenCode => self.opencode = snippet,
+            AppType::Cursor => self.cursor = snippet,
         }
     }
 }
@@ -377,6 +405,7 @@ impl Default for MultiAppConfig {
         apps.insert("codex".to_string(), ProviderManager::default());
         apps.insert("gemini".to_string(), ProviderManager::default());
         apps.insert("opencode".to_string(), ProviderManager::default());
+        apps.insert("cursor".to_string(), ProviderManager::default());
 
         Self {
             version: 2,
@@ -536,6 +565,7 @@ impl MultiAppConfig {
             AppType::Codex => &self.mcp.codex,
             AppType::Gemini => &self.mcp.gemini,
             AppType::OpenCode => &self.mcp.opencode,
+            AppType::Cursor => &self.mcp.cursor,
         }
     }
 
@@ -546,6 +576,7 @@ impl MultiAppConfig {
             AppType::Codex => &mut self.mcp.codex,
             AppType::Gemini => &mut self.mcp.gemini,
             AppType::OpenCode => &mut self.mcp.opencode,
+            AppType::Cursor => &mut self.mcp.cursor,
         }
     }
 
@@ -662,6 +693,7 @@ impl MultiAppConfig {
             AppType::Codex => &mut config.prompts.codex.prompts,
             AppType::Gemini => &mut config.prompts.gemini.prompts,
             AppType::OpenCode => &mut config.prompts.opencode.prompts,
+            AppType::Cursor => &mut config.prompts.cursor.prompts,
         };
 
         prompts.insert(id, prompt);
@@ -696,6 +728,7 @@ impl MultiAppConfig {
                 AppType::Codex => &self.mcp.codex.servers,
                 AppType::Gemini => &self.mcp.gemini.servers,
                 AppType::OpenCode => &self.mcp.opencode.servers,
+                AppType::Cursor => &self.mcp.cursor.servers,
             };
 
             for (id, entry) in old_servers {

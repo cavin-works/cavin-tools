@@ -372,6 +372,10 @@ impl ProxyService {
                 // OpenCode doesn't support proxy features
                 return Err("OpenCode 不支持代理功能".to_string());
             }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features
+                return Err("Cursor 不支持代理功能".to_string());
+            }
         };
 
         self.sync_live_config_to_provider(app_type, &live_config)
@@ -588,6 +592,9 @@ impl ProxyService {
             AppType::OpenCode => {
                 // OpenCode doesn't support proxy features, skip silently
             }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features, skip silently
+            }
         }
 
         Ok(())
@@ -769,6 +776,10 @@ impl ProxyService {
             AppType::OpenCode => {
                 // OpenCode doesn't support proxy features
                 return Err("OpenCode 不支持代理功能".to_string());
+            }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features
+                return Err("Cursor 不支持代理功能".to_string());
             }
         };
 
@@ -982,6 +993,10 @@ impl ProxyService {
                 // OpenCode doesn't support proxy features
                 return Err("OpenCode 不支持代理功能".to_string());
             }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features
+                return Err("Cursor 不支持代理功能".to_string());
+            }
         }
 
         Ok(())
@@ -1068,6 +1083,9 @@ impl ProxyService {
             AppType::OpenCode => {
                 // OpenCode doesn't support proxy features, skip silently
             }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features, skip silently
+            }
         }
 
         Ok(())
@@ -1102,6 +1120,9 @@ impl ProxyService {
             }
             AppType::OpenCode => {
                 // OpenCode doesn't support proxy features, skip silently
+            }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features, skip silently
             }
         }
 
@@ -1186,6 +1207,10 @@ impl ProxyService {
                 // OpenCode doesn't support proxy features
                 Err("OpenCode 不支持代理功能".to_string())
             }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features
+                Err("Cursor 不支持代理功能".to_string())
+            }
         }
     }
 
@@ -1205,6 +1230,10 @@ impl ProxyService {
             },
             AppType::OpenCode => {
                 // OpenCode doesn't support proxy takeover
+                false
+            }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy takeover
                 false
             }
         }
@@ -1248,6 +1277,10 @@ impl ProxyService {
             AppType::Gemini => self.cleanup_gemini_takeover_placeholders_in_live(),
             AppType::OpenCode => {
                 // OpenCode doesn't support proxy features
+                Ok(())
+            }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy features
                 Ok(())
             }
         }

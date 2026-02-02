@@ -167,6 +167,7 @@ pub(crate) fn parse_mcp_apps(apps_str: &str) -> Result<McpApps, AppError> {
         codex: false,
         gemini: false,
         opencode: false,
+        cursor: false,
     };
 
     for app in apps_str.split(',') {
@@ -175,6 +176,7 @@ pub(crate) fn parse_mcp_apps(apps_str: &str) -> Result<McpApps, AppError> {
             "codex" => apps.codex = true,
             "gemini" => apps.gemini = true,
             "opencode" => apps.opencode = true,
+            "cursor" => apps.cursor = true,
             other => {
                 return Err(AppError::InvalidInput(format!(
                     "Invalid app in 'apps': {other}"

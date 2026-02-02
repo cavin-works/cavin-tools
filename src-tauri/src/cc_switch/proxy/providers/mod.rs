@@ -136,6 +136,10 @@ impl ProviderType {
                 // OpenCode doesn't support proxy, but return a default type for completeness
                 ProviderType::Codex // Fallback to Codex-like type
             }
+            AppType::Cursor => {
+                // Cursor doesn't support proxy, fallback to Claude-like type
+                ProviderType::Claude
+            }
         }
     }
 
@@ -183,6 +187,10 @@ pub fn get_adapter(app_type: &AppType) -> Box<dyn ProviderAdapter> {
         AppType::OpenCode => {
             // OpenCode doesn't support proxy, fallback to Codex adapter
             Box::new(CodexAdapter::new())
+        }
+        AppType::Cursor => {
+            // Cursor doesn't support proxy, fallback to Claude adapter
+            Box::new(ClaudeAdapter::new())
         }
     }
 }

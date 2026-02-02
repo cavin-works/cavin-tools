@@ -240,6 +240,14 @@ impl StreamCheckService {
                     "OpenCode does not support health check yet",
                 ));
             }
+            AppType::Cursor => {
+                // Cursor doesn't support stream check yet
+                return Err(AppError::localized(
+                    "cursor_no_stream_check",
+                    "Cursor 暂不支持健康检查",
+                    "Cursor does not support health check yet",
+                ));
+            }
         };
 
         let response_time = start.elapsed().as_millis() as u64;
@@ -546,6 +554,10 @@ impl StreamCheckService {
                 // OpenCode uses models map in settings_config
                 // Try to extract first model from the models object
                 Self::extract_opencode_model(provider).unwrap_or_else(|| "gpt-4o".to_string())
+            }
+            AppType::Cursor => {
+                // Cursor doesn't support stream check
+                "claude-3-5-sonnet-20241022".to_string()
             }
         }
     }

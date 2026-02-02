@@ -8,6 +8,14 @@ use crate::cc_switch::app_config::AppType;
 use crate::cc_switch::codex_config;
 use crate::cc_switch::config::{self, get_claude_settings_path, ConfigStatus};
 use crate::cc_switch::settings;
+use std::path::PathBuf;
+
+/// 获取 Cursor 配置目录
+fn get_cursor_dir() -> PathBuf {
+    dirs::home_dir()
+        .map(|h| h.join(".cursor"))
+        .unwrap_or_else(|| PathBuf::from(".cursor"))
+}
 
 /// 获取 Claude Code 配置状态
 #[tauri::command]
@@ -60,6 +68,13 @@ pub async fn get_config_status(app: String) -> Result<ConfigStatus, String> {
 
             Ok(ConfigStatus { exists, path })
         }
+        AppType::Cursor => {
+            let mcp_path = get_cursor_dir().join("mcp.json");
+            let exists = mcp_path.exists();
+            let path = get_cursor_dir().to_string_lossy().to_string();
+
+            Ok(ConfigStatus { exists, path })
+        }
     }
 }
 
@@ -77,6 +92,7 @@ pub async fn get_config_dir(app: String) -> Result<String, String> {
         AppType::Codex => codex_config::get_codex_config_dir(),
         AppType::Gemini => crate::cc_switch::gemini_config::get_gemini_dir(),
         AppType::OpenCode => crate::cc_switch::opencode_config::get_opencode_dir(),
+        AppType::Cursor => get_cursor_dir(),
     };
 
     Ok(dir.to_string_lossy().to_string())
@@ -90,6 +106,7 @@ pub async fn open_config_folder(handle: AppHandle, app: String) -> Result<bool, 
         AppType::Codex => codex_config::get_codex_config_dir(),
         AppType::Gemini => crate::cc_switch::gemini_config::get_gemini_dir(),
         AppType::OpenCode => crate::cc_switch::opencode_config::get_opencode_dir(),
+        AppType::Cursor => get_cursor_dir(),
     };
 
     if !config_dir.exists() {

@@ -207,6 +207,10 @@ impl SkillService {
                     return Ok(custom.join("skills"));
                 }
             }
+            AppType::Cursor => {
+                // Cursor doesn't support skill management
+                return Err(anyhow!("Cursor 不支持技能管理功能"));
+            }
         }
 
         // 默认路径：回退到用户主目录下的标准位置
@@ -221,6 +225,9 @@ impl SkillService {
             AppType::Codex => home.join(".codex").join("skills"),
             AppType::Gemini => home.join(".gemini").join("skills"),
             AppType::OpenCode => home.join(".config").join("opencode").join("skills"),
+            AppType::Cursor => {
+                return Err(anyhow!("Cursor 不支持技能管理功能"));
+            }
         })
     }
 
@@ -347,6 +354,7 @@ impl SkillService {
             AppType::Codex,
             AppType::Gemini,
             AppType::OpenCode,
+            AppType::Cursor,
         ] {
             let _ = Self::remove_from_app(&skill.directory, &app);
         }
@@ -411,6 +419,7 @@ impl SkillService {
             AppType::Codex,
             AppType::Gemini,
             AppType::OpenCode,
+            AppType::Cursor,
         ] {
             let app_dir = match Self::get_app_skills_dir(&app) {
                 Ok(d) => d,
@@ -461,6 +470,7 @@ impl SkillService {
                     AppType::Codex => "codex",
                     AppType::Gemini => "gemini",
                     AppType::OpenCode => "opencode",
+                    AppType::Cursor => continue, // Cursor 不支持技能管理，跳过
                 };
 
                 unmanaged
@@ -510,6 +520,7 @@ impl SkillService {
                             AppType::Codex => "codex",
                             AppType::Gemini => "gemini",
                             AppType::OpenCode => "opencode",
+                            AppType::Cursor => "cursor",
                         };
                         found_in.push(app_str.to_string());
                     }
@@ -549,6 +560,7 @@ impl SkillService {
                     "codex" => apps.codex = true,
                     "gemini" => apps.gemini = true,
                     "opencode" => apps.opencode = true,
+                    "cursor" => apps.cursor = true,
                     _ => {}
                 }
             }
@@ -1109,6 +1121,7 @@ pub fn migrate_skills_to_ssot(db: &Arc<Database>) -> Result<usize> {
         AppType::Codex,
         AppType::Gemini,
         AppType::OpenCode,
+        AppType::Cursor,
     ] {
         let app_dir = match SkillService::get_app_skills_dir(&app) {
             Ok(d) => d,

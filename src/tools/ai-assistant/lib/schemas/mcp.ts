@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+// Cursor OAuth 配置
+const cursorAuthSchema = z
+  .object({
+    CLIENT_ID: z.string().optional(),
+    CLIENT_SECRET: z.string().optional(),
+    scopes: z.array(z.string()).optional(),
+  })
+  .optional();
+
 const mcpServerSpecSchema = z
   .object({
     type: z.enum(["stdio", "http", "sse"]).optional(),
@@ -7,8 +16,10 @@ const mcpServerSpecSchema = z
     args: z.array(z.string()).optional(),
     env: z.record(z.string(), z.string()).optional(),
     cwd: z.string().optional(),
+    envFile: z.string().optional(), // Cursor 特有：环境变量文件路径
     url: z.string().trim().url("请输入有效的 URL").optional(),
     headers: z.record(z.string(), z.string()).optional(),
+    auth: cursorAuthSchema, // Cursor 特有：OAuth 配置
   })
   .superRefine((server, ctx) => {
     const type = server.type ?? "stdio";
@@ -40,3 +51,4 @@ export const mcpServerSchema = z.object({
 });
 
 export type McpServerFormData = z.infer<typeof mcpServerSchema>;
+

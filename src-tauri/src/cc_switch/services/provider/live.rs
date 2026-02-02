@@ -178,6 +178,9 @@ pub(crate) fn write_live_snapshot(app_type: &AppType, provider: &Provider) -> Re
                 }
             }
         }
+        AppType::Cursor => {
+            // Cursor doesn't support live snapshot
+        }
     }
     Ok(())
 }
@@ -246,52 +249,16 @@ pub fn read_live_settings(app_type: AppType) -> Result<Value, AppError> {
             read_json_file(&path)
         }
         AppType::Gemini => {
-            use crate::cc_switch::gemini_config::{
-                env_to_json, get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
-            };
-
-            // Read .env file (environment variables)
-            let env_path = get_gemini_env_path();
-            if !env_path.exists() {
-                return Err(AppError::localized(
-                    "gemini.env.missing",
-                    "Gemini .env 文件不存在",
-                    "Gemini .env file not found",
-                ));
-            }
-
-            let env_map = read_gemini_env()?;
-            let env_json = env_to_json(&env_map);
-            let env_obj = env_json.get("env").cloned().unwrap_or_else(|| json!({}));
-
-            // Read settings.json file (MCP config etc.)
-            let settings_path = get_gemini_settings_path();
-            let config_obj = if settings_path.exists() {
-                read_json_file(&settings_path)?
-            } else {
-                json!({})
-            };
-
-            // Return complete structure: { "env": {...}, "config": {...} }
-            Ok(json!({
-                "env": env_obj,
-                "config": config_obj
-            }))
+            let env_map = crate::cc_switch::gemini_config::read_gemini_env()?;
+            Ok(crate::cc_switch::gemini_config::env_to_json(&env_map))
         }
         AppType::OpenCode => {
-            use crate::cc_switch::opencode_config::{get_opencode_config_path, read_opencode_config};
-
-            let config_path = get_opencode_config_path();
-            if !config_path.exists() {
-                return Err(AppError::localized(
-                    "opencode.config.missing",
-                    "OpenCode 配置文件不存在",
-                    "OpenCode configuration file not found",
-                ));
-            }
-
-            let config = read_opencode_config()?;
-            Ok(config)
+            // OpenCode doesn't have a separate live config file
+            Ok(json!({}))
+        }
+        AppType::Cursor => {
+            // Cursor doesn't have a separate live config file
+            Ok(json!({}))
         }
     }
 }
@@ -331,60 +298,19 @@ pub fn import_default_config(state: &AppState, app_type: AppType) -> Result<bool
                     "Claude settings file is missing",
                 ));
             }
-            let mut v = read_json_file::<Value>(&settings_path)?;
-            let _ = normalize_claude_models_in_value(&mut v);
-            v
+            read_json_file(&settings_path)?
         }
         AppType::Gemini => {
-            use crate::cc_switch::gemini_config::{
-                env_to_json, get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
-            };
-
-            // Read .env file (environment variables)
-            let env_path = get_gemini_env_path();
-            if !env_path.exists() {
-                return Err(AppError::localized(
-                    "gemini.live.missing",
-                    "Gemini 配置文件不存在",
-                    "Gemini configuration file is missing",
-                ));
-            }
-
-            let env_map = read_gemini_env()?;
-            let env_json = env_to_json(&env_map);
-            let env_obj = env_json.get("env").cloned().unwrap_or_else(|| json!({}));
-
-            // Read settings.json file (MCP config etc.)
-            let settings_path = get_gemini_settings_path();
-            let config_obj = if settings_path.exists() {
-                read_json_file(&settings_path)?
-            } else {
-                json!({})
-            };
-
-            // Return complete structure: { "env": {...}, "config": {...} }
-            json!({
-                "env": env_obj,
-                "config": config_obj
-            })
+            let env_map = crate::cc_switch::gemini_config::read_gemini_env()?;
+            crate::cc_switch::gemini_config::env_to_json(&env_map)
         }
         AppType::OpenCode => {
-            // OpenCode uses additive mode - import from live is not the same pattern
-            // For now, return an empty config structure
-            use crate::cc_switch::opencode_config::{get_opencode_config_path, read_opencode_config};
-
-            let config_path = get_opencode_config_path();
-            if !config_path.exists() {
-                return Err(AppError::localized(
-                    "opencode.live.missing",
-                    "OpenCode 配置文件不存在",
-                    "OpenCode configuration file is missing",
-                ));
-            }
-
-            // For OpenCode, we return the full config - but note that OpenCode
-            // uses additive mode, so importing defaults works differently
-            read_opencode_config()?
+            // OpenCode doesn't have a separate live config file
+            json!({})
+        }
+        AppType::Cursor => {
+            // Cursor doesn't have a separate live config file
+            json!({})
         }
     };
 

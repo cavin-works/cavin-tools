@@ -146,6 +146,11 @@ pub(crate) fn build_provider_from_request(
         AppType::Codex => build_codex_settings(request),
         AppType::Gemini => build_gemini_settings(request),
         AppType::OpenCode => build_opencode_settings(request),
+        AppType::Cursor => {
+            return Err(AppError::InvalidInput(
+                "Cursor does not support provider import via deep link".to_string(),
+            ))
+        }
     };
 
     // Build usage script configuration if provided

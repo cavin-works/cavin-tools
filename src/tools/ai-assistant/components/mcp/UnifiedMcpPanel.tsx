@@ -59,12 +59,13 @@ const UnifiedMcpPanel = React.forwardRef<
 
   // Count enabled servers per app
   const enabledCounts = useMemo(() => {
-    const counts = { claude: 0, codex: 0, gemini: 0, opencode: 0 };
+    const counts = { claude: 0, codex: 0, gemini: 0, opencode: 0, cursor: 0 };
     serverEntries.forEach(([_, server]) => {
       if (server.apps.claude) counts.claude++;
       if (server.apps.codex) counts.codex++;
       if (server.apps.gemini) counts.gemini++;
       if (server.apps.opencode) counts.opencode++;
+      if (server.apps.cursor) counts.cursor++;
     });
     return counts;
   }, [serverEntries]);
@@ -150,7 +151,8 @@ const UnifiedMcpPanel = React.forwardRef<
           {t("mcp.unifiedPanel.apps.claude")}: {enabledCounts.claude} ·{" "}
           {t("mcp.unifiedPanel.apps.codex")}: {enabledCounts.codex} ·{" "}
           {t("mcp.unifiedPanel.apps.gemini")}: {enabledCounts.gemini} ·{" "}
-          {t("mcp.unifiedPanel.apps.opencode")}: {enabledCounts.opencode}
+          {t("mcp.unifiedPanel.apps.opencode")}: {enabledCounts.opencode} ·{" "}
+          {t("mcp.unifiedPanel.apps.cursor")}: {enabledCounts.cursor}
         </div>
       </div>
 
@@ -352,6 +354,22 @@ const UnifiedMcpListItem: React.FC<UnifiedMcpListItemProps> = ({
             checked={server.apps.opencode}
             onCheckedChange={(checked: boolean) =>
               onToggleApp(id, "opencode", checked)
+            }
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <label
+            htmlFor={`${id}-cursor`}
+            className="text-sm text-foreground/80 cursor-pointer"
+          >
+            {t("mcp.unifiedPanel.apps.cursor")}
+          </label>
+          <Switch
+            id={`${id}-cursor`}
+            checked={server.apps.cursor}
+            onCheckedChange={(checked: boolean) =>
+              onToggleApp(id, "cursor", checked)
             }
           />
         </div>

@@ -14,6 +14,9 @@ pub fn prompt_file_path(app: &AppType) -> Result<PathBuf, AppError> {
         AppType::Codex => get_base_dir_with_fallback(get_codex_auth_path(), ".codex")?,
         AppType::Gemini => get_gemini_dir(),
         AppType::OpenCode => get_opencode_dir(),
+        AppType::Cursor => {
+            return Err(AppError::Message("Cursor 不支持提示词功能".to_string()));
+        }
     };
 
     let filename = match app {
@@ -21,6 +24,9 @@ pub fn prompt_file_path(app: &AppType) -> Result<PathBuf, AppError> {
         AppType::Codex => "AGENTS.md",
         AppType::Gemini => "GEMINI.md",
         AppType::OpenCode => "AGENTS.md",
+        AppType::Cursor => {
+            return Err(AppError::Message("Cursor 不支持提示词功能".to_string()));
+        }
     };
 
     Ok(base_dir.join(filename))

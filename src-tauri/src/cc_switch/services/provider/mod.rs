@@ -440,6 +440,10 @@ impl ProviderService {
             AppType::Codex => Self::extract_codex_common_config(&provider.settings_config),
             AppType::Gemini => Self::extract_gemini_common_config(&provider.settings_config),
             AppType::OpenCode => Self::extract_opencode_common_config(&provider.settings_config),
+            AppType::Cursor => {
+                // Cursor doesn't support provider config extraction
+                Ok(String::new())
+            }
         }
     }
 
@@ -453,6 +457,10 @@ impl ProviderService {
             AppType::Codex => Self::extract_codex_common_config(settings_config),
             AppType::Gemini => Self::extract_gemini_common_config(settings_config),
             AppType::OpenCode => Self::extract_opencode_common_config(settings_config),
+            AppType::Cursor => {
+                // Cursor doesn't support provider config extraction
+                Ok(String::new())
+            }
         }
     }
 
@@ -786,6 +794,14 @@ impl ProviderService {
                     ));
                 }
             }
+            AppType::Cursor => {
+                // Cursor doesn't support custom providers
+                return Err(AppError::localized(
+                    "provider.cursor.not_supported",
+                    "Cursor 不支持自定义供应商",
+                    "Cursor does not support custom providers",
+                ));
+            }
         }
 
         // Validate and clean UsageScript configuration (common for all app types)
@@ -956,6 +972,14 @@ impl ProviderService {
                     .to_string();
 
                 Ok((api_key, base_url))
+            }
+            AppType::Cursor => {
+                // Cursor doesn't support credential extraction
+                return Err(AppError::localized(
+                    "provider.cursor.not_supported",
+                    "Cursor 不支持自定义供应商",
+                    "Cursor does not support custom providers",
+                ));
             }
         }
     }

@@ -126,6 +126,9 @@ impl ConfigService {
                 // OpenCode uses additive mode, no live sync needed
                 // OpenCode providers are managed directly in the config file
             }
+            AppType::Cursor => {
+                // Cursor doesn't support live sync
+            }
         }
 
         Ok(())

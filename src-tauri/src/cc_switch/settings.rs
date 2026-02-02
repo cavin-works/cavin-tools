@@ -33,6 +33,8 @@ pub struct VisibleApps {
     pub gemini: bool,
     #[serde(default = "default_true")]
     pub opencode: bool,
+    #[serde(default = "default_true")]
+    pub cursor: bool,
 }
 
 impl Default for VisibleApps {
@@ -42,6 +44,7 @@ impl Default for VisibleApps {
             codex: true,
             gemini: true,
             opencode: true,
+            cursor: true,
         }
     }
 }
@@ -54,6 +57,7 @@ impl VisibleApps {
             AppType::Codex => self.codex,
             AppType::Gemini => self.gemini,
             AppType::OpenCode => self.opencode,
+            AppType::Cursor => self.cursor,
         }
     }
 }
@@ -335,6 +339,7 @@ pub fn get_current_provider(app_type: &AppType) -> Option<String> {
         AppType::Codex => settings.current_provider_codex.clone(),
         AppType::Gemini => settings.current_provider_gemini.clone(),
         AppType::OpenCode => settings.current_provider_opencode.clone(),
+        AppType::Cursor => None, // Cursor 不使用 provider 管理
     }
 }
 
@@ -350,6 +355,10 @@ pub fn set_current_provider(app_type: &AppType, id: Option<&str>) -> Result<(), 
         AppType::Codex => settings.current_provider_codex = id.map(|s| s.to_string()),
         AppType::Gemini => settings.current_provider_gemini = id.map(|s| s.to_string()),
         AppType::OpenCode => settings.current_provider_opencode = id.map(|s| s.to_string()),
+        AppType::Cursor => {
+            // Cursor 不使用 provider 管理，忽略设置
+            return Ok(());
+        }
     }
 
     update_settings(settings)
