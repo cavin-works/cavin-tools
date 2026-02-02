@@ -1,3 +1,17 @@
+## [0.1.4](https://github.com/cavin-works/cavin-tools/compare/v0.1.3...v0.1.4) (2026-02-02)
+
+
+### 🐛 Bug 修复
+
+* **process-manager:** 修复 Windows 平台 cmd 窗口弹出问题 ([b3612b2](https://github.com/cavin-works/cavin-tools/commit/b3612b283a57f961e2edc9e65d0996d7defcfffe))
+
+
+### ✨ 新功能
+
+* **mcp:** add Cursor MCP server integration ([7f0dd75](https://github.com/cavin-works/cavin-tools/commit/7f0dd752bb5d53f9bcb00332d6e204d6306f090c)), closes [#cursor-mcp-integration](https://github.com/cavin-works/cavin-tools/issues/cursor-mcp-integration)
+
+
+
 ## [0.1.3](https://github.com/cavin-works/cavin-tools/compare/v0.1.0...v0.1.3) (2026-01-28)
 
 
