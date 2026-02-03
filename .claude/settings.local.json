@@ -27,7 +27,9 @@
       "Bash(cargo search rmbg --limit 5)",
       "Bash(cargo info rmbg)",
       "mcp__open-websearch__fetchGithubReadme",
-      "Bash(cargo search ort --limit 10)"
+      "Bash(cargo search ort --limit 10)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

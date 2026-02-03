@@ -84,6 +84,7 @@ function App() {
     codex: true,
     gemini: true,
     opencode: true,
+    cursor: true,
   };
 
   // Get first visible app for fallback
@@ -92,6 +93,7 @@ function App() {
     if (visibleApps.codex) return "codex";
     if (visibleApps.gemini) return "gemini";
     if (visibleApps.opencode) return "opencode";
+    if (visibleApps.cursor) return "cursor";
     return "claude"; // fallback
   };
 

@@ -33,6 +33,7 @@ export function AppVisibilitySettings({
     codex: true,
     gemini: false,
     opencode: true,
+    cursor: true,
   };
 
   // Count how many apps are currently visible

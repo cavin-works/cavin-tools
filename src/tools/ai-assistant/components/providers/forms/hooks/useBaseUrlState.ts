@@ -6,7 +6,7 @@ import {
 import type { ProviderCategory } from "@ai-assistant/types";
 
 interface UseBaseUrlStateProps {
-  appType: "claude" | "codex" | "gemini" | "opencode";
+  appType: "claude" | "codex" | "gemini" | "opencode" | "cursor";
   category: ProviderCategory | undefined;
   settingsConfig: string;
   codexConfig?: string;

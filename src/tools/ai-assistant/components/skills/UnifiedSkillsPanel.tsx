@@ -59,13 +59,14 @@ const UnifiedSkillsPanel = React.forwardRef<
 
   // Count enabled skills per app
   const enabledCounts = useMemo(() => {
-    const counts = { claude: 0, codex: 0, gemini: 0, opencode: 0 };
+    const counts = { claude: 0, codex: 0, gemini: 0, opencode: 0, cursor: 0 };
     if (!skills) return counts;
     skills.forEach((skill) => {
       if (skill.apps.claude) counts.claude++;
       if (skill.apps.codex) counts.codex++;
       if (skill.apps.gemini) counts.gemini++;
       if (skill.apps.opencode) counts.opencode++;
+      if (skill.apps.cursor) counts.cursor++;
     });
     return counts;
   }, [skills]);
