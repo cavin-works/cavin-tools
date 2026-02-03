@@ -1,3 +1,12 @@
+## [0.1.6](https://github.com/cavin-works/cavin-tools/compare/v0.1.5...v0.1.6) (2026-02-03)
+
+
+### 🐛 Bug 修复
+
+* **version:** 修复 GitHub Actions 版本号更新问题 ([48a7417](https://github.com/cavin-works/cavin-tools/commit/48a7417e2e5df51bc8b601b5913da85b13850889))
+
+
+
 ## [0.1.5](https://github.com/cavin-works/cavin-tools/compare/v0.1.4...v0.1.5) (2026-02-03)
 
 
