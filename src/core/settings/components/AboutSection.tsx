@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import logo from '../../../assets/logo.svg';
 import { ExternalLink, RefreshCw, CheckCircle, Github, Heart } from 'lucide-react';
 import { checkUpdate } from '@/lib/updateUtils';
 import { useAppStore } from '@/core/store/appStore';
 
-const APP_VERSION = '0.1.0';
 const BUILD_DATE = '2026-01';
 const GITHUB_URL = 'https://github.com/cavin-works/cavin-tools';
 
@@ -17,7 +16,24 @@ const isTauri = () => '__TAURI__' in window;
 export function AboutSection() {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'latest' | 'available'>('idle');
+  const [appVersion, setAppVersion] = useState<string>('0.1.5');
   const { setUpdateAvailable, setShowUpdateDialog } = useAppStore();
+
+  // 获取版本号
+  useEffect(() => {
+    const getVersion = async () => {
+      if (isTauri()) {
+        try {
+          const { getVersion } = await import('@tauri-apps/api/app');
+          const version = await getVersion();
+          setAppVersion(version);
+        } catch (err) {
+          console.error('获取版本号失败:', err);
+        }
+      }
+    };
+    getVersion();
+  }, []);
 
   // 检查更新
   const handleCheckUpdate = async () => {
@@ -75,7 +91,7 @@ export function AboutSection() {
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">专业的多媒体处理工具集</p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded">
-                v{APP_VERSION}
+                v{appVersion}
               </span>
               <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded">
                 {BUILD_DATE}

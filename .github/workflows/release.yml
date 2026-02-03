@@ -70,12 +70,8 @@ jobs:
         shell: bash
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          # Update package.json
+          # Update all version files (package.json, tauri.conf.json, Cargo.toml)
           node scripts/update-version.cjs $VERSION
-          # Update Cargo.toml
-          cd src-tauri
-          sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
-          rm -f Cargo.toml.bak
           echo "Updated version to $VERSION"
 
       - name: Generate CHANGELOG

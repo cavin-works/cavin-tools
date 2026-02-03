@@ -24,4 +24,11 @@ config.version = VERSION;
 fs.writeFileSync(tauriConfPath, JSON.stringify(config, null, 2) + '\n');
 console.log('✓ Updated tauri.conf.json');
 
+// Update Cargo.toml
+const cargoPath = path.join(process.cwd(), 'src-tauri', 'Cargo.toml');
+let cargoContent = fs.readFileSync(cargoPath, 'utf-8');
+cargoContent = cargoContent.replace(/^version = ".*"/m, `version = "${VERSION}"`);
+fs.writeFileSync(cargoPath, cargoContent);
+console.log('✓ Updated Cargo.toml');
+
 console.log('Version update completed successfully');
