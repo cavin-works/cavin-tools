@@ -1,9 +1,10 @@
-## [0.1.4](https://github.com/cavin-works/cavin-tools/compare/v0.1.3...v0.1.4) (2026-02-02)
+## [0.1.4](https://github.com/cavin-works/cavin-tools/compare/v0.1.3...v0.1.4) (2026-02-03)
 
 
 ### 🐛 Bug 修复
 
 * **process-manager:** 修复 Windows 平台 cmd 窗口弹出问题 ([b3612b2](https://github.com/cavin-works/cavin-tools/commit/b3612b283a57f961e2edc9e65d0996d7defcfffe))
+* **types:** add cursor to TypeScript type definitions ([2bcd3a9](https://github.com/cavin-works/cavin-tools/commit/2bcd3a91df663b2c4c487685c87b4232f7e52c85))
 
 
 ### ✨ 新功能
