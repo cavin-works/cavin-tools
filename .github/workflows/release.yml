@@ -126,7 +126,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate latest.json
+      - name: Download signature files from Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          mkdir -p signatures
+
+          # 下载所有 .sig 文件到 signatures 目录
+          gh release download "v${VERSION}" -p "*.sig" --dir signatures || echo "No signature files found"
+
+          # 列出下载的签名文件
+          ls -la signatures/
+
+      - name: Generate latest.json with signatures
         shell: bash
         env:
           VERSION: ${{ needs.release.outputs.version }}
@@ -136,6 +149,7 @@ jobs:
         run: |
           node -e "
             const fs = require('fs');
+            const path = require('path');
 
             const VERSION = process.env.VERSION;
             const NOTES = process.env.NOTES || '暂无更新内容';
@@ -143,31 +157,61 @@ jobs:
             const repoName = process.env.REPO_NAME;
 
             console.log('Generating latest.json for version:', VERSION);
-            console.log('Release notes length:', NOTES ? NOTES.length : 0);
+
+            // 读取签名文件内容的辅助函数
+            function readSignature(filePath) {
+              try {
+                if (fs.existsSync(filePath)) {
+                  // 读取 .sig 文件的内容并去除空白字符
+                  const sigContent = fs.readFileSync(filePath, 'utf-8').trim();
+                  console.log('Found signature file:', filePath);
+                  return sigContent;
+                }
+              } catch (err) {
+                console.log('Error reading signature file:', filePath, err.message);
+              }
+              return '';
+            }
+
+            // 根据实际的 Release 文件名匹配签名文件
+            const windowsSig = readSignature('signatures/Mnemosyne_' + VERSION + '_x64-setup.exe.sig');
+            const macSig = readSignature('signatures/Mnemosyne_' + VERSION + '_aarch64.app.tar.gz.sig');
 
             const latest = {
               version: VERSION,
               notes: NOTES,
               pub_date: new Date().toISOString(),
-              platforms: {
-                'windows-x86_64': {
-                  url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Cavin-Tools_' + VERSION + '_x64-setup.nsis.zip',
-                  signature: ''
-                },
-                'darwin-aarch64': {
-                  url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_aarch64.app.tar.gz',
-                  signature: ''
-                }
-              }
+              platforms: {}
             };
+
+            // Windows 平台
+            if (windowsSig) {
+              latest.platforms['windows-x86_64'] = {
+                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_x64-setup.nsis.zip',
+                signature: windowsSig
+              };
+            }
+
+            // macOS 平台
+            if (macSig) {
+              latest.platforms['darwin-aarch64'] = {
+                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_aarch64.app.tar.gz',
+                signature: macSig
+              };
+            }
 
             fs.writeFileSync('latest.json', JSON.stringify(latest, null, 2));
             console.log('Generated latest.json');
+            console.log('Windows signature:', windowsSig ? 'present' : 'MISSING');
+            console.log('macOS signature:', macSig ? 'present' : 'MISSING');
           "
 
       - name: Upload latest.json to Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # 显示生成的 latest.json 内容
+          cat latest.json
+
           # 如果文件已存在，先删除再上传
           gh release upload ${{ github.ref_name }} latest.json --clobber
