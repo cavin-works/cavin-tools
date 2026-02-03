@@ -17,6 +17,8 @@ pub fn list_processes() -> Result<Vec<ProcessInfo>, String> {
 /// Windows平台获取进程列表
 #[cfg(target_os = "windows")]
 fn list_processes_windows() -> Result<Vec<ProcessInfo>, String> {
+    use std::os::windows::process::CommandExt;
+
     // 使用 CREATE_NO_WINDOW 标志防止 cmd 窗口弹出
     let output = Command::new("cmd")
         .args(["/C", "tasklist", "/fo", "csv", "/nh"])
@@ -164,6 +166,8 @@ pub fn kill_process(pid: u32) -> Result<KillResult, String> {
 /// Windows平台杀进程
 #[cfg(target_os = "windows")]
 fn kill_process_windows(pid: u32) -> Result<KillResult, String> {
+    use std::os::windows::process::CommandExt;
+
     // 使用 CREATE_NO_WINDOW 标志防止窗口弹出
     let output = Command::new("taskkill")
         .args(["/F", "/PID", &pid.to_string()])

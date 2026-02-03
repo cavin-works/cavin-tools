@@ -18,6 +18,8 @@ pub fn query_ports_by_pid(pid: u32) -> Result<Vec<PortInfo>, String> {
 /// Windows平台根据PID查询端口
 #[cfg(target_os = "windows")]
 fn query_ports_by_pid_windows(pid: u32) -> Result<Vec<PortInfo>, String> {
+    use std::os::windows::process::CommandExt;
+
     // 使用 CREATE_NO_WINDOW 标志防止 cmd 窗口弹出
     let output = Command::new("cmd")
         .args(["/C", "netstat", "-ano"])
@@ -156,6 +158,8 @@ pub fn query_port(port: u16) -> Result<Vec<PortInfo>, String> {
 /// Windows平台查询端口
 #[cfg(target_os = "windows")]
 fn query_port_windows(port: u16) -> Result<Vec<PortInfo>, String> {
+    use std::os::windows::process::CommandExt;
+
     // 使用 CREATE_NO_WINDOW 标志防止 cmd 窗口弹出
     let output = Command::new("cmd")
         .args(["/C", "netstat", "-ano"])
@@ -398,6 +402,8 @@ fn get_process_name_by_pid(pid: u32) -> String {
 /// Windows平台获取进程名称
 #[cfg(target_os = "windows")]
 fn get_process_name_by_pid_windows(pid: u32) -> String {
+    use std::os::windows::process::CommandExt;
+
     // 使用 CREATE_NO_WINDOW 标志防止 cmd 窗口弹出
     let output = Command::new("cmd")
         .args(["/C", "tasklist", "/FI", &format!("PID eq {}", pid), "/FO", "CSV", "/NH"])

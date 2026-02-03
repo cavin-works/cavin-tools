@@ -17,7 +17,6 @@ use crate::cc_switch::store::AppState;
 use super::gemini_auth::{
     detect_gemini_auth_type, ensure_google_oauth_security_flag, GeminiAuthType,
 };
-use super::normalize_claude_models_in_value;
 
 /// Live configuration snapshot for backup/restore
 #[derive(Clone)]
