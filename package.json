@@ -1,6 +1,6 @@
 {
   "name": "mnemosyne",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Mnemosyne - All-in-One Toolkit with AI Assistant",
   "private": true,
   "type": "module",

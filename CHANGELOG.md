@@ -1,3 +1,12 @@
+## [0.1.5](https://github.com/cavin-works/cavin-tools/compare/v0.1.4...v0.1.5) (2026-02-03)
+
+
+### 🐛 Bug 修复
+
+* **ci:** 修复 latest.json 签名字段为空的问题 ([9985eea](https://github.com/cavin-works/cavin-tools/commit/9985eead5df5baf932cd829160d2aa6e8eee493e)), closes [tauri-apps/tauri-action#950](https://github.com/tauri-apps/tauri-action/issues/950)
+
+
+
 ## [0.1.4](https://github.com/cavin-works/cavin-tools/compare/v0.1.3...v0.1.4) (2026-02-03)
 
 
