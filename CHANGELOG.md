@@ -5,6 +5,7 @@
 
 * **process-manager:** 修复 Windows 平台 cmd 窗口弹出问题 ([b3612b2](https://github.com/cavin-works/cavin-tools/commit/b3612b283a57f961e2edc9e65d0996d7defcfffe))
 * **types:** add cursor to TypeScript type definitions ([2bcd3a9](https://github.com/cavin-works/cavin-tools/commit/2bcd3a91df663b2c4c487685c87b4232f7e52c85))
+* **windows:** add CommandExt import for creation_flags ([62b7ce4](https://github.com/cavin-works/cavin-tools/commit/62b7ce4f1f622c1b03a5dcc417cc00072db7cfee))
 
 
 ### ✨ 新功能
