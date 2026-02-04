@@ -29,7 +29,15 @@
       "mcp__open-websearch__fetchGithubReadme",
       "Bash(cargo search ort --limit 10)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "WebSearch",
+      "Bash(gh release view:*)",
+      "Bash(gh release:*)",
+      "Bash(1 ls -la /tmp/tauri-sigs/ echo \"=== Checking signature file format ===\" cat /tmp/tauri-sigs/Mnemosyne_aarch64.app.tar.gz.sig)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(node scripts/update-version.cjs:*)",
+      "Bash(node -e:*)"
     ]
   }
 }
