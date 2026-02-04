@@ -170,8 +170,10 @@ jobs:
             }
 
             // 根据实际的 Release 文件名匹配签名文件
+            // Windows: Mnemosyne_<VERSION>_x64-setup.exe.sig
             const windowsSig = readSignature('signatures/Mnemosyne_' + VERSION + '_x64-setup.exe.sig');
-            const macSig = readSignature('signatures/Mnemosyne_' + VERSION + '_aarch64.app.tar.gz.sig');
+            // macOS: Mnemosyne_aarch64.app.tar.gz.sig (注意：Tauri 生成的 macOS 文件名不带版本号)
+            const macSig = readSignature('signatures/Mnemosyne_aarch64.app.tar.gz.sig');
 
             const latest = {
               version: VERSION,
@@ -191,7 +193,7 @@ jobs:
             // macOS 平台
             if (macSig) {
               latest.platforms['darwin-aarch64'] = {
-                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_aarch64.app.tar.gz',
+                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_aarch64.app.tar.gz',
                 signature: macSig
               };
             }
