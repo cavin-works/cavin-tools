@@ -1,9 +1,10 @@
-# [0.2.0](https://github.com/cavin-works/cavin-tools/compare/v0.1.6...v0.2.0) (2026-02-04)
+## [0.1.7](https://github.com/cavin-works/cavin-tools/compare/v0.1.6...v0.1.7) (2026-02-04)
 
 
 ### 🐛 Bug 修复
 
 * **release:** 修复 macOS 签名文件名匹配问题 ([092e638](https://github.com/cavin-works/cavin-tools/commit/092e63876292b20a3d9c0a32710ea54ab29c10fb))
+* 修正版本号为 0.1.7 ([9b10f50](https://github.com/cavin-works/cavin-tools/commit/9b10f50b48e0b7d6b5f29b7a1e435f90ed73ae02))
 
 
 ### ✨ 新功能
