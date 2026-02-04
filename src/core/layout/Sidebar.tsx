@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isMac } from "@/lib/platform";
 import logo from "../../assets/logo.svg";
 import {
   ChevronLeft,
@@ -90,7 +91,7 @@ export function Sidebar() {
       {/* 折叠/展开按钮 - 悬浮在边缘 */}
       <button
         onClick={toggleSidebar}
-        className="absolute top-6 -right-2.5 z-10 w-5 h-5 flex items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors bg-card shadow-sm"
+        className={`absolute -right-2.5 z-10 w-5 h-5 flex items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors bg-card shadow-sm ${isMac() ? "top-[52px]" : "top-6"}`}
         title={sidebarCollapsed ? "展开侧边栏" : "折叠侧边栏"}
       >
         {sidebarCollapsed ? (
@@ -101,25 +102,37 @@ export function Sidebar() {
       </button>
 
       {/* 顶部品牌区 */}
-      <div className="flex-shrink-0 p-4">
-        <button
-          onClick={() => {
-            setShowSettings(false);
-            setCurrentToolId(null);
-          }}
-          className={`flex items-center gap-3 hover:opacity-80 transition-opacity ${sidebarCollapsed ? "justify-center w-full" : ""}`}
-          title="返回首页"
-        >
-          <img src={logo} alt="Logo" className="w-10 h-10 flex-shrink-0" />
-          {!sidebarCollapsed && (
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base font-bold text-sidebar-foreground">
-                Mnemosyne
-              </h1>
-              <p className="text-xs text-muted-foreground">多功能工具集</p>
-            </div>
-          )}
-        </button>
+      <div className={`flex-shrink-0 relative ${isMac() ? "pt-10 pb-4 px-4" : "p-4"}`}>
+        {/* macOS 拖动区域 - 整个区域可拖动 */}
+        {isMac() && (
+          <div
+            data-tauri-drag-region
+            className="absolute inset-0 pointer-events-none"
+            style={{ margin: '0 -1rem' }}
+          />
+        )}
+        <div className="relative flex items-center gap-3">
+          {/* Logo 和标题可拖动 */}
+          <div
+            data-tauri-drag-region
+            className={`flex items-center gap-3 hover:opacity-80 transition-opacity cursor-move ${sidebarCollapsed ? "justify-center w-full" : ""}`}
+            title="返回首页"
+            onClick={() => {
+              setShowSettings(false);
+              setCurrentToolId(null);
+            }}
+          >
+            <img src={logo} alt="Logo" className="w-10 h-10 flex-shrink-0" />
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base font-bold text-sidebar-foreground">
+                  Mnemosyne
+                </h1>
+                <p className="text-xs text-muted-foreground">多功能工具集</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 工具列表 */}

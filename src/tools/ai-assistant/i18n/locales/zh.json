@@ -1039,7 +1039,8 @@
       "claude": "Claude",
       "codex": "Codex",
       "gemini": "Gemini",
-      "opencode": "OpenCode"
+      "opencode": "OpenCode",
+      "cursor": "Cursor"
     }
   },
   "deeplink": {

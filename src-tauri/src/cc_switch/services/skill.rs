@@ -123,12 +123,14 @@ impl Default for SkillStore {
         SkillStore {
             skills: HashMap::new(),
             repos: vec![
+                // Claude 官方仓库
                 SkillRepo {
                     owner: "anthropics".to_string(),
                     name: "skills".to_string(),
                     branch: "main".to_string(),
                     enabled: true,
                 },
+                // Claude 社区仓库
                 SkillRepo {
                     owner: "ComposioHQ".to_string(),
                     name: "awesome-claude-skills".to_string(),
@@ -144,6 +146,19 @@ impl Default for SkillStore {
                 SkillRepo {
                     owner: "JimLiu".to_string(),
                     name: "baoyu-skills".to_string(),
+                    branch: "main".to_string(),
+                    enabled: true,
+                },
+                // Cursor 社区仓库
+                SkillRepo {
+                    owner: "grapelike-class151".to_string(),
+                    name: "cursor-skills".to_string(),
+                    branch: "main".to_string(),
+                    enabled: true,
+                },
+                SkillRepo {
+                    owner: "araguaci".to_string(),
+                    name: "cursor-skills".to_string(),
                     branch: "main".to_string(),
                     enabled: true,
                 },
@@ -208,8 +223,9 @@ impl SkillService {
                 }
             }
             AppType::Cursor => {
-                // Cursor doesn't support skill management
-                return Err(anyhow!("Cursor 不支持技能管理功能"));
+                if let Some(custom) = crate::cc_switch::settings::get_cursor_override_dir() {
+                    return Ok(custom.join("skills"));
+                }
             }
         }
 
@@ -225,9 +241,7 @@ impl SkillService {
             AppType::Codex => home.join(".codex").join("skills"),
             AppType::Gemini => home.join(".gemini").join("skills"),
             AppType::OpenCode => home.join(".config").join("opencode").join("skills"),
-            AppType::Cursor => {
-                return Err(anyhow!("Cursor 不支持技能管理功能"));
-            }
+            AppType::Cursor => home.join(".cursor").join("skills"),
         })
     }
 
@@ -470,7 +484,7 @@ impl SkillService {
                     AppType::Codex => "codex",
                     AppType::Gemini => "gemini",
                     AppType::OpenCode => "opencode",
-                    AppType::Cursor => continue, // Cursor 不支持技能管理，跳过
+                    AppType::Cursor => "cursor",
                 };
 
                 unmanaged

@@ -99,6 +99,8 @@ pub struct AppSettings {
     pub gemini_config_dir: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub opencode_config_dir: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cursor_config_dir: Option<String>,
 
     // ===== 当前供应商 ID（设备级）=====
     /// 当前 Claude 供应商 ID（本地存储，优先于数据库 is_current）
@@ -142,6 +144,7 @@ impl Default for AppSettings {
             codex_config_dir: None,
             gemini_config_dir: None,
             opencode_config_dir: None,
+            cursor_config_dir: None,
             current_provider_claude: None,
             current_provider_codex: None,
             current_provider_gemini: None,
@@ -181,6 +184,13 @@ impl AppSettings {
 
         self.opencode_config_dir = self
             .opencode_config_dir
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+
+        self.cursor_config_dir = self
+            .cursor_config_dir
             .as_ref()
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
@@ -322,6 +332,14 @@ pub fn get_opencode_override_dir() -> Option<PathBuf> {
     let settings = settings_store().read().ok()?;
     settings
         .opencode_config_dir
+        .as_ref()
+        .map(|p| resolve_override_path(p))
+}
+
+pub fn get_cursor_override_dir() -> Option<PathBuf> {
+    let settings = settings_store().read().ok()?;
+    settings
+        .cursor_config_dir
         .as_ref()
         .map(|p| resolve_override_path(p))
 }

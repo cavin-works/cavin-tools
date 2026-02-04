@@ -32,13 +32,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-assistant/componen
 import { Button } from "@ai-assistant/components/ui/button";
 import { settingsApi } from "@ai-assistant/lib/api";
 import { LanguageSettings } from "@ai-assistant/components/settings/LanguageSettings";
-import { ThemeSettings } from "@ai-assistant/components/settings/ThemeSettings";
 import { WindowSettings } from "@ai-assistant/components/settings/WindowSettings";
 import { AppVisibilitySettings } from "@ai-assistant/components/settings/AppVisibilitySettings";
 import { SkillSyncMethodSettings } from "@ai-assistant/components/settings/SkillSyncMethodSettings";
 import { DirectorySettings } from "@ai-assistant/components/settings/DirectorySettings";
 import { ImportExportSection } from "@ai-assistant/components/settings/ImportExportSection";
-import { AboutSection } from "@ai-assistant/components/settings/AboutSection";
 import { GlobalProxySettings } from "@ai-assistant/components/settings/GlobalProxySettings";
 import { ProxyPanel } from "@ai-assistant/components/proxy";
 import { PricingConfigPanel } from "@ai-assistant/components/usage/PricingConfigPanel";
@@ -74,7 +72,6 @@ export function SettingsPage({
     settings,
     isLoading,
     isSaving,
-    isPortable,
     appConfigDir,
     resolvedDirs,
     updateSettings,
@@ -217,7 +214,7 @@ export function SettingsPage({
           onValueChange={setActiveTab}
           className="flex flex-col h-full"
         >
-          <TabsList className="grid w-full grid-cols-4 mb-6 glass rounded-lg">
+          <TabsList className="grid w-full grid-cols-3 mb-6 glass rounded-lg">
             <TabsTrigger value="general">
               {t("settings.tabGeneral")}
             </TabsTrigger>
@@ -225,7 +222,6 @@ export function SettingsPage({
               {t("settings.tabAdvanced")}
             </TabsTrigger>
             <TabsTrigger value="usage">{t("usage.title")}</TabsTrigger>
-            <TabsTrigger value="about">{t("common.about")}</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2">
@@ -241,7 +237,6 @@ export function SettingsPage({
                     value={settings.language}
                     onChange={(lang) => handleAutoSave({ language: lang })}
                   />
-                  <ThemeSettings />
                   <AppVisibilitySettings
                     settings={settings}
                     onChange={handleAutoSave}
@@ -633,10 +628,6 @@ export function SettingsPage({
                   </div>
                 </motion.div>
               ) : null}
-            </TabsContent>
-
-            <TabsContent value="about" className="mt-0">
-              <AboutSection isPortable={isPortable} />
             </TabsContent>
 
             <TabsContent value="usage" className="mt-0">

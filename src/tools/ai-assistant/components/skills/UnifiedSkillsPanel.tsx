@@ -149,7 +149,8 @@ const UnifiedSkillsPanel = React.forwardRef<
           {t("skills.apps.claude")}: {enabledCounts.claude} ·{" "}
           {t("skills.apps.codex")}: {enabledCounts.codex} ·{" "}
           {t("skills.apps.gemini")}: {enabledCounts.gemini} ·{" "}
-          {t("skills.apps.opencode")}: {enabledCounts.opencode}
+          {t("skills.apps.opencode")}: {enabledCounts.opencode} ·{" "}
+          {t("skills.apps.cursor")}: {enabledCounts.cursor}
         </div>
       </div>
 
@@ -331,6 +332,22 @@ const InstalledSkillListItem: React.FC<InstalledSkillListItemProps> = ({
             checked={skill.apps.opencode}
             onCheckedChange={(checked: boolean) =>
               onToggleApp(skill.id, "opencode", checked)
+            }
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <label
+            htmlFor={`${skill.id}-cursor`}
+            className="text-sm text-foreground/80 cursor-pointer"
+          >
+            {t("skills.apps.cursor")}
+          </label>
+          <Switch
+            id={`${skill.id}-cursor`}
+            checked={skill.apps.cursor}
+            onCheckedChange={(checked: boolean) =>
+              onToggleApp(skill.id, "cursor", checked)
             }
           />
         </div>

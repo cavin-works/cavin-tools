@@ -32,14 +32,13 @@ import { useLastValidValue } from "@ai-assistant/hooks/useLastValidValue";
 import { extractErrorMessage } from "@ai-assistant/utils/errorUtils";
 import { isTextEditableTarget } from "@ai-assistant/utils/domUtils";
 import { cn } from "@ai-assistant/lib/utils";
-import "@ai-assistant/lib/platform"; // Platform detection, used for platform-specific features
+import { isMac } from "@ai-assistant/lib/platform"; // Platform detection, used for platform-specific features
 import { AppSwitcher } from "@ai-assistant/components/AppSwitcher";
 import { ProviderList } from "@ai-assistant/components/providers/ProviderList";
 import { AddProviderDialog } from "@ai-assistant/components/providers/AddProviderDialog";
 import { EditProviderDialog } from "@ai-assistant/components/providers/EditProviderDialog";
 import { ConfirmDialog } from "@ai-assistant/components/ConfirmDialog";
 import { SettingsPage } from "@ai-assistant/components/settings/SettingsPage";
-import { UpdateBadge } from "@ai-assistant/components/UpdateBadge";
 import { EnvWarningBanner } from "@ai-assistant/components/env/EnvWarningBanner";
 import { ProxyToggle } from "@ai-assistant/components/proxy/ProxyToggle";
 import { FailoverToggle } from "@ai-assistant/components/proxy/FailoverToggle";
@@ -680,10 +679,21 @@ function App() {
       )}
 
       <header
-        className="sticky top-0 z-40 w-full pt-3"
-        style={{ height: HEADER_HEIGHT }}
+        className={cn(
+          "sticky top-0 z-40 w-full relative",
+          isMac() ? "pt-[38px]" : "pt-3"
+        )}
+        style={{ height: isMac() ? HEADER_HEIGHT + 26 : HEADER_HEIGHT }}
       >
-        <div className="flex h-full items-center justify-between gap-3 px-4 pb-3">
+        {/* macOS 拖动区域 - 顶部空白区域 */}
+        {isMac() && (
+          <div
+            data-tauri-drag-region
+            className="absolute top-0 left-0 right-0 z-0 pointer-events-none"
+            style={{ height: '38px' }}
+          />
+        )}
+        <div className="relative z-10 flex h-full items-center justify-between gap-3 px-4 pb-3">
           <div className="flex items-center gap-1">
             {currentView !== "providers" ? (
               <div className="flex items-center gap-2">
@@ -701,7 +711,13 @@ function App() {
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
-                <h1 className="text-lg font-semibold text-foreground">
+                <h1
+                  className={cn(
+                    "text-lg font-semibold text-foreground",
+                    isMac() && "cursor-move"
+                  )}
+                  {...(isMac() && { "data-tauri-drag-region": true })}
+                >
                   {currentView === "settings" && t("settings.title")}
                   {currentView === "prompts" &&
                     t("prompts.title", { appName: t(`apps.${activeApp}`) })}
@@ -718,19 +734,33 @@ function App() {
             ) : (
               <div className="flex items-center gap-2">
                 <div className="relative inline-flex items-center">
-                  <a
-                    href="https://github.com/farion1231/cc-switch"
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cn(
-                      "text-xl font-semibold transition-colors",
-                      isProxyRunning && isCurrentAppTakeoverActive
-                        ? "text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
-                        : "text-foreground hover:text-foreground/80",
-                    )}
-                  >
-                    AI 助手
-                  </a>
+                  {isMac() ? (
+                    <div
+                      data-tauri-drag-region
+                      className={cn(
+                        "text-xl font-semibold transition-colors cursor-move",
+                        isProxyRunning && isCurrentAppTakeoverActive
+                          ? "text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
+                          : "text-foreground hover:text-foreground/80",
+                      )}
+                    >
+                      AI 助手
+                    </div>
+                  ) : (
+                    <a
+                      href="https://github.com/farion1231/cc-switch"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={cn(
+                        "text-xl font-semibold transition-colors",
+                        isProxyRunning && isCurrentAppTakeoverActive
+                          ? "text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
+                          : "text-foreground hover:text-foreground/80",
+                      )}
+                    >
+                      AI 助手
+                    </a>
+                  )}
                 </div>
                 <Button
                   variant="ghost"
@@ -744,12 +774,6 @@ function App() {
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
-                <UpdateBadge
-                  onClick={() => {
-                    setSettingsDefaultTab("about");
-                    setCurrentView("settings");
-                  }}
-                />
                 {isCurrentAppTakeoverActive && (
                   <Button
                     variant="ghost"
