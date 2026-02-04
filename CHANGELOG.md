@@ -1,3 +1,17 @@
+# [0.2.0](https://github.com/cavin-works/cavin-tools/compare/v0.1.6...v0.2.0) (2026-02-04)
+
+
+### 🐛 Bug 修复
+
+* **release:** 修复 macOS 签名文件名匹配问题 ([092e638](https://github.com/cavin-works/cavin-tools/commit/092e63876292b20a3d9c0a32710ea54ab29c10fb))
+
+
+### ✨ 新功能
+
+* **ai-assistant:** 添加 Cursor skill 支持并修复 macOS 窗口问题 ([43b2d9c](https://github.com/cavin-works/cavin-tools/commit/43b2d9c641c05b355fed8bc7cabdfdf4ca3dfbbd))
+
+
+
 ## [0.1.6](https://github.com/cavin-works/cavin-tools/compare/v0.1.5...v0.1.6) (2026-02-03)
 
 
