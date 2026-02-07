@@ -11,8 +11,6 @@ import {
   // Bot, // TODO: Agents 功能开发中，暂时不需要
   Book,
   Wrench,
-  RefreshCw,
-  Search,
   Download,
   BarChart2,
 } from "lucide-react";
@@ -45,8 +43,7 @@ import { FailoverToggle } from "@ai-assistant/components/proxy/FailoverToggle";
 import UsageScriptModal from "@ai-assistant/components/UsageScriptModal";
 import UnifiedMcpPanel from "@ai-assistant/components/mcp/UnifiedMcpPanel";
 import PromptPanel from "@ai-assistant/components/prompts/PromptPanel";
-import { SkillsPage } from "@ai-assistant/components/skills/SkillsPage";
-import UnifiedSkillsPanel from "@ai-assistant/components/skills/UnifiedSkillsPanel";
+import { SkillsWorkspace } from "@ai-assistant/components/skills/SkillsWorkspace";
 import { DeepLinkImportDialog } from "@ai-assistant/components/DeepLinkImportDialog";
 import { AgentsPanel } from "@ai-assistant/components/agents/AgentsPanel";
 import { UniversalProviderPanel } from "@ai-assistant/components/universal";
@@ -58,7 +55,6 @@ type View =
   | "settings"
   | "prompts"
   | "skills"
-  | "skillsDiscovery"
   | "mcp"
   | "agents"
   | "universal";
@@ -119,8 +115,6 @@ function App() {
 
   const promptPanelRef = useRef<any>(null);
   const mcpPanelRef = useRef<any>(null);
-  const skillsPageRef = useRef<any>(null);
-  const unifiedSkillsPanelRef = useRef<any>(null);
   const addActionButtonClass =
     "bg-orange-500 hover:bg-orange-600 dark:bg-orange-500 dark:hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 dark:shadow-orange-500/40 rounded-full w-8 h-8";
 
@@ -347,7 +341,7 @@ function App() {
       if (isTextEditableTarget(event.target)) return;
 
       event.preventDefault();
-      setCurrentView(view === "skillsDiscovery" ? "skills" : "providers");
+      setCurrentView("providers");
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -550,19 +544,7 @@ function App() {
             />
           );
         case "skills":
-          return (
-            <UnifiedSkillsPanel
-              ref={unifiedSkillsPanelRef}
-              onOpenDiscovery={() => setCurrentView("skillsDiscovery")}
-            />
-          );
-        case "skillsDiscovery":
-          return (
-            <SkillsPage
-              ref={skillsPageRef}
-              initialApp={activeApp === "opencode" ? "claude" : activeApp}
-            />
-          );
+          return <SkillsWorkspace />;
         case "mcp":
           return (
             <UnifiedMcpPanel
@@ -646,6 +628,8 @@ function App() {
     );
   };
 
+  const isSkillsWorkspace = currentView === "skills";
+
   return (
     <div
       className="flex flex-col h-full overflow-hidden text-neutral-900 dark:text-neutral-100 selection:bg-primary/30 relative"
@@ -678,6 +662,7 @@ function App() {
         />
       )}
 
+      {!isSkillsWorkspace && (
       <header
         className={cn(
           "sticky top-0 z-40 w-full relative",
@@ -700,13 +685,7 @@ function App() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() =>
-                    setCurrentView(
-                      currentView === "skillsDiscovery"
-                        ? "skills"
-                        : "providers",
-                    )
-                  }
+                  onClick={() => setCurrentView("providers")}
                   className="mr-2 rounded-lg hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -721,8 +700,6 @@ function App() {
                   {currentView === "settings" && t("settings.title")}
                   {currentView === "prompts" &&
                     t("prompts.title", { appName: t(`apps.${activeApp}`) })}
-                  {currentView === "skills" && t("skills.title")}
-                  {currentView === "skillsDiscovery" && t("skills.title")}
                   {currentView === "mcp" && t("mcp.unifiedPanel.title")}
                   {currentView === "agents" && t("agents.title")}
                   {currentView === "universal" &&
@@ -828,50 +805,6 @@ function App() {
                 </Button>
               </>
             )}
-            {currentView === "skills" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => unifiedSkillsPanelRef.current?.openImport()}
-                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {t("skills.import")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentView("skillsDiscovery")}
-                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
-                >
-                  <Search className="w-4 h-4 mr-2" />
-                  {t("skills.discover")}
-                </Button>
-              </>
-            )}
-            {currentView === "skillsDiscovery" && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => skillsPageRef.current?.refresh()}
-                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  {t("skills.refresh")}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => skillsPageRef.current?.openRepoManager()}
-                  className="hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  {t("skills.repoManager")}
-                </Button>
-              </>
-            )}
             {currentView === "providers" && (
               <>
                 {activeApp !== "opencode" && (
@@ -960,9 +893,10 @@ function App() {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="flex-1 pb-12 animate-fade-in ">
-        <div className="pb-12">{renderContent()}</div>
+      <main className={cn("flex-1 animate-fade-in", !isSkillsWorkspace && "pb-12")}>
+        <div className={cn(!isSkillsWorkspace && "pb-12")}>{renderContent()}</div>
       </main>
 
       <AddProviderDialog

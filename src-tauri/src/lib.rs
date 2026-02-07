@@ -788,6 +788,11 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Trace)
+                        // tao/wry 在部分窗口事件序列下会输出非致命警告，避免污染业务日志
+                        .level_for(
+                            "tao::platform_impl::platform::event_loop::runner",
+                            log::LevelFilter::Error,
+                        )
                         .targets([
                             Target::new(TargetKind::Stdout),
                             Target::new(TargetKind::Folder {
@@ -1163,6 +1168,7 @@ pub fn run() {
             cc_switch::commands::toggle_skill_app,
             cc_switch::commands::scan_unmanaged_skills,
             cc_switch::commands::import_skills_from_apps,
+            cc_switch::commands::browse_skills_sh,
             cc_switch::commands::discover_available_skills,
             cc_switch::commands::get_skills,
             cc_switch::commands::get_skills_for_app,

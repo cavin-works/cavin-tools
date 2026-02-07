@@ -10,6 +10,7 @@ use crate::cc_switch::services::skill::{
     DiscoverableSkill, Skill, SkillRepo, SkillService, SkillUpdateInfo,
 };
 use crate::cc_switch::store::AppState;
+use serde_json::Value;
 use std::sync::Arc;
 use tauri::State;
 
@@ -95,6 +96,41 @@ pub fn import_skills_from_apps(
 }
 
 // ========== 发现功能命令 ==========
+
+/// 浏览 skills.sh 技能列表
+///
+/// 使用后端请求，避免 WebView 侧跨域限制。
+#[tauri::command]
+pub async fn browse_skills_sh(category: String, page: u32) -> Result<Value, String> {
+    let normalized = match category.as_str() {
+        "hot" => "hot",
+        "trending" => "trending",
+        "all-time" => "all-time",
+        _ => return Err(format!("不支持的分类: {category}")),
+    };
+
+    let safe_page = if page == 0 { 1 } else { page };
+    let url = format!("https://skills.sh/api/skills/{normalized}/{safe_page}");
+
+    // 复用全局 HTTP 客户端（含全局代理设置）
+    let client = crate::cc_switch::proxy::http_client::get();
+    let response = client
+        .get(&url)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("请求 skills.sh 失败: {e}"))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!("skills.sh 返回错误状态: HTTP {}", status.as_u16()));
+    }
+
+    response
+        .json::<Value>()
+        .await
+        .map_err(|e| format!("解析 skills.sh 响应失败: {e}"))
+}
 
 /// 发现可安装的 Skills（从仓库获取）
 #[tauri::command]

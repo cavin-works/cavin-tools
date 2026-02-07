@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 // ========== 类型定义 ==========
 
 export type AppType = "claude" | "codex" | "gemini" | "opencode" | "cursor";
+export type SkillsShCategory = "all-time" | "trending" | "hot";
 
 /** Skill 应用启用状态 */
 export interface SkillApps {
@@ -77,6 +78,168 @@ export interface SkillUpdateInfo {
   removedSkills: string[];
 }
 
+/** skills.sh 浏览项 */
+export interface SkillsShSkill {
+  id: string;
+  name: string;
+  repo: string;
+  description?: string;
+  url?: string;
+  directory?: string;
+}
+
+/** skills.sh 浏览结果 */
+export interface SkillsShBrowseResult {
+  items: SkillsShSkill[];
+  page: number;
+  hasMore: boolean;
+  totalPages?: number;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function parseRepoName(value: string): string {
+  if (value.includes("github.com/")) {
+    try {
+      const url = new URL(value);
+      const segments = url.pathname
+        .split("/")
+        .map((segment: string) => segment.trim())
+        .filter((segment: string) => segment.length > 0);
+      if (segments.length >= 2) {
+        return `${segments[0]}/${segments[1]}`;
+      }
+    } catch {
+      return value;
+    }
+  }
+
+  if (value.startsWith("/")) {
+    return value.slice(1);
+  }
+
+  return value;
+}
+
+function readSkillsArray(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (!isRecord(payload)) {
+    return [];
+  }
+
+  const listKeys: string[] = ["data", "items", "skills", "result", "list"];
+  for (const key of listKeys) {
+    const candidate: unknown = payload[key];
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
+}
+
+function mapSkillsShItem(item: unknown, index: number): SkillsShSkill | null {
+  if (!isRecord(item)) {
+    return null;
+  }
+
+  const name: string | null =
+    asString(item.name) ??
+    asString(item.title) ??
+    asString(item.skill_name) ??
+    asString(item.slug);
+  const rawRepo: string | null =
+    asString(item.repo) ??
+    asString(item.repository) ??
+    asString(item.full_name) ??
+    asString(item.github_repo) ??
+    asString(item.source);
+
+  if (!name || !rawRepo) {
+    return null;
+  }
+
+  const repo: string = parseRepoName(rawRepo);
+  const id: string =
+    asString(item.id) ??
+    asString(item.key) ??
+    asString(item.uuid) ??
+    asString(item.skillId) ??
+    `${repo}:${name}:${index}`;
+
+  const description: string | undefined =
+    asString(item.description) ?? asString(item.desc) ?? undefined;
+  const url: string | undefined =
+    asString(item.url) ??
+    asString(item.html_url) ??
+    asString(item.repo_url) ??
+    undefined;
+  const directory: string | undefined =
+    asString(item.directory) ??
+    asString(item.path) ??
+    asString(item.skill_path) ??
+    asString(item.skillId) ??
+    undefined;
+
+  return {
+    id,
+    name,
+    repo,
+    description,
+    url,
+    directory,
+  };
+}
+
+function parseSkillsShPagination(
+  payload: unknown,
+  page: number,
+  count: number,
+): { hasMore: boolean; totalPages?: number } {
+  if (!isRecord(payload)) {
+    return { hasMore: count > 0 };
+  }
+
+  const rawTotalPages: unknown =
+    payload.total_pages ??
+    payload.totalPages ??
+    payload.pages ??
+    payload.last_page ??
+    payload.totalPagesCount;
+  const rawHasMore: unknown = payload.has_more ?? payload.hasMore ?? payload.next_page;
+  const rawTotal: unknown = payload.total ?? payload.count;
+
+  const totalPages: number | undefined =
+    typeof rawTotalPages === "number" && rawTotalPages > 0 ? rawTotalPages : undefined;
+
+  if (typeof rawHasMore === "boolean") {
+    return { hasMore: rawHasMore, totalPages };
+  }
+
+  if (typeof rawHasMore === "number") {
+    return { hasMore: rawHasMore > page, totalPages };
+  }
+
+  if (totalPages) {
+    return { hasMore: page < totalPages, totalPages };
+  }
+
+  if (typeof rawTotal === "number" && rawTotal >= 0 && count > 0) {
+    return { hasMore: page * count < rawTotal };
+  }
+
+  return { hasMore: count > 0 };
+}
+
 // ========== API ==========
 
 export const skillsApi = {
@@ -122,6 +285,31 @@ export const skillsApi = {
   /** 发现可安装的 Skills（从仓库获取） */
   async discoverAvailable(): Promise<DiscoverableSkill[]> {
     return await invoke("discover_available_skills");
+  },
+
+  /** 从 skills.sh 浏览技能 */
+  async browseSkills(
+    category: SkillsShCategory,
+    page: number,
+  ): Promise<SkillsShBrowseResult> {
+    const safePage: number = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const payload: unknown = await invoke("browse_skills_sh", {
+      category,
+      page: safePage,
+    });
+    const rawArray: unknown[] = readSkillsArray(payload);
+    const items: SkillsShSkill[] = rawArray
+      .map((item: unknown, index: number) => mapSkillsShItem(item, index))
+      .filter((item: SkillsShSkill | null): item is SkillsShSkill => item !== null);
+
+    const pagination = parseSkillsShPagination(payload, safePage, items.length);
+
+    return {
+      items,
+      page: safePage,
+      hasMore: pagination.hasMore,
+      totalPages: pagination.totalPages,
+    };
   },
 
   // ========== 兼容旧 API ==========
