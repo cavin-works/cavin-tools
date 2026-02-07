@@ -26,7 +26,7 @@ export interface DownloadEvent {
   };
 }
 
-const SKIPPED_VERSION_KEY = 'cavin-tools-skipped-version';
+const SKIPPED_VERSION_KEY = 'mnemosyne:skipped-version';
 
 export function getSkippedVersion(): string | null {
   try {

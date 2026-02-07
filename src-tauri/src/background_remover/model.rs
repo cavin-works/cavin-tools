@@ -9,20 +9,10 @@ const MODEL_SIZE_BYTES: u64 = 176_000_000; // 约 176MB
 
 /// 获取模型存储目录
 pub fn get_model_dir() -> Result<PathBuf, String> {
-    // 优先使用应用数据目录
-    if let Some(data_dir) = dirs::data_local_dir() {
-        let model_dir = data_dir.join("cavin-tools").join("models");
-        std::fs::create_dir_all(&model_dir)
-            .map_err(|e| format!("创建模型目录失败: {}", e))?;
-        return Ok(model_dir);
-    }
-
-    // 回退到应用目录
-    std::env::current_exe()
-        .map_err(|e| format!("获取应用路径失败: {}", e))?
-        .parent()
-        .map(|p| p.join("models"))
-        .ok_or_else(|| "无法获取应用目录".to_string())
+    let model_dir = crate::cc_switch::config::get_models_dir();
+    std::fs::create_dir_all(&model_dir)
+        .map_err(|e| format!("创建模型目录失败: {}", e))?;
+    Ok(model_dir)
 }
 
 /// 获取模型文件路径

@@ -753,6 +753,12 @@ pub fn run() {
         .setup(|app| {
             // Initialize app config directory override
             cc_switch::app_store::refresh_app_config_dir_override(app.handle());
+
+            // 路径迁移：~/.cc-switch/ -> ~/.config/mnemosyne/
+            if let Err(e) = cc_switch::path_migration::run_path_migration() {
+                eprintln!("[PathMigration] Failed: {e}");
+            }
+
             cc_switch::panic_hook::init_app_config_dir(cc_switch::config::get_app_config_dir());
 
             // Initialize updater plugin
@@ -776,7 +782,7 @@ pub fn run() {
                     eprintln!("创建日志目录失败: {e}");
                 }
 
-                let log_file_path = log_dir.join("cavin-tools.log");
+                let log_file_path = log_dir.join("mnemosyne.log");
                 let _ = std::fs::remove_file(&log_file_path);
 
                 app.handle().plugin(
@@ -786,7 +792,7 @@ pub fn run() {
                             Target::new(TargetKind::Stdout),
                             Target::new(TargetKind::Folder {
                                 path: log_dir,
-                                file_name: Some("cavin-tools".into()),
+                                file_name: Some("mnemosyne".into()),
                             }),
                         ])
                         .rotation_strategy(RotationStrategy::KeepSome(2))
@@ -797,9 +803,8 @@ pub fn run() {
             }
 
             // Initialize CC Switch database
-            let app_config_dir = cc_switch::config::get_app_config_dir();
-            let db_path = app_config_dir.join("cavin-tools.db");
-            let json_path = app_config_dir.join("config.json");
+            let db_path = cc_switch::config::get_db_path();
+            let json_path = cc_switch::config::get_app_config_path();
 
             let has_json = json_path.exists();
             let has_db = db_path.exists();

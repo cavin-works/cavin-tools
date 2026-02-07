@@ -19,6 +19,7 @@ pub mod init_status;
 pub mod mcp;
 pub mod opencode_config;
 pub mod panic_hook;
+pub mod path_migration;
 pub mod prompt;
 pub mod prompt_files;
 pub mod provider;

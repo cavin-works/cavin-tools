@@ -1,7 +1,7 @@
 //! Skills 服务层
 //!
 //! v3.10.0+ 统一管理架构：
-//! - SSOT（单一事实源）：`~/.cc-switch/skills/`
+//! - SSOT（单一事实源）：`~/.config/mnemosyne/skills/`
 //! - 安装时下载到 SSOT，按需同步到各应用目录
 //! - 数据库存储安装记录和启用状态
 
@@ -15,7 +15,7 @@ use std::sync::Arc;
 use tokio::time::timeout;
 
 use crate::cc_switch::app_config::{AppType, InstalledSkill, SkillApps, UnmanagedSkill};
-use crate::cc_switch::config::get_app_config_dir;
+use crate::cc_switch::config::get_skills_dir;
 use crate::cc_switch::database::Database;
 use crate::cc_switch::error::format_skill_error;
 
@@ -191,9 +191,9 @@ impl SkillService {
 
     // ========== 路径管理 ==========
 
-    /// 获取 SSOT 目录（~/.cc-switch/skills/）
+    /// 获取 SSOT 目录（~/.config/mnemosyne/skills/）
     pub fn get_ssot_dir() -> Result<PathBuf> {
-        let dir = get_app_config_dir().join("skills");
+        let dir = get_skills_dir();
         fs::create_dir_all(&dir)?;
         Ok(dir)
     }

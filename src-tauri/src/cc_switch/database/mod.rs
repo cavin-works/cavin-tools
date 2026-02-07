@@ -34,7 +34,7 @@ mod tests;
 // DAO 类型导出供外部使用
 pub use dao::FailoverQueueItem;
 
-use crate::cc_switch::config::get_app_config_dir;
+use crate::cc_switch::config::get_db_path;
 use crate::cc_switch::error::AppError;
 use rusqlite::Connection;
 use serde::Serialize;
@@ -78,9 +78,9 @@ pub struct Database {
 impl Database {
     /// 初始化数据库连接并创建表
     ///
-    /// 数据库文件位于 `~/.cc-switch/cc-switch.db`
+    /// 数据库文件位于 `~/.config/mnemosyne/mnemosyne.db`
     pub fn init() -> Result<Self, AppError> {
-        let db_path = get_app_config_dir().join("cc-switch.db");
+        let db_path = get_db_path();
 
         // 确保父目录存在
         if let Some(parent) = db_path.parent() {

@@ -278,7 +278,10 @@ pub struct PromptRoot {
     pub cursor: PromptConfig,
 }
 
-use crate::cc_switch::config::{copy_file, get_app_config_dir, get_app_config_path, write_json_file};
+use crate::cc_switch::config::{
+    copy_file, get_app_config_backup_path, get_app_config_dir, get_app_config_path,
+    write_json_file,
+};
 use crate::cc_switch::error::AppError;
 use crate::cc_switch::prompt_files::prompt_file_path;
 use crate::cc_switch::provider::ProviderManager;
@@ -451,8 +454,8 @@ impl MultiAppConfig {
         if is_v1 {
             return Err(AppError::localized(
                 "config.unsupported_v1",
-                "检测到旧版 v1 配置格式。当前版本已不再支持运行时自动迁移。\n\n解决方案：\n1. 安装 v3.2.x 版本进行一次性自动迁移\n2. 或手动编辑 ~/.cc-switch/config.json，将顶层结构调整为：\n   {\"version\": 2, \"claude\": {...}, \"codex\": {...}, \"mcp\": {...}}\n\n",
-                "Detected legacy v1 config. Runtime auto-migration is no longer supported.\n\nSolutions:\n1. Install v3.2.x for one-time auto-migration\n2. Or manually edit ~/.cc-switch/config.json to adjust the top-level structure:\n   {\"version\": 2, \"claude\": {...}, \"codex\": {...}, \"mcp\": {...}}\n\n",
+                "检测到旧版 v1 配置格式。当前版本已不再支持运行时自动迁移。\n\n解决方案：\n1. 安装 v3.2.x 版本进行一次性自动迁移\n2. 或手动编辑 ~/.config/mnemosyne/config.json，将顶层结构调整为：\n   {\"version\": 2, \"claude\": {...}, \"codex\": {...}, \"mcp\": {...}}\n\n",
+                "Detected legacy v1 config. Runtime auto-migration is no longer supported.\n\nSolutions:\n1. Install v3.2.x for one-time auto-migration\n2. Or manually edit ~/.config/mnemosyne/config.json to adjust the top-level structure:\n   {\"version\": 2, \"claude\": {...}, \"codex\": {...}, \"mcp\": {...}}\n\n",
             ));
         }
 
@@ -528,9 +531,9 @@ impl MultiAppConfig {
     /// 保存配置到文件
     pub fn save(&self) -> Result<(), AppError> {
         let config_path = get_app_config_path();
-        // 先备份旧版（若存在）到 ~/.cc-switch/config.json.bak，再写入新内容
+        // 先备份旧版（若存在）到 ~/.config/mnemosyne/config.json.bak，再写入新内容
         if config_path.exists() {
-            let backup_path = get_app_config_dir().join("config.json.bak");
+            let backup_path = get_app_config_backup_path();
             if let Err(e) = copy_file(&config_path, &backup_path) {
                 log::warn!("备份 config.json 到 .bak 失败: {e}");
             }

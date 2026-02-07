@@ -66,20 +66,75 @@ pub fn get_claude_settings_path() -> PathBuf {
     settings
 }
 
-/// 获取应用配置目录路径 (~/.cc-switch)
+/// 获取应用配置目录路径 (~/.config/mnemosyne)
+///
+/// 优先级：自定义覆盖 > 新路径 > 旧路径回退
 pub fn get_app_config_dir() -> PathBuf {
     if let Some(custom) = crate::cc_switch::app_store::get_app_config_dir_override() {
         return custom;
     }
 
-    dirs::home_dir()
-        .expect("无法获取用户主目录")
-        .join(".cc-switch")
+    let home = dirs::home_dir().expect("无法获取用户主目录");
+    let new_dir = home.join(".config").join("mnemosyne");
+
+    // 如果新目录已存在，直接使用
+    if new_dir.exists() {
+        return new_dir;
+    }
+
+    // 如果旧目录存在但新目录不存在，回退到旧路径（迁移尚未执行）
+    let legacy_dir = home.join(".cc-switch");
+    if legacy_dir.exists() {
+        return legacy_dir;
+    }
+
+    // 全新安装，使用新路径
+    new_dir
 }
 
 /// 获取应用配置文件路径
 pub fn get_app_config_path() -> PathBuf {
     get_app_config_dir().join("config.json")
+}
+
+/// 获取应用配置文件备份路径
+pub fn get_app_config_backup_path() -> PathBuf {
+    get_app_config_dir().join("config.json.bak")
+}
+
+/// 获取应用设置文件路径
+pub fn get_app_settings_path() -> PathBuf {
+    get_app_config_dir().join("settings.json")
+}
+
+/// 获取数据库文件路径
+pub fn get_db_path() -> PathBuf {
+    get_app_config_dir().join("mnemosyne.db")
+}
+
+/// 获取崩溃日志文件路径
+pub fn get_crash_log_path() -> PathBuf {
+    get_app_config_dir().join("crash.log")
+}
+
+/// 获取运行日志目录路径
+pub fn get_log_dir() -> PathBuf {
+    get_app_config_dir().join("logs")
+}
+
+/// 获取 Skills SSOT 目录路径
+pub fn get_skills_dir() -> PathBuf {
+    get_app_config_dir().join("skills")
+}
+
+/// 获取备份目录路径
+pub fn get_backups_dir() -> PathBuf {
+    get_app_config_dir().join("backups")
+}
+
+/// 获取 AI 模型文件目录路径
+pub fn get_models_dir() -> PathBuf {
+    get_app_config_dir().join("models")
 }
 
 /// 清理供应商名称，确保文件名安全

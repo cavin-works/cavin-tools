@@ -123,7 +123,7 @@ export const useAppStore = create<AppState>()(
         const { updateInfo } = get();
         if (updateInfo) {
           try {
-            localStorage.setItem('cavin-tools-skipped-version', updateInfo.version);
+            localStorage.setItem('mnemosyne:skipped-version', updateInfo.version);
           } catch (error) {
             console.error('保存跳过版本失败:', error);
           }

@@ -140,7 +140,7 @@ fn query_ports_by_pid_unix(pid: u32) -> Result<Vec<PortInfo>, String> {
 
 /// 查询指定端口占用情况
 pub fn query_port(port: u16) -> Result<Vec<PortInfo>, String> {
-    if port < 1 || port > 65535 {
+    if port < 1 {
         return Err("端口号必须在 1-65535 之间".to_string());
     }
 
@@ -362,6 +362,7 @@ pub fn kill_port_process(port: u16) -> Result<Vec<String>, String> {
 
 /// 从地址字符串中提取本地端口
 /// 格式: [::1]:1421 (LISTEN) 或 [::1]:1421->[::1]:49224 (ESTABLISHED)
+#[cfg(not(target_os = "windows"))]
 fn extract_local_port(address_str: &str) -> Option<u16> {
     if let Some(bracket_start) = address_str.find('[') {
         let addr_part = &address_str[bracket_start..];
