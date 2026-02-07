@@ -6,10 +6,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@ai-assistant/components/ui/dialog";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Trash2, ExternalLink, Plus } from "lucide-react";
 import { settingsApi } from "@ai-assistant/lib/api";
 import type { DiscoverableSkill, SkillRepo } from "@ai-assistant/lib/api/skills";

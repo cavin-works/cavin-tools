@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Textarea } from "@ai-assistant/components/ui/textarea";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Alert, AlertDescription } from "@ai-assistant/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {

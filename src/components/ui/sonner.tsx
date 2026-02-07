@@ -1,18 +1,22 @@
-import { Toaster as SonnerToaster } from "sonner";
-import { useTheme } from "@ai-assistant/components/theme-provider";
+import { Toaster as SonnerToaster } from "sonner"
+
+/**
+ * Detect current theme from document root class.
+ * Falls back to system preference if no explicit class is set.
+ */
+function getResolvedTheme(): "light" | "dark" {
+  if (typeof document === "undefined") return "light"
+  return document.documentElement.classList.contains("dark") ? "dark" : "light"
+}
 
 export function Toaster() {
-  const { theme } = useTheme();
-
-  // 将应用主题映射到 Sonner 的主题
-  // 如果是 "system"，Sonner 会自己处理
-  const sonnerTheme = theme === "system" ? "system" : theme;
+  const theme = getResolvedTheme()
 
   return (
     <SonnerToaster
       position="top-center"
       richColors
-      theme={sonnerTheme}
+      theme={theme}
       toastOptions={{
         duration: 2000,
         classNames: {
@@ -27,5 +31,5 @@ export function Toaster() {
         },
       }}
     />
-  );
+  )
 }

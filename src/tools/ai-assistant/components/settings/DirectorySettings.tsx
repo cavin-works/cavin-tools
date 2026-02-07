@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { FolderSearch, Undo2 } from "lucide-react";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import type { AppId } from "@ai-assistant/lib/api";
 import type { ResolvedDirectories } from "@ai-assistant/hooks/useSettings";

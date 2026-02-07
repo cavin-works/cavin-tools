@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { Trash2, ExternalLink, Plus } from "lucide-react";
 import { settingsApi } from "@ai-assistant/lib/api";
 import type { DiscoverableSkill, SkillRepo } from "@ai-assistant/lib/api/skills";
@@ -130,7 +130,7 @@ export function RepoManagerPanel({
                   />
                 </div>
                 {error && (
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                  <p className="text-sm text-destructive dark:text-destructive">{error}</p>
                 )}
                 <Button
                   onClick={handleAdd}

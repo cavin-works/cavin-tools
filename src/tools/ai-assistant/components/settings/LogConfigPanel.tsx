@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Label } from "@ai-assistant/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ai-assistant/components/ui/select";
+} from "@/components/ui/select";
 import { settingsApi, type LogConfig } from "@ai-assistant/lib/api/settings";
 
 const LOG_LEVELS = ["error", "warn", "info", "debug", "trace"] as const;
@@ -93,7 +93,7 @@ export function LogConfigPanel() {
         </p>
         <div className="grid gap-1 text-muted-foreground">
           <p>
-            <span className="font-mono text-red-500">error</span> -{" "}
+            <span className="font-mono text-destructive">error</span> -{" "}
             {t("settings.advanced.logConfig.levelDesc.error")}
           </p>
           <p>
@@ -101,7 +101,7 @@ export function LogConfigPanel() {
             {t("settings.advanced.logConfig.levelDesc.warn")}
           </p>
           <p>
-            <span className="font-mono text-blue-500">info</span> -{" "}
+            <span className="font-mono text-primary">info</span> -{" "}
             {t("settings.advanced.logConfig.levelDesc.info")}
           </p>
           <p>
@@ -109,7 +109,7 @@ export function LogConfigPanel() {
             {t("settings.advanced.logConfig.levelDesc.debug")}
           </p>
           <p>
-            <span className="font-mono text-gray-500">trace</span> -{" "}
+            <span className="font-mono text-muted-foreground">trace</span> -{" "}
             {t("settings.advanced.logConfig.levelDesc.trace")}
           </p>
         </div>

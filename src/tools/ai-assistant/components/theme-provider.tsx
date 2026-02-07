@@ -1,91 +1,41 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 
-type Theme = "light" | "dark" | "system";
-
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
-}
+type Theme = "light" | "dark";
 
 interface ThemeContextValue {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  resolvedTheme: "light" | "dark";
+  /** Resolved theme based on document.documentElement class */
+  resolvedTheme: Theme;
+  /** Toggle dark mode on the root element */
+  toggleTheme: () => void;
 }
 
 const ThemeProviderContext = createContext<ThemeContextValue | undefined>(
   undefined,
 );
 
+function getResolvedTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+}
+
 /**
- * ThemeProvider for AI Assistant
- * 
- * When running inside Mnemosyne, we observe the parent app's theme
- * by watching the `dark` class on document.documentElement.
- * We don't actively modify the theme - we follow the main app's theme.
+ * Simplified ThemeProvider for AI Assistant.
+ *
+ * CSS variables inherit from :root, and Tailwind `dark:` prefix
+ * works via the global `.dark` class on documentElement.
+ * This provider only exposes a read helper and toggle for convenience.
  */
-export function ThemeProvider({
-  children,
-  defaultTheme = "system",
-  storageKey = "cc-switch-theme",
-}: ThemeProviderProps) {
-  // Observe the current theme from document.documentElement
-  const getResolvedTheme = (): "light" | "dark" => {
-    if (typeof window === "undefined") return "light";
-    return document.documentElement.classList.contains("dark") ? "dark" : "light";
-  };
-
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(getResolvedTheme);
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return defaultTheme;
-    const stored = localStorage.getItem(storageKey) as Theme | null;
-    return stored || defaultTheme;
-  });
-
-  // Watch for theme changes from the main app
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const observer = new MutationObserver(() => {
-      setResolvedTheme(getResolvedTheme());
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    // Also listen for system preference changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => setResolvedTheme(getResolvedTheme());
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      observer.disconnect();
-      mediaQuery.removeEventListener("change", handleChange);
-    };
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const toggleTheme = useCallback(() => {
+    document.documentElement.classList.toggle("dark");
   }, []);
-
-  // Save theme preference (for AI Assistant's own settings)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(storageKey, theme);
-  }, [theme, storageKey]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
-      theme,
-      setTheme: setThemeState,
-      resolvedTheme,
+      resolvedTheme: getResolvedTheme(),
+      toggleTheme,
     }),
-    [theme, resolvedTheme],
+    [toggleTheme],
   );
 
   return (

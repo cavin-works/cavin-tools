@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { cn } from "@ai-assistant/lib/utils";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ProviderIcon } from "@ai-assistant/components/ProviderIcon";
 import type { SettingsFormState } from "@ai-assistant/hooks/useSettings";
 import type { VisibleApps } from "@ai-assistant/types";

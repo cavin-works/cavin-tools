@@ -8,10 +8,10 @@ import {
   Save,
   Loader2,
 } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Input } from "@ai-assistant/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useProxyStatus } from "@ai-assistant/hooks/useProxyStatus";
 import { toast } from "sonner";
 import { useFailoverQueue } from "@ai-assistant/lib/query/failover";

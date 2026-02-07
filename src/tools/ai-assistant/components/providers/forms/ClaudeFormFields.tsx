@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { FormLabel } from "@ai-assistant/components/ui/form";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Input } from "@ai-assistant/components/ui/input";
+import { FormLabel } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import EndpointSpeedTest from "./EndpointSpeedTest";
 import { ApiKeySection, EndpointField } from "./shared";
 import type { ProviderCategory } from "@ai-assistant/types";

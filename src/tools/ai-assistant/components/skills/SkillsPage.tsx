@@ -1,14 +1,14 @@
 import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ai-assistant/components/ui/select";
+} from "@/components/ui/select";
 import { RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { SkillCard } from "./SkillCard";

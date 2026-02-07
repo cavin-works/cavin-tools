@@ -2,7 +2,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { isWindows, isLinux } from "@ai-assistant/lib/platform";
 import { isTextEditableTarget } from "@ai-assistant/utils/domUtils";
 

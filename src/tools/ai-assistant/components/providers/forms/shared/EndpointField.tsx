@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { FormLabel } from "@ai-assistant/components/ui/form";
-import { Input } from "@ai-assistant/components/ui/input";
+import { FormLabel } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Zap } from "lucide-react";
 
 interface EndpointFieldProps {

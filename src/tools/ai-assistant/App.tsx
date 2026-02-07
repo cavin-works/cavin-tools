@@ -31,7 +31,7 @@ import { useProxyStatus } from "@ai-assistant/hooks/useProxyStatus";
 import { useLastValidValue } from "@ai-assistant/hooks/useLastValidValue";
 import { extractErrorMessage } from "@ai-assistant/utils/errorUtils";
 import { isTextEditableTarget } from "@ai-assistant/utils/domUtils";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import { isMac } from "@ai-assistant/lib/platform"; // Platform detection, used for platform-specific features
 import { AppSwitcher } from "@ai-assistant/components/AppSwitcher";
 import { ProviderList } from "@ai-assistant/components/providers/ProviderList";
@@ -51,7 +51,7 @@ import { DeepLinkImportDialog } from "@ai-assistant/components/DeepLinkImportDia
 import { AgentsPanel } from "@ai-assistant/components/agents/AgentsPanel";
 import { UniversalProviderPanel } from "@ai-assistant/components/universal";
 import { McpIcon } from "@ai-assistant/components/BrandIcons";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 type View =
   | "providers"

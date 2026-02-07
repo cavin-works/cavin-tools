@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Label } from "@ai-assistant/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { settingsApi, type RectifierConfig } from "@ai-assistant/lib/api/settings";
 
 export function RectifierConfigPanel() {

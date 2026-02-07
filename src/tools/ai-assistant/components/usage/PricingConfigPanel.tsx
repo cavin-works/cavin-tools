@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardHeader, CardTitle } from "@ai-assistant/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -8,9 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@ai-assistant/components/ui/table";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Alert, AlertDescription } from "@ai-assistant/components/ui/alert";
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { useModelPricing, useDeleteModelPricing } from "@ai-assistant/lib/query/usage";
 import { PricingEditModal } from "./PricingEditModal";
 import type { ModelPricing } from "@ai-assistant/types/usage";

@@ -30,8 +30,8 @@ import {
   useRemoveFromFailoverQueue,
 } from "@ai-assistant/lib/query/failover";
 import { useCallback } from "react";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface ProviderListProps {
   providers: Record<string, Provider>;

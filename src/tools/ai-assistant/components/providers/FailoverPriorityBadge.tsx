@@ -1,4 +1,4 @@
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
 interface FailoverPriorityBadgeProps {

@@ -21,15 +21,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@ai-assistant/components/ui/accordion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-assistant/components/ui/tabs";
-import { Button } from "@ai-assistant/components/ui/button";
+} from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { settingsApi } from "@ai-assistant/lib/api";
 import { LanguageSettings } from "@ai-assistant/components/settings/LanguageSettings";
 import { WindowSettings } from "@ai-assistant/components/settings/WindowSettings";
@@ -50,8 +50,8 @@ import { useSettings } from "@ai-assistant/hooks/useSettings";
 import { useImportExport } from "@ai-assistant/hooks/useImportExport";
 import { useTranslation } from "react-i18next";
 import type { SettingsFormState } from "@ai-assistant/hooks/useSettings";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Badge } from "@ai-assistant/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useProxyStatus } from "@ai-assistant/hooks/useProxyStatus";
 
 interface SettingsDialogProps {
@@ -558,7 +558,7 @@ export function SettingsPage({
                     >
                       <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
                         <div className="flex items-center gap-3">
-                          <Database className="h-5 w-5 text-blue-500" />
+                          <Database className="h-5 w-5 text-primary" />
                           <div className="text-left">
                             <h3 className="text-base font-semibold">
                               {t("settings.advanced.data.title")}

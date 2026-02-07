@@ -65,7 +65,7 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
     if (inline) {
       return (
         <div className="inline-flex items-center gap-2 text-xs rounded-lg border border-border-default bg-card px-3 py-2 shadow-sm">
-          <div className="flex items-center gap-1.5 text-red-500 dark:text-red-400">
+          <div className="flex items-center gap-1.5 text-destructive dark:text-destructive">
             <AlertCircle size={12} />
             <span>{t("usage.queryFailed")}</span>
           </div>
@@ -84,7 +84,7 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
     return (
       <div className="mt-3 rounded-xl border border-border-default bg-card px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2 text-red-500 dark:text-red-400">
+          <div className="flex items-center gap-2 text-destructive dark:text-destructive">
             <AlertCircle size={14} />
             <span>{usage.error || t("usage.queryFailed")}</span>
           </div>
@@ -93,7 +93,7 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
           <button
             onClick={() => refetch()}
             disabled={loading}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 flex-shrink-0"
+            className="p-1 rounded hover:bg-muted dark:hover:bg-muted transition-colors disabled:opacity-50 flex-shrink-0"
             title={t("usage.refreshUsage")}
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -144,10 +144,10 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
           {/* 已用 */}
           {firstUsage.used !== undefined && (
             <div className="flex items-center gap-0.5">
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-muted-foreground dark:text-muted-foreground">
                 {t("usage.used")}
               </span>
-              <span className="tabular-nums text-gray-600 dark:text-gray-400 font-medium">
+              <span className="tabular-nums text-muted-foreground dark:text-muted-foreground font-medium">
                 {firstUsage.used.toFixed(2)}
               </span>
             </div>
@@ -156,13 +156,13 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
           {/* 剩余 */}
           {firstUsage.remaining !== undefined && (
             <div className="flex items-center gap-0.5">
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-muted-foreground dark:text-muted-foreground">
                 {t("usage.remaining")}
               </span>
               <span
                 className={`font-semibold tabular-nums ${
                   isExpired
-                    ? "text-red-500 dark:text-red-400"
+                    ? "text-destructive dark:text-destructive"
                     : firstUsage.remaining <
                         (firstUsage.total || firstUsage.remaining) * 0.1
                       ? "text-orange-500 dark:text-orange-400"
@@ -176,7 +176,7 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
 
           {/* 单位 */}
           {firstUsage.unit && (
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-muted-foreground dark:text-muted-foreground">
               {firstUsage.unit}
             </span>
           )}
@@ -189,7 +189,7 @@ const UsageFooter: React.FC<UsageFooterProps> = ({
     <div className="mt-3 rounded-xl border border-border-default bg-card px-4 py-3 shadow-sm">
       {/* 标题行：包含刷新按钮和自动查询时间 */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+        <span className="text-xs text-muted-foreground dark:text-muted-foreground font-medium">
           {t("usage.planUsage")}
         </span>
         <div className="flex items-center gap-2">
@@ -242,12 +242,12 @@ const UsagePlanItem: React.FC<{ data: UsageData }> = ({ data }) => {
     <div className="flex items-center gap-3">
       {/* 标题部分：25% */}
       <div
-        className="text-xs text-gray-500 dark:text-gray-400 min-w-0"
+        className="text-xs text-muted-foreground dark:text-muted-foreground min-w-0"
         style={{ width: "25%" }}
       >
         {planName ? (
           <span
-            className={`font-medium truncate block ${isExpired ? "text-red-500 dark:text-red-400" : ""}`}
+            className={`font-medium truncate block ${isExpired ? "text-destructive dark:text-destructive" : ""}`}
             title={planName}
           >
             💰 {planName}
@@ -259,19 +259,19 @@ const UsagePlanItem: React.FC<{ data: UsageData }> = ({ data }) => {
 
       {/* 扩展字段：30% */}
       <div
-        className="text-xs text-gray-500 dark:text-gray-400 min-w-0 flex items-center gap-2"
+        className="text-xs text-muted-foreground dark:text-muted-foreground min-w-0 flex items-center gap-2"
         style={{ width: "30%" }}
       >
         {extra && (
           <span
-            className={`truncate ${isExpired ? "text-red-500 dark:text-red-400" : ""}`}
+            className={`truncate ${isExpired ? "text-destructive dark:text-destructive" : ""}`}
             title={extra}
           >
             {extra}
           </span>
         )}
         {isExpired && (
-          <span className="text-red-500 dark:text-red-400 font-medium text-[10px] px-1.5 py-0.5 bg-red-50 dark:bg-red-900/20 rounded flex-shrink-0">
+          <span className="text-destructive dark:text-destructive font-medium text-[10px] px-1.5 py-0.5 bg-destructive/10 dark:bg-destructive/20/20 rounded flex-shrink-0">
             {invalidMessage || t("usage.invalid")}
           </span>
         )}
@@ -285,39 +285,39 @@ const UsagePlanItem: React.FC<{ data: UsageData }> = ({ data }) => {
         {/* 总额度 */}
         {total !== undefined && (
           <>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-muted-foreground dark:text-muted-foreground">
               {t("usage.total")}
             </span>
-            <span className="tabular-nums text-gray-600 dark:text-gray-400">
+            <span className="tabular-nums text-muted-foreground dark:text-muted-foreground">
               {total === -1 ? "∞" : total.toFixed(2)}
             </span>
-            <span className="text-gray-400 dark:text-gray-600">|</span>
+            <span className="text-muted-foreground dark:text-gray-600">|</span>
           </>
         )}
 
         {/* 已用额度 */}
         {used !== undefined && (
           <>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-muted-foreground dark:text-muted-foreground">
               {t("usage.used")}
             </span>
-            <span className="tabular-nums text-gray-600 dark:text-gray-400">
+            <span className="tabular-nums text-muted-foreground dark:text-muted-foreground">
               {used.toFixed(2)}
             </span>
-            <span className="text-gray-400 dark:text-gray-600">|</span>
+            <span className="text-muted-foreground dark:text-gray-600">|</span>
           </>
         )}
 
         {/* 剩余额度 - 突出显示 */}
         {remaining !== undefined && (
           <>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-muted-foreground dark:text-muted-foreground">
               {t("usage.remaining")}
             </span>
             <span
               className={`font-semibold tabular-nums ${
                 isExpired
-                  ? "text-red-500 dark:text-red-400"
+                  ? "text-destructive dark:text-destructive"
                   : remaining < (total || remaining) * 0.1
                     ? "text-orange-500 dark:text-orange-400"
                     : "text-green-600 dark:text-green-400"
@@ -329,7 +329,7 @@ const UsagePlanItem: React.FC<{ data: UsageData }> = ({ data }) => {
         )}
 
         {unit && (
-          <span className="text-gray-500 dark:text-gray-400">{unit}</span>
+          <span className="text-muted-foreground dark:text-muted-foreground">{unit}</span>
         )}
       </div>
     </div>

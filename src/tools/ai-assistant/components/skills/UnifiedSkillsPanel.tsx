@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sparkles, Trash2, ExternalLink } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Switch } from "@ai-assistant/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
   useInstalledSkills,
   useToggleSkillApp,

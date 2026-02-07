@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Alert, AlertDescription } from "@ai-assistant/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Save, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useAppProxyConfig, useUpdateAppProxyConfig } from "@ai-assistant/lib/query/proxy";
@@ -222,7 +222,7 @@ export function AutoFailoverConfigPanel({
           </Alert>
         )}
 
-        <Alert className="border-blue-500/40 bg-blue-500/10">
+        <Alert className="border-primary/40 bg-primary/10">
           <Info className="h-4 w-4" />
           <AlertDescription className="text-sm">
             {t(

@@ -1,21 +1,11 @@
 import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useTheme } from "@ai-assistant/components/theme-provider";
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { toggleTheme } = useTheme();
   const { t } = useTranslation();
-
-  const toggleTheme = () => {
-    // 如果当前是 dark 或 system（且系统是暗色），切换到 light
-    // 否则切换到 dark
-    if (theme === "dark") {
-      setTheme("light");
-    } else {
-      setTheme("dark");
-    }
-  };
 
   return (
     <Button variant="outline" size="icon" onClick={toggleTheme}>

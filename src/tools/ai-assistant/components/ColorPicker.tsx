@@ -1,7 +1,7 @@
 import React from "react";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
-import { cn } from "@ai-assistant/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface ColorPickerProps {
   value?: string;

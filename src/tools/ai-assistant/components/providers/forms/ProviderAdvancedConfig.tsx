@@ -9,11 +9,11 @@ import {
   EyeOff,
   X,
 } from "lucide-react";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Button } from "@ai-assistant/components/ui/button";
-import { cn } from "@ai-assistant/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { ProviderTestConfig, ProviderProxyConfig } from "@ai-assistant/types";
 
 interface ProviderAdvancedConfigProps {

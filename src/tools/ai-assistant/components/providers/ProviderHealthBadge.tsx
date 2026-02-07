@@ -1,4 +1,4 @@
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import { ProviderHealthStatus } from "@ai-assistant/types/proxy";
 import { useTranslation } from "react-i18next";
 
@@ -43,9 +43,9 @@ export function ProviderHealthBadge({
         labelKey: "health.circuitOpen",
         labelFallback: "熔断",
         status: ProviderHealthStatus.Failed,
-        color: "bg-red-500",
-        bgColor: "bg-red-500/10",
-        textColor: "text-red-600 dark:text-red-400",
+        color: "bg-destructive",
+        bgColor: "bg-destructive/10",
+        textColor: "text-destructive dark:text-destructive",
       };
     }
   };

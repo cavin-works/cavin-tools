@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { FormLabel } from "@ai-assistant/components/ui/form";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Button } from "@ai-assistant/components/ui/button";
+import { FormLabel } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ai-assistant/components/ui/select";
+} from "@/components/ui/select";
 import { Plus, Trash2, ChevronRight } from "lucide-react";
 import { ApiKeySection } from "./shared";
 import { opencodeNpmPackages } from "@ai-assistant/config/opencodeProviderPresets";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import type { ProviderCategory, OpenCodeModel } from "@ai-assistant/types";
 
 /**

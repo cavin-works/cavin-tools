@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, RefreshCw } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Switch } from "@ai-assistant/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { ConfirmDialog } from "@ai-assistant/components/ConfirmDialog";
 import { ProviderIcon } from "@ai-assistant/components/ProviderIcon";
 import JsonEditor from "@ai-assistant/components/JsonEditor";

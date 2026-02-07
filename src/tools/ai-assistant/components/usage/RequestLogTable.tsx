@@ -7,16 +7,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@ai-assistant/components/ui/table";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ai-assistant/components/ui/select";
+} from "@/components/ui/select";
 import { useRequestLogs, usageKeys } from "@ai-assistant/lib/query/usage";
 import { useQueryClient } from "@tanstack/react-query";
 import type { LogFilters } from "@ai-assistant/types/usage";
@@ -237,7 +237,7 @@ export function RequestLogTable() {
       </div>
 
       {isLoading ? (
-        <div className="h-[400px] animate-pulse rounded bg-gray-100" />
+        <div className="h-[400px] animate-pulse rounded bg-muted" />
       ) : (
         <>
           <div className="rounded-lg border border-border/50 bg-card/40 backdrop-blur-sm overflow-x-auto">
@@ -358,7 +358,7 @@ export function RequestLogTable() {
                           <span
                             className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs ${
                               log.isStreaming
-                                ? "bg-blue-100 text-blue-800"
+                                ? "bg-primary/15 text-primary"
                                 : "bg-purple-100 text-purple-800"
                             }`}
                           >
@@ -373,7 +373,7 @@ export function RequestLogTable() {
                           className={`inline-flex rounded-full px-2 py-1 text-xs ${
                             log.statusCode >= 200 && log.statusCode < 300
                               ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              : "bg-destructive/15 text-red-800"
                           }`}
                         >
                           {log.statusCode}

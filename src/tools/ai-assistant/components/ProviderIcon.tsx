@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { getIcon, hasIcon, getIconMetadata } from "@ai-assistant/icons/extracted";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface ProviderIconProps {
   icon?: string; // 图标名称

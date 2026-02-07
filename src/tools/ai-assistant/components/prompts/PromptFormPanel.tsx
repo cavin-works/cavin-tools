@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import MarkdownEditor from "@ai-assistant/components/MarkdownEditor";
 import type { Prompt, AppId } from "@ai-assistant/lib/api";
 

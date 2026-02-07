@@ -2,9 +2,9 @@ import {
   useCircuitBreakerConfig,
   useUpdateCircuitBreakerConfig,
 } from "@ai-assistant/lib/query/failover";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";

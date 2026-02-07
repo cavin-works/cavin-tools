@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './components/theme-provider';
 import { queryClient } from './lib/query';
-import { Toaster } from './components/ui/sonner';
+import { Toaster } from '@/components/ui/sonner';
 import App from './App';
 import './index.css';
 // Initialize i18n
@@ -16,7 +16,7 @@ import './i18n';
 export default function AIAssistant() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="ai-assistant-theme">
+      <ThemeProvider>
         <div className="ai-assistant-root h-full">
           <App />
           <Toaster />

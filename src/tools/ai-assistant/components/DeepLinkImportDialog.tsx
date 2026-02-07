@@ -8,8 +8,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@ai-assistant/components/ui/dialog";
-import { Button } from "@ai-assistant/components/ui/button";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -383,7 +383,7 @@ export function DeepLinkImportDialog() {
                     <div className="font-medium text-sm text-muted-foreground">
                       {t("deeplink.homepage")}
                     </div>
-                    <div className="col-span-2 text-sm break-all text-blue-600 dark:text-blue-400">
+                    <div className="col-span-2 text-sm break-all text-primary dark:text-primary">
                       {request.homepage}
                     </div>
                   </div>
@@ -504,7 +504,7 @@ export function DeepLinkImportDialog() {
                           {t("deeplink.configSource")}
                         </div>
                         <div className="col-span-2 text-sm">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-primary/15 dark:bg-primary/20/30 text-primary dark:text-primary text-xs font-medium">
                             {configSource === "base64"
                               ? t("deeplink.configEmbedded")
                               : t("deeplink.configRemote")}
@@ -639,7 +639,7 @@ export function DeepLinkImportDialog() {
                             className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
                               request.usageEnabled !== false
                                 ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                                : "bg-muted dark:bg-muted text-muted-foreground dark:text-muted-foreground"
                             }`}
                           >
                             {request.usageEnabled !== false

@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Server } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Switch } from "@ai-assistant/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   useAllMcpServers,
   useToggleMcpApp,

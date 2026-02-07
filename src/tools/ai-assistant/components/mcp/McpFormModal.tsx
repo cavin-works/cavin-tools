@@ -2,9 +2,9 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Save, Plus, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Checkbox } from "@ai-assistant/components/ui/checkbox";
-import { Input } from "@ai-assistant/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import JsonEditor from "@ai-assistant/components/JsonEditor";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import type { AppId } from "@ai-assistant/lib/api/types";
 import { McpServer, McpServerSpec } from "@ai-assistant/types";
 import { mcpPresets, getMcpPresetWithDescription } from "@ai-assistant/config/mcpPresets";
@@ -471,10 +471,10 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-foreground">
-                    {t("mcp.form.title")} <span className="text-red-500">*</span>
+                    {t("mcp.form.title")} <span className="text-destructive">*</span>
                   </label>
                   {!isEditing && idError && (
-                    <span className="text-xs text-red-500 dark:text-red-400">
+                    <span className="text-xs text-destructive dark:text-destructive">
                       {idError}
                     </span>
                   )}
@@ -637,7 +637,7 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsWizardOpen(true)}
-                    className="text-sm text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                    className="text-sm text-primary dark:text-primary hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
                   >
                     {t("mcp.form.useWizard")}
                   </button>
@@ -661,7 +661,7 @@ const McpFormModal: React.FC<McpFormModalProps> = ({
                   />
                 </div>
                 {configError && (
-                  <div className="flex items-center gap-2 mt-2 text-red-500 dark:text-red-400 text-sm flex-shrink-0">
+                  <div className="flex items-center gap-2 mt-2 text-destructive dark:text-destructive text-sm flex-shrink-0">
                     <AlertCircle size={16} />
                     <span>{configError}</span>
                   </div>

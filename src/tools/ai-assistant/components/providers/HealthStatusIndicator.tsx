@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import type { HealthStatus } from "@ai-assistant/lib/api/model-test";
 import { useTranslation } from "react-i18next";
 
@@ -23,10 +23,10 @@ const statusConfig = {
     textColor: "text-yellow-600 dark:text-yellow-400",
   },
   failed: {
-    color: "bg-red-500",
+    color: "bg-destructive",
     labelKey: "health.failed",
     labelFallback: "失败",
-    textColor: "text-red-600 dark:text-red-400",
+    textColor: "text-destructive dark:text-destructive",
   },
 };
 

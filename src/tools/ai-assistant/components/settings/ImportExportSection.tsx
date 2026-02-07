@@ -7,7 +7,7 @@ import {
   Save,
   XCircle,
 } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import type { ImportStatus } from "@ai-assistant/hooks/useImportExport";
 
@@ -60,7 +60,7 @@ export function ImportExportSection({
           <div className="relative">
             <Button
               type="button"
-              className={`w-full h-auto py-3 px-4 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white ${selectedFile && !isImporting ? "flex-col items-start" : "items-center"}`}
+              className={`w-full h-auto py-3 px-4 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-white ${selectedFile && !isImporting ? "flex-col items-start" : "items-center"}`}
               onClick={!selectedFile ? onSelectFile : onImport}
               disabled={isImporting}
             >
@@ -92,7 +92,7 @@ export function ImportExportSection({
               <button
                 type="button"
                 onClick={onClear}
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition-colors z-10"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive hover:bg-destructive/90 text-white flex items-center justify-center shadow-lg transition-colors z-10"
                 aria-label={t("common.clear")}
               >
                 <XCircle className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function ImportExportSection({
           <div>
             <Button
               type="button"
-              className="w-full h-full py-3 px-4 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white items-center"
+              className="w-full h-full py-3 px-4 bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 text-white items-center"
               onClick={onExport}
             >
               <Save className="mr-2 h-4 w-4" />
@@ -146,12 +146,12 @@ function ImportStatusMessage({
   if (status === "importing") {
     return (
       <div
-        className={`${baseClass} border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400`}
+        className={`${baseClass} border-primary/30 bg-primary/10 text-primary dark:text-blue-400`}
       >
         <Loader2 className="mt-0.5 h-5 w-5 flex-shrink-0 animate-spin" />
         <div>
           <p className="font-semibold">{t("settings.importing")}</p>
-          <p className="text-blue-600/80 dark:text-blue-400/80">
+          <p className="text-primary/80 dark:text-primary/80">
             {t("common.loading")}
           </p>
         </div>
@@ -200,12 +200,12 @@ function ImportStatusMessage({
 
   return (
     <div
-      className={`${baseClass} border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400`}
+      className={`${baseClass} border-destructive/30 bg-destructive/10 text-destructive dark:text-red-400`}
     >
       <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
       <div className="space-y-1.5">
         <p className="font-semibold">{t("settings.importFailed")}</p>
-        <p className="text-red-600/80 dark:text-red-400/80">{message}</p>
+        <p className="text-destructive/80 dark:text-destructive/80">{message}</p>
       </div>
     </div>
   );

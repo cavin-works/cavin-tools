@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Zap, Loader2, Plus, X, AlertCircle, Save } from "lucide-react";
 import type { AppId } from "@ai-assistant/lib/api";
 import { vscodeApi } from "@ai-assistant/lib/api/vscode";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
 import type { CustomEndpoint, EndpointCandidate } from "@ai-assistant/types";
 
@@ -489,7 +489,7 @@ const EndpointSpeedTest: React.FC<EndpointSpeedTestProps> = ({
             {entries.length} {t("endpointTest.endpoints")}
           </div>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground dark:text-muted-foreground">
               <input
                 type="checkbox"
                 checked={autoSelect}
@@ -548,7 +548,7 @@ const EndpointSpeedTest: React.FC<EndpointSpeedTestProps> = ({
             </Button>
           </div>
           {addError && (
-            <div className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+            <div className="flex items-center gap-1.5 text-xs text-destructive dark:text-destructive">
               <AlertCircle className="h-3 w-3" />
               {addError}
             </div>
@@ -577,8 +577,8 @@ const EndpointSpeedTest: React.FC<EndpointSpeedTestProps> = ({
                     <div
                       className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition ${
                         isSelected
-                          ? "bg-blue-500 dark:bg-blue-400"
-                          : "bg-gray-300 dark:bg-gray-700"
+                          ? "bg-primary dark:bg-blue-400"
+                          : "bg-gray-300 dark:bg-muted"
                       }`}
                     />
 
@@ -602,25 +602,25 @@ const EndpointSpeedTest: React.FC<EndpointSpeedTestProps> = ({
                                 ? "text-yellow-600 dark:text-yellow-400"
                                 : latency < 800
                                   ? "text-orange-600 dark:text-orange-400"
-                                  : "text-red-600 dark:text-red-400"
+                                  : "text-destructive dark:text-destructive"
                           }`}
                         >
                           {latency}ms
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                        <div className="text-[10px] text-muted-foreground dark:text-muted-foreground">
                           {entry.status
                             ? t("endpointTest.status", { code: entry.status })
                             : t("endpointTest.notTested")}
                         </div>
                       </div>
                     ) : isTesting ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     ) : entry.error ? (
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs text-muted-foreground">
                         {t("endpointTest.failed")}
                       </div>
                     ) : (
-                      <div className="text-xs text-gray-400">—</div>
+                      <div className="text-xs text-muted-foreground">—</div>
                     )}
 
                     <button
@@ -646,7 +646,7 @@ const EndpointSpeedTest: React.FC<EndpointSpeedTestProps> = ({
 
         {/* 错误提示 */}
         {lastError && (
-          <div className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+          <div className="flex items-center gap-1.5 text-xs text-destructive dark:text-destructive">
             <AlertCircle className="h-3 w-3" />
             {lastError}
           </div>

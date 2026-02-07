@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ProviderIcon } from "./ProviderIcon";
 import { iconList } from "@ai-assistant/icons/extracted";
 import { searchIcons, getIconMetadata } from "@ai-assistant/icons/extracted/metadata";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface IconPickerProps {
   value?: string; // 当前选中的图标

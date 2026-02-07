@@ -7,7 +7,7 @@ import type {
 } from "@dnd-kit/core";
 import type { Provider } from "@ai-assistant/types";
 import type { AppId } from "@ai-assistant/lib/api";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import { ProviderActions } from "@ai-assistant/components/providers/ProviderActions";
 import { ProviderIcon } from "@ai-assistant/components/ProviderIcon";
 import UsageFooter from "@ai-assistant/components/UsageFooter";
@@ -216,7 +216,7 @@ export function ProviderCard({
         // 当前激活的供应商边框样式
         shouldUseGreen &&
           "border-emerald-500/60 shadow-sm shadow-emerald-500/10",
-        shouldUseBlue && "border-blue-500/60 shadow-sm shadow-blue-500/10",
+        shouldUseBlue && "border-primary/60 shadow-sm shadow-blue-500/10",
         !isActiveProvider && "hover:shadow-sm",
         dragHandleProps?.isDragging &&
           "cursor-grabbing border-primary shadow-lg scale-105 z-10",
@@ -298,7 +298,7 @@ export function ProviderCard({
                 className={cn(
                   "inline-flex items-center text-sm max-w-[280px]",
                   isClickableUrl
-                    ? "text-blue-500 transition-colors hover:underline dark:text-blue-400 cursor-pointer"
+                    ? "text-primary transition-colors hover:underline dark:text-primary cursor-pointer"
                     : "text-muted-foreground cursor-default",
                 )}
                 title={displayUrl}
@@ -323,7 +323,7 @@ export function ProviderCard({
             <div className="flex items-center gap-1 transition-transform duration-200 group-hover:-translate-x-[var(--actions-width)] group-focus-within:-translate-x-[var(--actions-width)]">
               {/* 多套餐时显示套餐数量，单套餐时显示详细信息 */}
               {hasMultiplePlans ? (
-                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
                   <span className="font-medium">
                     {t("usage.multiplePlans", {
                       count: usage?.data?.length || 0,
@@ -349,7 +349,7 @@ export function ProviderCard({
                     e.stopPropagation();
                     setIsExpanded(!isExpanded);
                   }}
-                  className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 dark:text-gray-400 flex-shrink-0"
+                  className="p-1 rounded hover:bg-muted dark:hover:bg-muted transition-colors text-muted-foreground dark:text-muted-foreground flex-shrink-0"
                   title={
                     isExpanded
                       ? t("usage.collapse", { defaultValue: "收起" })

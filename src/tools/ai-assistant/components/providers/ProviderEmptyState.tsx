@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 interface ProviderEmptyStateProps {
   onCreate?: () => void;

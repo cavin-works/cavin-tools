@@ -10,17 +10,17 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Plus, Trash2, Loader2, Info, AlertTriangle } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Switch } from "@ai-assistant/components/ui/switch";
-import { Alert, AlertDescription } from "@ai-assistant/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@ai-assistant/components/ui/select";
-import { cn } from "@ai-assistant/lib/utils";
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type { FailoverQueueItem } from "@ai-assistant/types/proxy";
 import type { AppId } from "@ai-assistant/lib/api";
 import {
@@ -153,7 +153,7 @@ export function FailoverQueueManager({
       </div>
 
       {/* 说明信息 */}
-      <Alert className="border-blue-500/40 bg-blue-500/10">
+      <Alert className="border-primary/40 bg-primary/10">
         <Info className="h-4 w-4" />
         <AlertDescription className="text-sm">
           {t(

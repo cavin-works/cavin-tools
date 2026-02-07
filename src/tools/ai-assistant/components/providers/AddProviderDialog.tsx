@@ -2,15 +2,15 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-assistant/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import type { Provider, CustomEndpoint, UniversalProvider } from "@ai-assistant/types";
 import type { AppId } from "@ai-assistant/lib/api";
 import { universalProvidersApi } from "@ai-assistant/lib/api";

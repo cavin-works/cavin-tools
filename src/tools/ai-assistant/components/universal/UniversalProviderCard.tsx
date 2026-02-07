@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Edit2, Trash2, RefreshCw, Globe } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ProviderIcon } from "@ai-assistant/components/ProviderIcon";
 import type { UniversalProvider } from "@ai-assistant/types";
 

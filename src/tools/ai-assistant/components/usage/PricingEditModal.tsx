@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Save, Plus } from "lucide-react";
 import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Label } from "@ai-assistant/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useUpdateModelPricing } from "@ai-assistant/lib/query/usage";
 import type { ModelPricing } from "@ai-assistant/types/usage";
 

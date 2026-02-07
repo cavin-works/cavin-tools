@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@ai-assistant/components/ui/table";
+} from "@/components/ui/table";
 import { useProviderStats } from "@ai-assistant/lib/query/usage";
 
 export function ProviderStatsTable() {
@@ -14,7 +14,7 @@ export function ProviderStatsTable() {
   const { data: stats, isLoading } = useProviderStats();
 
   if (isLoading) {
-    return <div className="h-[400px] animate-pulse rounded bg-gray-100" />;
+    return <div className="h-[400px] animate-pulse rounded bg-muted" />;
   }
 
   return (

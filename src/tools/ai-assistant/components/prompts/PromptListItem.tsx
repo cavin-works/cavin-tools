@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Edit3, Trash2 } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 import type { Prompt } from "@ai-assistant/lib/api";
 import PromptToggle from "./PromptToggle";
 

@@ -7,16 +7,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@ai-assistant/components/ui/form";
-import { Input } from "@ai-assistant/components/ui/input";
-import { Button } from "@ai-assistant/components/ui/button";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogTrigger,
   DialogClose,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 import { ProviderIcon } from "@ai-assistant/components/ProviderIcon";
 import { IconPicker } from "@ai-assistant/components/IconPicker";
 import { getIconMetadata } from "@ai-assistant/icons/extracted/metadata";

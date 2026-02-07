@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ChevronDown, ChevronUp, X, Trash2 } from "lucide-react";
-import { Button } from "@ai-assistant/components/ui/button";
-import { Checkbox } from "@ai-assistant/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { EnvConflict } from "@ai-assistant/types/env";
 import { deleteEnvVars } from "@ai-assistant/lib/api/env";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@ai-assistant/components/ui/dialog";
+} from "@/components/ui/dialog";
 
 interface EnvWarningBannerProps {
   conflicts: EnvConflict[];
@@ -180,7 +180,7 @@ export function EnvWarningBanner({
                       return (
                         <div
                           key={key}
-                          className="flex items-start gap-3 p-3 bg-white dark:bg-gray-900 rounded-md border border-yellow-200 dark:border-yellow-900/50"
+                          className="flex items-start gap-3 p-3 bg-white dark:bg-muted rounded-md border border-yellow-200 dark:border-yellow-900/50"
                         >
                           <Checkbox
                             id={key}

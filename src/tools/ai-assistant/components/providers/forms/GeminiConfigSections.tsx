@@ -66,7 +66,7 @@ export const GeminiEnvSection: React.FC<GeminiEnvSectionProps> = ({
             type="checkbox"
             checked={useCommonConfig}
             onChange={(e) => onCommonConfigToggle(e.target.checked)}
-            className="w-4 h-4 text-blue-500 bg-white dark:bg-gray-800 border-border-default rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
+            className="w-4 h-4 text-primary bg-white dark:bg-muted border-border-default rounded focus:ring-ring dark:focus:ring-blue-400 focus:ring-2"
           />
           {t("geminiConfig.writeCommonConfig", {
             defaultValue: "写入通用配置",
@@ -78,7 +78,7 @@ export const GeminiEnvSection: React.FC<GeminiEnvSectionProps> = ({
         <button
           type="button"
           onClick={onEditCommonConfig}
-          className="text-xs text-blue-500 dark:text-blue-400 hover:underline"
+          className="text-xs text-primary dark:text-primary hover:underline"
         >
           {t("geminiConfig.editCommonConfig", {
             defaultValue: "编辑通用配置",
@@ -87,7 +87,7 @@ export const GeminiEnvSection: React.FC<GeminiEnvSectionProps> = ({
       </div>
 
       {commonConfigError && (
-        <p className="text-xs text-red-500 dark:text-red-400 text-right">
+        <p className="text-xs text-destructive dark:text-destructive text-right">
           {commonConfigError}
         </p>
       )}
@@ -105,7 +105,7 @@ GEMINI_MODEL=gemini-3-pro-preview`}
       />
 
       {error && (
-        <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+        <p className="text-xs text-destructive dark:text-destructive">{error}</p>
       )}
 
       {!error && (
@@ -176,7 +176,7 @@ export const GeminiConfigSection: React.FC<GeminiConfigSectionProps> = ({
       />
 
       {configError && (
-        <p className="text-xs text-red-500 dark:text-red-400">{configError}</p>
+        <p className="text-xs text-destructive dark:text-destructive">{configError}</p>
       )}
 
       {!configError && (

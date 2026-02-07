@@ -12,8 +12,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@ai-assistant/components/ui/button";
-import { cn } from "@ai-assistant/lib/utils";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { AppId } from "@ai-assistant/lib/api";
 
 interface ProviderActionsProps {
@@ -121,7 +121,7 @@ export function ProviderActions({
           disabled: false,
           variant: "secondary" as const,
           className:
-            "bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/70",
+            "bg-primary/15 text-primary hover:bg-blue-200 dark:bg-primary/20/50 dark:text-primary dark:hover:bg-blue-900/70",
           icon: <Check className="h-4 w-4" />,
           text: t("failover.inQueue", { defaultValue: "已加入" }),
         };
@@ -130,7 +130,7 @@ export function ProviderActions({
         disabled: false,
         variant: "default" as const,
         className:
-          "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
+          "bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90",
         icon: <Plus className="h-4 w-4" />,
         text: t("failover.addQueue", { defaultValue: "加入" }),
       };
@@ -142,7 +142,7 @@ export function ProviderActions({
         disabled: true,
         variant: "secondary" as const,
         className:
-          "bg-gray-200 text-muted-foreground hover:bg-gray-200 hover:text-muted-foreground dark:bg-gray-700 dark:hover:bg-gray-700",
+          "bg-gray-200 text-muted-foreground hover:bg-gray-200 hover:text-muted-foreground dark:bg-muted dark:hover:bg-muted",
         icon: <Check className="h-4 w-4" />,
         text: t("provider.inUse"),
       };

@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
-import { Label } from "@ai-assistant/components/ui/label";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Save, Download, Loader2 } from "lucide-react";
 import JsonEditor from "@ai-assistant/components/JsonEditor";
 
@@ -65,7 +65,7 @@ export function CommonConfigEditor({
                 id="useCommonConfig"
                 checked={useCommonConfig}
                 onChange={(e) => onCommonConfigToggle(e.target.checked)}
-                className="w-4 h-4 text-blue-500 bg-white dark:bg-gray-800 border-border-default rounded focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-2"
+                className="w-4 h-4 text-primary bg-white dark:bg-muted border-border-default rounded focus:ring-ring dark:focus:ring-blue-400 focus:ring-2"
               />
               <span>
                 {t("claudeConfig.writeCommonConfig", {
@@ -79,7 +79,7 @@ export function CommonConfigEditor({
           <button
             type="button"
             onClick={onEditClick}
-            className="text-xs text-blue-400 dark:text-blue-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+            className="text-xs text-primary dark:text-primary hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
           >
             {t("claudeConfig.editCommonConfig", {
               defaultValue: "编辑通用配置",
@@ -87,7 +87,7 @@ export function CommonConfigEditor({
           </button>
         </div>
         {commonConfigError && !isModalOpen && (
-          <p className="text-xs text-red-500 dark:text-red-400 text-right">
+          <p className="text-xs text-destructive dark:text-destructive text-right">
             {commonConfigError}
           </p>
         )}
@@ -163,7 +163,7 @@ export function CommonConfigEditor({
             language="json"
           />
           {commonConfigError && (
-            <p className="text-sm text-red-500 dark:text-red-400">
+            <p className="text-sm text-destructive dark:text-destructive">
               {commonConfigError}
             </p>
           )}

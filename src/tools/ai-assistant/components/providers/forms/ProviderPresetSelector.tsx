@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { FormLabel } from "@ai-assistant/components/ui/form";
+import { FormLabel } from "@/components/ui/form";
 import { ClaudeIcon, CodexIcon, GeminiIcon } from "@ai-assistant/components/BrandIcons";
 import { Zap, Star, Layers, Settings2 } from "lucide-react";
 import type { ProviderPreset } from "@ai-assistant/config/claudeProviderPresets";
@@ -105,7 +105,7 @@ export function ProviderPresetSelector({
         return `${baseClass} text-white`;
       }
       // 默认使用主题蓝色
-      return `${baseClass} bg-blue-500 text-white dark:bg-blue-600`;
+      return `${baseClass} bg-primary text-white dark:bg-blue-600`;
     }
 
     return `${baseClass} bg-accent text-muted-foreground hover:bg-accent/80`;
@@ -136,7 +136,7 @@ export function ProviderPresetSelector({
           onClick={() => onPresetChange("custom")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             selectedPresetId === "custom"
-              ? "bg-blue-500 text-white dark:bg-blue-600"
+              ? "bg-primary text-white dark:bg-primary"
               : "bg-accent text-muted-foreground hover:bg-accent/80"
           }`}
         >

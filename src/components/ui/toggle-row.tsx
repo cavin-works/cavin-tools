@@ -1,12 +1,12 @@
-import { Switch } from "@ai-assistant/components/ui/switch";
+import { Switch } from "@/components/ui/switch"
 
 export interface ToggleRowProps {
-  icon: React.ReactNode;
-  title: string;
-  description?: string;
-  checked: boolean;
-  onCheckedChange: (value: boolean) => void;
-  disabled?: boolean;
+  icon: React.ReactNode
+  title: string
+  description?: string
+  checked: boolean
+  onCheckedChange: (value: boolean) => void
+  disabled?: boolean
 }
 
 export function ToggleRow({
@@ -37,5 +37,5 @@ export function ToggleRow({
         aria-label={title}
       />
     </div>
-  );
+  )
 }

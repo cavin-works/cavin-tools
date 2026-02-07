@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Save, Download, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FullScreenPanel } from "@ai-assistant/components/common/FullScreenPanel";
-import { Button } from "@ai-assistant/components/ui/button";
+import { Button } from "@/components/ui/button";
 import JsonEditor from "@ai-assistant/components/JsonEditor";
 
 interface CodexCommonConfigModalProps {
@@ -99,7 +99,7 @@ export const CodexCommonConfigModal: React.FC<CodexCommonConfigModalProps> = ({
         />
 
         {error && (
-          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+          <p className="text-sm text-destructive dark:text-destructive">{error}</p>
         )}
       </div>
     </FullScreenPanel>

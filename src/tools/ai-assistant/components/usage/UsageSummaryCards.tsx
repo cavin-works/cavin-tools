@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent } from "@ai-assistant/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useUsageSummary } from "@ai-assistant/lib/query/usage";
 import { Activity, DollarSign, Layers, Database, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -31,8 +31,8 @@ export function UsageSummaryCards({ days }: UsageSummaryCardsProps) {
         title: t("usage.totalRequests"),
         value: totalRequests.toLocaleString(),
         icon: Activity,
-        color: "text-blue-500",
-        bg: "bg-blue-500/10",
+        color: "text-primary",
+        bg: "bg-primary/10",
         subValue: null,
       },
       {

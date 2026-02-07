@@ -6,9 +6,9 @@
  */
 
 import { Radio, Loader2 } from "lucide-react";
-import { Switch } from "@ai-assistant/components/ui/switch";
+import { Switch } from "@/components/ui/switch";
 import { useProxyStatus } from "@ai-assistant/hooks/useProxyStatus";
-import { cn } from "@ai-assistant/lib/utils";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import type { AppId } from "@ai-assistant/lib/api";
 

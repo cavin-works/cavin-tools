@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { SettingsFormState } from "@ai-assistant/hooks/useSettings";
 import { AppWindow, MonitorUp, Power } from "lucide-react";
-import { ToggleRow } from "@ai-assistant/components/ui/toggle-row";
+import { ToggleRow } from "@/components/ui/toggle-row";
 
 interface WindowSettingsProps {
   settings: SettingsFormState;
@@ -46,7 +46,7 @@ export function WindowSettings({ settings, onChange }: WindowSettingsProps) {
         />
 
         <ToggleRow
-          icon={<AppWindow className="h-4 w-4 text-blue-500" />}
+          icon={<AppWindow className="h-4 w-4 text-primary" />}
           title={t("settings.minimizeToTray")}
           description={t("settings.minimizeToTrayDescription")}
           checked={settings.minimizeToTrayOnClose}
