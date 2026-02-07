@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FileJson, AlertCircle, Sparkles, Minimize2, Copy, Check } from 'lucide-react';
 import { JSONTreeView } from './JSONTreeView';
@@ -90,28 +92,23 @@ export function JSONFormatter() {
   };
 
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="space-y-1 mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-3 text-foreground">
-          <FileJson className="w-7 h-7 text-foreground" />
-          JSON 格式化器
-        </h2>
-        <p className="text-muted-foreground">格式化、美化或压缩 JSON 数据</p>
-      </div>
-
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0">
-        <div className="flex flex-col min-h-0 lg:col-span-2">
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-base font-medium text-foreground">输入 JSON</Label>
-            <Button 
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* 左侧：输入 */}
+      <Card className="lg:col-span-2 flex flex-col">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">输入 JSON</CardTitle>
+            <Button
               onClick={handleLoadExample}
-              variant="ghost" 
+              variant="ghost"
               size="sm"
               className="h-8 text-xs"
             >
               加载示例
             </Button>
           </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col space-y-4">
           <Textarea
             id="json-input"
             value={inputJSON}
@@ -120,51 +117,50 @@ export function JSONFormatter() {
               setError('');
             }}
             placeholder='{"key": "value"}'
-            className="flex-1 min-h-0 font-mono text-sm text-foreground resize-none placeholder:text-muted-foreground"
+            className="flex-1 min-h-[200px] font-mono text-sm resize-none"
           />
 
-          <div className="mt-6 space-y-3">
-            <Label className="text-foreground">缩进选项 (美化)</Label>
+          <div className="space-y-3">
+            <Label className="text-sm">缩进选项 (美化)</Label>
             <RadioGroup value={indent} onValueChange={(value) => setIndent(value as IndentType)}>
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-4">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="2" id="indent-2" />
-                  <Label htmlFor="indent-2" className="font-normal cursor-pointer text-sm text-foreground">2 空格</Label>
+                  <Label htmlFor="indent-2" className="font-normal cursor-pointer text-sm">2 空格</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="4" id="indent-4" />
-                  <Label htmlFor="indent-4" className="font-normal cursor-pointer text-sm text-foreground">4 空格</Label>
+                  <Label htmlFor="indent-4" className="font-normal cursor-pointer text-sm">4 空格</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="tab" id="indent-tab" />
-                  <Label htmlFor="indent-tab" className="font-normal cursor-pointer text-sm text-foreground">Tab</Label>
+                  <Label htmlFor="indent-tab" className="font-normal cursor-pointer text-sm">Tab</Label>
                 </div>
               </div>
             </RadioGroup>
           </div>
 
-          <div className="mt-6 flex gap-2">
-            <Button 
+          <div className="flex gap-2">
+            <Button
               onClick={() => handleFormat(false)}
-              className="flex-1 h-11 text-base text-foreground"
+              className="flex-1"
               disabled={!inputJSON.trim()}
             >
-              <Sparkles className="w-4 h-4 mr-2 text-foreground" />
+              <Sparkles className="w-4 h-4 mr-2" />
               美化
             </Button>
-            <Button 
+            <Button
               onClick={handleMinify}
               variant="outline"
-              className="flex-1 h-11 text-base text-foreground"
+              className="flex-1"
               disabled={!inputJSON.trim()}
             >
-              <Minimize2 className="w-4 h-4 mr-2 text-foreground" />
+              <Minimize2 className="w-4 h-4 mr-2" />
               压缩
             </Button>
-            <Button 
-              onClick={handleClear} 
+            <Button
+              onClick={handleClear}
               variant="outline"
-              className="h-11 px-6 text-base text-foreground"
               disabled={!inputJSON && !parsedData}
             >
               清空
@@ -172,7 +168,7 @@ export function JSONFormatter() {
           </div>
 
           {error && (
-            <Alert variant="destructive" className="mt-4">
+            <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <span className="font-medium">JSON 解析错误：</span>
@@ -180,16 +176,18 @@ export function JSONFormatter() {
               </AlertDescription>
             </Alert>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="flex flex-col min-h-0 lg:col-span-3">
-          <div className="flex justify-between items-center mb-2">
-            <Label className="text-base font-medium text-foreground">格式化结果</Label>
-            <Button 
+      {/* 右侧：结果 */}
+      <Card className="lg:col-span-3 flex flex-col">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">格式化结果</CardTitle>
+            <Button
               onClick={handleCopy}
-              variant="ghost" 
+              variant="ghost"
               size="sm"
-              className="h-8"
               disabled={!parsedData}
             >
               {copied ? (
@@ -205,21 +203,21 @@ export function JSONFormatter() {
               )}
             </Button>
           </div>
-          
+        </CardHeader>
+        <CardContent className="flex-1">
           {parsedData && !error ? (
-            <div className="flex-1 border-2 rounded-lg p-4 overflow-auto bg-muted/30 min-h-0">
+            <div className="border rounded-lg p-4 overflow-auto bg-muted/30 min-h-[200px]">
               <JSONTreeView data={parsedData} />
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-center text-muted-foreground border-2 border-dashed rounded-lg min-h-0">
-              <div className="space-y-2">
-                <FileJson className="w-12 h-12 mx-auto opacity-30" />
-                <p className="text-sm">输入 JSON 数据或加载示例</p>
-              </div>
-            </div>
+            <EmptyState
+              icon={<FileJson className="w-6 h-6 text-muted-foreground" />}
+              title="暂无结果"
+              description="输入 JSON 数据或加载示例"
+            />
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

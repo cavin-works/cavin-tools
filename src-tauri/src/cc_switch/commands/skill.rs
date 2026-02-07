@@ -6,7 +6,9 @@
 
 use crate::cc_switch::app_config::{AppType, InstalledSkill, UnmanagedSkill};
 use crate::cc_switch::error::format_skill_error;
-use crate::cc_switch::services::skill::{DiscoverableSkill, Skill, SkillRepo, SkillService};
+use crate::cc_switch::services::skill::{
+    DiscoverableSkill, Skill, SkillRepo, SkillService, SkillUpdateInfo,
+};
 use crate::cc_switch::store::AppState;
 use std::sync::Arc;
 use tauri::State;
@@ -103,7 +105,7 @@ pub async fn discover_available_skills(
     let repos = app_state.db.get_skill_repos().map_err(|e| e.to_string())?;
     service
         .0
-        .discover_available(repos)
+        .discover_available(repos, &app_state.db)
         .await
         .map_err(|e| e.to_string())
 }
@@ -160,7 +162,7 @@ pub async fn install_skill_for_app(
     let repos = app_state.db.get_skill_repos().map_err(|e| e.to_string())?;
     let skills = service
         .0
-        .discover_available(repos)
+        .discover_available(repos, &app_state.db)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -248,6 +250,31 @@ pub fn remove_skill_repo(
         .db
         .delete_skill_repo(&owner, &name)
         .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+// ========== 缓存管理命令 ==========
+
+/// 检查技能更新（仅调用 Trees API，不克隆仓库）
+#[tauri::command]
+pub async fn check_skill_updates(
+    service: State<'_, SkillServiceState>,
+    app_state: State<'_, AppState>,
+) -> Result<Vec<SkillUpdateInfo>, String> {
+    let repos = app_state.db.get_skill_repos().map_err(|e| e.to_string())?;
+    service
+        .0
+        .check_updates(repos, &app_state.db)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 清空技能缓存
+#[tauri::command]
+pub fn clear_skill_cache(
+    app_state: State<'_, AppState>,
+) -> Result<bool, String> {
+    SkillService::clear_cache(&app_state.db).map_err(|e| e.to_string())?;
     Ok(true)
 }
 

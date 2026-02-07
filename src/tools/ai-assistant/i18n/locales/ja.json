@@ -1035,6 +1035,12 @@
     "uninstallConfirm": "「{{name}}」をアンインストールしますか？すべてのアプリからこのスキルが削除されます。",
     "uninstallInMainPanel": "メインパネルからスキルをアンインストールしてください",
     "notFound": "スキルが見つかりません",
+    "checkUpdates": "更新を確認",
+    "checkingUpdates": "確認中...",
+    "clearCache": "キャッシュをクリア",
+    "updatesAvailable": "{{count}} 件のスキルが更新可能です",
+    "noUpdates": "すべてのスキルは最新です",
+    "cacheCleared": "キャッシュをクリアしました",
     "apps": {
       "claude": "Claude",
       "codex": "Codex",

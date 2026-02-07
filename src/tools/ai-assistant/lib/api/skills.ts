@@ -68,6 +68,15 @@ export interface SkillRepo {
   enabled: boolean;
 }
 
+/** 技能更新检测结果 */
+export interface SkillUpdateInfo {
+  repoOwner: string;
+  repoName: string;
+  updatedSkills: string[];
+  newSkills: string[];
+  removedSkills: string[];
+}
+
 // ========== API ==========
 
 export const skillsApi = {
@@ -159,5 +168,17 @@ export const skillsApi = {
   /** 删除仓库 */
   async removeRepo(owner: string, name: string): Promise<boolean> {
     return await invoke("remove_skill_repo", { owner, name });
+  },
+
+  // ========== 缓存管理 ==========
+
+  /** 检查技能更新（仅调用 Trees API，不克隆仓库） */
+  async checkUpdates(): Promise<SkillUpdateInfo[]> {
+    return await invoke("check_skill_updates");
+  },
+
+  /** 清空技能缓存 */
+  async clearCache(): Promise<boolean> {
+    return await invoke("clear_skill_cache");
   },
 };

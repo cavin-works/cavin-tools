@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Copy, Check, Hash, Lock } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Copy, Check, Hash } from 'lucide-react';
 
 export function MD5Generator() {
   const [inputText, setInputText] = useState('');
@@ -51,87 +51,78 @@ export function MD5Generator() {
   };
 
   return (
-    <Card className="border-2">
-      <CardHeader className="pb-6">
-        <CardTitle className="flex items-center gap-3 text-xl">
-          <Lock className="w-6 h-6" />
-          MD5 生成器
-        </CardTitle>
-        <CardDescription className="text-base">为输入的文本生成 SHA-256 哈希值</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-0">
-        <div className="space-y-3">
-          <Label htmlFor="md5-input" className="text-base font-medium">输入文本</Label>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 左侧：输入 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">输入文本</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <Textarea
             id="md5-input"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="输入要生成哈希值的文本..."
-            className="min-h-[180px] p-4 text-base resize-none"
+            className="min-h-[240px] text-sm resize-none"
           />
-        </div>
 
-        <div className="flex gap-3">
-          <Button 
-            onClick={handleClear} 
+          <Button
+            onClick={handleClear}
             variant="outline"
             disabled={!inputText}
-            className="h-11 px-6 text-base"
           >
             清空
           </Button>
-        </div>
+        </CardContent>
+      </Card>
 
-        {md5Hash && (
-          <div className="space-y-4 p-6 bg-muted rounded-xl border-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Hash className="w-5 h-5 text-muted-foreground" />
-                <Label className="text-base font-medium">SHA-256 哈希值</Label>
-              </div>
-              <Button 
+      {/* 右侧：结果 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">SHA-256 哈希值</CardTitle>
+            {md5Hash && (
+              <Button
                 onClick={handleCopy}
-                variant="ghost" 
+                variant="ghost"
                 size="sm"
-                className="h-9 px-4 text-base"
               >
                 {copied ? (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
+                    <Check className="w-4 h-4 mr-1" />
                     已复制
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 mr-2" />
+                    <Copy className="w-4 h-4 mr-1" />
                     复制
                   </>
                 )}
               </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {md5Hash ? (
+            <div className="space-y-3">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-mono text-sm break-all leading-relaxed">
+                  {md5Hash}
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground font-medium">
+                长度: {md5Hash.length} 个字符 (SHA-256)
+              </p>
             </div>
-            <p className="font-mono text-base break-all word-break-all leading-loose">
-              {md5Hash}
-            </p>
-            <p className="text-sm text-muted-foreground font-medium">
-              长度: {md5Hash.length} 个字符 (SHA-256)
-            </p>
-          </div>
-        )}
-
-        {!md5Hash && inputText && (
-          <div className="flex items-center justify-center py-12 text-center text-muted-foreground">
-            <p className="text-base">正在生成哈希值...</p>
-          </div>
-        )}
-
-        {!md5Hash && !inputText && (
-          <div className="flex items-center justify-center py-12 text-center text-muted-foreground">
-            <div className="space-y-4">
-              <Lock className="w-16 h-16 mx-auto opacity-30" />
-              <p className="text-base">输入文本后将自动生成哈希值</p>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <EmptyState
+              icon={<Hash className="w-6 h-6 text-muted-foreground" />}
+              title="暂无结果"
+              description="输入文本后将自动生成哈希值"
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

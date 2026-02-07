@@ -1173,6 +1173,8 @@ pub fn run() {
             cc_switch::commands::get_skill_repos,
             cc_switch::commands::add_skill_repo,
             cc_switch::commands::remove_skill_repo,
+            cc_switch::commands::check_skill_updates,
+            cc_switch::commands::clear_skill_cache,
             cc_switch::commands::set_auto_launch,
             cc_switch::commands::get_auto_launch_status,
             cc_switch::commands::start_proxy_server,

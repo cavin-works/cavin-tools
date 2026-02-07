@@ -1035,6 +1035,12 @@
     "uninstallConfirm": "确定要卸载技能 \"{{name}}\" 吗？这将从所有应用中移除该技能。",
     "uninstallInMainPanel": "请在主面板中卸载技能",
     "notFound": "未找到技能",
+    "checkUpdates": "检查更新",
+    "checkingUpdates": "检查中...",
+    "clearCache": "清除缓存",
+    "updatesAvailable": "有 {{count}} 个技能可更新",
+    "noUpdates": "所有技能已是最新",
+    "cacheCleared": "缓存已清除",
     "apps": {
       "claude": "Claude",
       "codex": "Codex",

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Sparkles, Trash2, ExternalLink } from "lucide-react";
+import { Sparkles, Trash2, ExternalLink, RefreshCw, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -16,6 +16,8 @@ import {
   useUninstallSkill,
   useScanUnmanagedSkills,
   useImportSkillsFromApps,
+  useCheckSkillUpdates,
+  useClearSkillCache,
   type InstalledSkill,
   type AppType,
 } from "@ai-assistant/hooks/useSkills";
@@ -56,6 +58,8 @@ const UnifiedSkillsPanel = React.forwardRef<
   const { data: unmanagedSkills, refetch: scanUnmanaged } =
     useScanUnmanagedSkills();
   const importMutation = useImportSkillsFromApps();
+  const checkUpdatesMutation = useCheckSkillUpdates();
+  const clearCacheMutation = useClearSkillCache();
 
   // Count enabled skills per app
   const enabledCounts = useMemo(() => {
@@ -135,6 +139,34 @@ const UnifiedSkillsPanel = React.forwardRef<
     }
   };
 
+  const handleCheckUpdates = async () => {
+    try {
+      const updates = await checkUpdatesMutation.mutateAsync();
+      const totalUpdates = updates.reduce(
+        (sum, u) => sum + u.updatedSkills.length + u.newSkills.length,
+        0,
+      );
+      if (totalUpdates > 0) {
+        toast.info(t("skills.updatesAvailable", { count: totalUpdates }), {
+          closeButton: true,
+        });
+      } else {
+        toast.success(t("skills.noUpdates"), { closeButton: true });
+      }
+    } catch (error) {
+      toast.error(t("common.error"), { description: String(error) });
+    }
+  };
+
+  const handleClearCache = async () => {
+    try {
+      await clearCacheMutation.mutateAsync();
+      toast.success(t("skills.cacheCleared"), { closeButton: true });
+    } catch (error) {
+      toast.error(t("common.error"), { description: String(error) });
+    }
+  };
+
   React.useImperativeHandle(ref, () => ({
     openDiscovery: onOpenDiscovery,
     openImport: handleOpenImport,
@@ -144,13 +176,44 @@ const UnifiedSkillsPanel = React.forwardRef<
     <div className="px-6 flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
       {/* Info Section */}
       <div className="flex-shrink-0 py-4 glass rounded-xl border border-white/10 mb-4 px-6">
-        <div className="text-sm text-muted-foreground">
-          {t("skills.installed", { count: skills?.length || 0 })} ·{" "}
-          {t("skills.apps.claude")}: {enabledCounts.claude} ·{" "}
-          {t("skills.apps.codex")}: {enabledCounts.codex} ·{" "}
-          {t("skills.apps.gemini")}: {enabledCounts.gemini} ·{" "}
-          {t("skills.apps.opencode")}: {enabledCounts.opencode} ·{" "}
-          {t("skills.apps.cursor")}: {enabledCounts.cursor}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            {t("skills.installed", { count: skills?.length || 0 })} ·{" "}
+            {t("skills.apps.claude")}: {enabledCounts.claude} ·{" "}
+            {t("skills.apps.codex")}: {enabledCounts.codex} ·{" "}
+            {t("skills.apps.gemini")}: {enabledCounts.gemini} ·{" "}
+            {t("skills.apps.opencode")}: {enabledCounts.opencode} ·{" "}
+            {t("skills.apps.cursor")}: {enabledCounts.cursor}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleCheckUpdates}
+              disabled={checkUpdatesMutation.isPending}
+              className="text-xs"
+            >
+              <RefreshCw
+                size={14}
+                className={checkUpdatesMutation.isPending ? "animate-spin" : ""}
+              />
+              {checkUpdatesMutation.isPending
+                ? t("skills.checkingUpdates")
+                : t("skills.checkUpdates")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearCache}
+              disabled={clearCacheMutation.isPending}
+              className="text-xs"
+            >
+              <Eraser size={14} />
+              {t("skills.clearCache")}
+            </Button>
+          </div>
         </div>
       </div>
 

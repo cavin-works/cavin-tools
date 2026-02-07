@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Copy, Check, ArrowDown, ArrowUp, ArrowLeftRight, AlertCircle, FileText } from 'lucide-react';
 
 export function Base64Converter() {
@@ -71,19 +71,26 @@ export function Base64Converter() {
   };
 
   return (
-    <Card className="border-2">
-      <CardHeader className="pb-6">
-        <CardTitle className="flex items-center gap-3 text-xl">
-          <FileText className="w-6 h-6" />
-          Base64 转换器
-        </CardTitle>
-        <CardDescription className="text-base">
-          {mode === 'encode' ? '将文本编码为 Base64' : '将 Base64 解码为文本'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6 pt-0">
-        <div className="space-y-3">
-          <Label htmlFor="base64-input" className="text-base font-medium">输入 ({mode === 'encode' ? '原文' : 'Base64'})</Label>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 左侧：输入 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              输入 ({mode === 'encode' ? '原文' : 'Base64'})
+            </CardTitle>
+            <Button
+              onClick={swapMode}
+              variant="outline"
+              size="sm"
+              title="切换编码/解码"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-1" />
+              {mode === 'encode' ? '解码模式' : '编码模式'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <Textarea
             id="base64-input"
             value={inputText}
@@ -92,93 +99,94 @@ export function Base64Converter() {
               setError('');
             }}
             placeholder={mode === 'encode' ? '输入要编码的文本...' : '输入要解码的 Base64 字符串...'}
-            className="min-h-[180px] font-mono text-base p-4"
+            className="min-h-[240px] font-mono text-sm"
           />
-        </div>
 
-        <div className="flex gap-3">
-          <Button 
-            onClick={handleConvert} 
-            className="flex-1 h-11 text-base"
-            disabled={!inputText.trim()}
-          >
-            {mode === 'encode' ? (
-              <>
-                <ArrowDown className="w-5 h-5 mr-2" />
-                编码
-              </>
-            ) : (
-              <>
-                <ArrowUp className="w-5 h-5 mr-2" />
-                解码
-              </>
-            )}
-          </Button>
-          <Button 
-            onClick={swapMode} 
-            variant="outline"
-            title="切换编码/解码"
-            className="h-11 w-12"
-          >
-            <ArrowLeftRight className="w-5 h-5" />
-          </Button>
-          <Button 
-            onClick={handleClear} 
-            variant="outline"
-            disabled={!inputText && !outputText}
-            className="h-11 px-6 text-base"
-          >
-            清空
-          </Button>
-        </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={handleConvert}
+              className="flex-1"
+              disabled={!inputText.trim()}
+            >
+              {mode === 'encode' ? (
+                <>
+                  <ArrowDown className="w-4 h-4 mr-2" />
+                  编码
+                </>
+              ) : (
+                <>
+                  <ArrowUp className="w-4 h-4 mr-2" />
+                  解码
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleClear}
+              variant="outline"
+              disabled={!inputText && !outputText}
+            >
+              清空
+            </Button>
+          </div>
 
-        {error && (
-          <Alert variant="destructive" className="border-2">
-            <AlertCircle className="h-5 w-5" />
-            <AlertDescription className="text-base">{error}</AlertDescription>
-          </Alert>
-        )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">{error}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
-        {outputText && !error && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Label className="text-base font-medium">输出 ({mode === 'encode' ? 'Base64' : '原文'})</Label>
-              <Button 
+      {/* 右侧：输出 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              输出 ({mode === 'encode' ? 'Base64' : '原文'})
+            </CardTitle>
+            {outputText && !error && (
+              <Button
                 onClick={handleCopy}
-                variant="ghost" 
+                variant="ghost"
                 size="sm"
-                className="h-9 px-4 text-base"
               >
                 {copied ? (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
+                    <Check className="w-4 h-4 mr-1" />
                     已复制
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 mr-2" />
+                    <Copy className="w-4 h-4 mr-1" />
                     复制
                   </>
                 )}
               </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {outputText && !error ? (
+            <div className="space-y-3">
+              <Textarea
+                value={outputText}
+                readOnly
+                className="min-h-[240px] font-mono text-sm"
+              />
+              <p className="text-sm text-muted-foreground font-medium">
+                长度: {outputText.length} 个字符
+              </p>
             </div>
-            <Textarea
-              value={outputText}
-              readOnly
-              className="min-h-[180px] font-mono text-base p-4"
+          ) : (
+            <EmptyState
+              icon={<FileText className="w-6 h-6 text-muted-foreground" />}
+              title="暂无结果"
+              description="输入文本后点击转换按钮"
             />
-            <p className="text-sm text-muted-foreground font-medium">
-              长度: {outputText.length} 个字符
-            </p>
-          </div>
-        )}
-
-        {!outputText && !error && !inputText && (
-          <div className="flex items-center justify-center py-12 text-center text-muted-foreground">
-            <p className="text-base">输入文本后点击转换按钮</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

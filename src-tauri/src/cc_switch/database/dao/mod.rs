@@ -8,6 +8,7 @@ pub mod prompts;
 pub mod providers;
 pub mod proxy;
 pub mod settings;
+pub mod skill_cache;
 pub mod skills;
 pub mod stream_check;
 pub mod universal_providers;

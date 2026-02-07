@@ -305,6 +305,45 @@ impl Database {
             [],
         );
 
+        // 13. Skill Cache 表（v6+：技能缓存，基于 GitHub Tree SHA）
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS skill_cache (
+                cache_key TEXT PRIMARY KEY,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                repo_branch TEXT NOT NULL,
+                skill_directory TEXT NOT NULL,
+                tree_sha TEXT NOT NULL,
+                cached_data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL,
+                last_checked_at INTEGER NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_skill_cache_repo
+             ON skill_cache(repo_owner, repo_name)",
+            [],
+        )
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+        // 14. Repo Tree Cache 表（v6+：仓库级 Trees API 响应缓存）
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS repo_tree_cache (
+                repo_key TEXT PRIMARY KEY,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                repo_branch TEXT NOT NULL,
+                root_tree_sha TEXT NOT NULL,
+                tree_data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
         Ok(())
     }
 
@@ -358,6 +397,11 @@ impl Database {
                         log::info!("迁移数据库从 v4 到 v5（Cursor 支持）");
                         Self::migrate_v4_to_v5(conn)?;
                         Self::set_user_version(conn, 5)?;
+                    }
+                    5 => {
+                        log::info!("迁移数据库从 v5 到 v6（Skill 缓存系统）");
+                        Self::migrate_v5_to_v6(conn)?;
+                        Self::set_user_version(conn, 6)?;
                     }
                     _ => {
                         return Err(AppError::Database(format!(
@@ -907,6 +951,54 @@ impl Database {
         )?;
 
         log::info!("v4 -> v5 迁移完成：已添加 Cursor 支持");
+        Ok(())
+    }
+
+    /// v5 -> v6 迁移：添加 Skill 缓存系统
+    ///
+    /// 新增 skill_cache 和 repo_tree_cache 表，
+    /// 支持基于 GitHub Tree SHA 的增量更新检测。
+    fn migrate_v5_to_v6(conn: &Connection) -> Result<(), AppError> {
+        // 创建 skill_cache 表
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS skill_cache (
+                cache_key TEXT PRIMARY KEY,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                repo_branch TEXT NOT NULL,
+                skill_directory TEXT NOT NULL,
+                tree_sha TEXT NOT NULL,
+                cached_data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL,
+                last_checked_at INTEGER NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_skill_cache_repo
+             ON skill_cache(repo_owner, repo_name)",
+            [],
+        )
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+        // 创建 repo_tree_cache 表
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS repo_tree_cache (
+                repo_key TEXT PRIMARY KEY,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                repo_branch TEXT NOT NULL,
+                root_tree_sha TEXT NOT NULL,
+                tree_data TEXT NOT NULL,
+                cached_at INTEGER NOT NULL
+            )",
+            [],
+        )
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+        log::info!("v5 -> v6 迁移完成：已添加 Skill 缓存系统");
         Ok(())
     }
 

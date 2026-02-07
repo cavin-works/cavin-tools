@@ -7,54 +7,43 @@ import { JSONFormatter } from './components/JSONFormatter';
 export function CharacterTools() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6 py-10 sm:px-8 sm:py-12">
-        <div className="mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">
             字符处理工具
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">
-            快速处理文本、编码、格式化等常见任务
-          </p>
         </div>
 
-        <Tabs defaultValue="random" className="w-full flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1">
-            <TabsTrigger value="random" className="py-3 text-sm sm:text-base">
+        <Tabs defaultValue="random" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 h-10 mb-6">
+            <TabsTrigger value="random" className="text-sm">
               随机字符
             </TabsTrigger>
-            <TabsTrigger value="base64" className="py-3 text-sm sm:text-base">
+            <TabsTrigger value="base64" className="text-sm">
               Base64
             </TabsTrigger>
-            <TabsTrigger value="md5" className="py-3 text-sm sm:text-base">
+            <TabsTrigger value="md5" className="text-sm">
               MD5
             </TabsTrigger>
-            <TabsTrigger value="json" className="py-3 text-sm sm:text-base">
+            <TabsTrigger value="json" className="text-sm">
               JSON
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="random" className="mt-8">
-            <div className="max-w-2xl mx-auto">
-              <RandomStringGenerator />
-            </div>
+          <TabsContent value="random" className="mt-6">
+            <RandomStringGenerator />
           </TabsContent>
 
-          <TabsContent value="base64" className="mt-8">
-            <div className="max-w-2xl mx-auto">
-              <Base64Converter />
-            </div>
+          <TabsContent value="base64" className="mt-6">
+            <Base64Converter />
           </TabsContent>
 
-          <TabsContent value="md5" className="mt-8">
-            <div className="max-w-2xl mx-auto">
-              <MD5Generator />
-            </div>
+          <TabsContent value="md5" className="mt-6">
+            <MD5Generator />
           </TabsContent>
 
-          <TabsContent value="json" className="mt-4 flex-1">
-            <div className="h-full">
-              <JSONFormatter />
-            </div>
+          <TabsContent value="json" className="mt-6">
+            <JSONFormatter />
           </TabsContent>
         </Tabs>
       </div>

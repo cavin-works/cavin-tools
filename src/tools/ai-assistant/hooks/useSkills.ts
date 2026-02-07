@@ -147,6 +147,30 @@ export function useRemoveSkillRepo() {
   });
 }
 
+// ========== 缓存管理 ==========
+
+/**
+ * 检查技能更新（手动触发）
+ */
+export function useCheckSkillUpdates() {
+  return useMutation({
+    mutationFn: () => skillsApi.checkUpdates(),
+  });
+}
+
+/**
+ * 清除技能缓存
+ */
+export function useClearSkillCache() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => skillsApi.clearCache(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["skills", "discoverable"] });
+    },
+  });
+}
+
 // ========== 辅助类型 ==========
 
 export type { InstalledSkill, DiscoverableSkill, AppType };

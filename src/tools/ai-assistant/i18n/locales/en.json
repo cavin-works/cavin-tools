@@ -1035,6 +1035,12 @@
     "uninstallConfirm": "Are you sure you want to uninstall \"{{name}}\"? This will remove the skill from all apps.",
     "uninstallInMainPanel": "Please uninstall skills from the main panel",
     "notFound": "Skill not found",
+    "checkUpdates": "Check Updates",
+    "checkingUpdates": "Checking...",
+    "clearCache": "Clear Cache",
+    "updatesAvailable": "{{count}} skill(s) can be updated",
+    "noUpdates": "All skills are up to date",
+    "cacheCleared": "Cache cleared",
     "apps": {
       "claude": "Claude",
       "codex": "Codex",
