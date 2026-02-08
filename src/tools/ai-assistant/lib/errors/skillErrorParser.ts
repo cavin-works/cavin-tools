@@ -37,6 +37,8 @@ function getErrorI18nKey(code: string): string {
     SKILL_DIR_NOT_FOUND: "skills.error.skillDirNotFound",
     EMPTY_ARCHIVE: "skills.error.emptyArchive",
     GET_HOME_DIR_FAILED: "skills.error.getHomeDirFailed",
+    IMPORT_FAILED: "skills.error.importFailed",
+    SCAN_FAILED: "skills.error.scanFailed",
   };
 
   return mapping[code] || "skills.error.unknownError";

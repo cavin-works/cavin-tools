@@ -83,6 +83,7 @@ impl Database {
             repo_name TEXT,
             repo_branch TEXT DEFAULT 'main',
             readme_url TEXT,
+            tree_commit_id TEXT,
             enabled_claude BOOLEAN NOT NULL DEFAULT 0,
             enabled_codex BOOLEAN NOT NULL DEFAULT 0,
             enabled_gemini BOOLEAN NOT NULL DEFAULT 0,
@@ -402,6 +403,11 @@ impl Database {
                         log::info!("迁移数据库从 v5 到 v6（Skill 缓存系统）");
                         Self::migrate_v5_to_v6(conn)?;
                         Self::set_user_version(conn, 6)?;
+                    }
+                    6 => {
+                        log::info!("迁移数据库从 v6 到 v7（Skills tree commit id）");
+                        Self::migrate_v6_to_v7(conn)?;
+                        Self::set_user_version(conn, 7)?;
                     }
                     _ => {
                         return Err(AppError::Database(format!(
@@ -889,6 +895,7 @@ impl Database {
                 repo_name TEXT,
                 repo_branch TEXT DEFAULT 'main',
                 readme_url TEXT,
+                tree_commit_id TEXT,
                 enabled_claude BOOLEAN NOT NULL DEFAULT 0,
                 enabled_codex BOOLEAN NOT NULL DEFAULT 0,
                 enabled_gemini BOOLEAN NOT NULL DEFAULT 0,
@@ -999,6 +1006,13 @@ impl Database {
         .map_err(|e| AppError::Database(e.to_string()))?;
 
         log::info!("v5 -> v6 迁移完成：已添加 Skill 缓存系统");
+        Ok(())
+    }
+
+    /// v6 -> v7 迁移：为已安装 Skills 增加 tree commit id 字段
+    fn migrate_v6_to_v7(conn: &Connection) -> Result<(), AppError> {
+        Self::add_column_if_missing(conn, "skills", "tree_commit_id", "TEXT")?;
+        log::info!("v6 -> v7 迁移完成：已添加 skills.tree_commit_id");
         Ok(())
     }
 

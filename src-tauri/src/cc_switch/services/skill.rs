@@ -62,6 +62,9 @@ pub struct DiscoverableSkill {
     /// 分支名称
     #[serde(rename = "repoBranch")]
     pub repo_branch: String,
+    /// Git 树 SHA（来自 GitHub Trees API）
+    #[serde(rename = "treeSha", skip_serializing_if = "Option::is_none")]
+    pub tree_sha: Option<String>,
 }
 
 /// 技能对象（兼容旧 API，内部使用 DiscoverableSkill）
@@ -213,6 +216,30 @@ pub struct SkillUpdateInfo {
     pub removed_skills: Vec<String>,
 }
 
+/// 已安装技能远程刷新结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillRemoteRefreshResult {
+    #[serde(rename = "checkedRepos")]
+    pub checked_repos: usize,
+    #[serde(rename = "scannedSkills")]
+    pub scanned_skills: usize,
+    #[serde(rename = "updatedSkills")]
+    pub updated_skills: usize,
+}
+
+/// 单个已安装技能远程刷新结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillSingleRemoteRefreshResult {
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+    #[serde(rename = "updated")]
+    pub updated: bool,
+    #[serde(rename = "matchedRemote")]
+    pub matched_remote: bool,
+    #[serde(rename = "treeCommitId", skip_serializing_if = "Option::is_none")]
+    pub tree_commit_id: Option<String>,
+}
+
 // ========== SkillService ==========
 
 pub struct SkillService;
@@ -263,7 +290,7 @@ impl SkillService {
             }
             AppType::Cursor => {
                 if let Some(custom) = crate::cc_switch::settings::get_cursor_override_dir() {
-                    return Ok(custom.join("skills"));
+                    return Ok(custom.join("skills-cursor"));
                 }
             }
         }
@@ -280,7 +307,7 @@ impl SkillService {
             AppType::Codex => home.join(".codex").join("skills"),
             AppType::Gemini => home.join(".gemini").join("skills"),
             AppType::OpenCode => home.join(".config").join("opencode").join("skills"),
-            AppType::Cursor => home.join(".cursor").join("skills"),
+            AppType::Cursor => home.join(".cursor").join("skills-cursor"),
         })
     }
 
@@ -288,8 +315,57 @@ impl SkillService {
 
     /// 获取所有已安装的 Skills
     pub fn get_all_installed(db: &Arc<Database>) -> Result<Vec<InstalledSkill>> {
-        let skills = db.get_all_installed_skills()?;
-        Ok(skills.into_values().collect())
+        let mut skills: Vec<InstalledSkill> = db.get_all_installed_skills()?.into_values().collect();
+
+        for skill in &mut skills {
+            if skill
+                .tree_commit_id
+                .as_ref()
+                .is_some_and(|value| !value.trim().is_empty())
+            {
+                continue;
+            }
+
+            let (Some(repo_owner), Some(repo_name)) = (&skill.repo_owner, &skill.repo_name) else {
+                continue;
+            };
+
+            let caches = match db.get_skill_caches_by_repo(repo_owner, repo_name) {
+                Ok(rows) => rows,
+                Err(error) => {
+                    log::debug!(
+                        "读取 skill_cache 失败（{}/{}）: {}",
+                        repo_owner,
+                        repo_name,
+                        error
+                    );
+                    continue;
+                }
+            };
+
+            let normalized_directory = skill.directory.trim().trim_matches('/').to_lowercase();
+            let matched_sha = caches.into_iter().find_map(|row| {
+                if row.tree_sha.trim().is_empty() {
+                    return None;
+                }
+                let cached_directory = row.skill_directory.trim().trim_matches('/').to_lowercase();
+                if cached_directory == normalized_directory
+                    || cached_directory.ends_with(&format!("/{normalized_directory}"))
+                {
+                    return Some(row.tree_sha);
+                }
+                None
+            });
+
+            if let Some(tree_sha) = matched_sha {
+                skill.tree_commit_id = Some(tree_sha);
+                if let Err(error) = db.save_skill(skill) {
+                    log::debug!("回填 tree_commit_id 到数据库失败（{}）: {}", skill.id, error);
+                }
+            }
+        }
+
+        Ok(skills)
     }
 
     /// 安装 Skill
@@ -305,6 +381,12 @@ impl SkillService {
         current_app: &AppType,
     ) -> Result<InstalledSkill> {
         let ssot_dir = Self::get_ssot_dir()?;
+        let repo = SkillRepo {
+            owner: skill.repo_owner.clone(),
+            name: skill.repo_name.clone(),
+            branch: skill.repo_branch.clone(),
+            enabled: true,
+        };
 
         // 使用目录最后一段作为安装名
         let install_name = Path::new(&skill.directory)
@@ -316,13 +398,6 @@ impl SkillService {
 
         // 如果已存在则跳过下载
         if !dest.exists() {
-            let repo = SkillRepo {
-                owner: skill.repo_owner.clone(),
-                name: skill.repo_name.clone(),
-                branch: skill.repo_branch.clone(),
-                enabled: true,
-            };
-
             // 克隆仓库
             let temp_dir = self.clone_repo(&repo).await?;
 
@@ -341,6 +416,17 @@ impl SkillService {
             let _ = fs::remove_dir_all(&temp_dir);
         }
 
+        let tree_commit_id = if let Some(tree_sha) = skill
+            .tree_sha
+            .clone()
+            .filter(|value| !value.trim().is_empty())
+        {
+            Some(tree_sha)
+        } else {
+            self.resolve_tree_commit_id(&repo, &skill.directory, &install_name)
+                .await
+        };
+
         // 创建 InstalledSkill 记录
         let installed_skill = InstalledSkill {
             id: skill.key.clone(),
@@ -355,6 +441,7 @@ impl SkillService {
             repo_name: Some(skill.repo_name.clone()),
             repo_branch: Some(skill.repo_branch.clone()),
             readme_url: skill.readme_url.clone(),
+            tree_commit_id,
             apps: SkillApps::only(current_app),
             installed_at: chrono::Utc::now().timestamp(),
         };
@@ -523,7 +610,9 @@ impl SkillService {
             }
         }
 
-        Ok(unmanaged.into_values().collect())
+        let mut result: Vec<UnmanagedSkill> = unmanaged.into_values().collect();
+        result.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        Ok(result)
     }
 
     /// 从应用目录导入 Skills
@@ -546,6 +635,7 @@ impl SkillService {
                 AppType::Codex,
                 AppType::Gemini,
                 AppType::OpenCode,
+                AppType::Cursor,
             ] {
                 if let Ok(app_dir) = Self::get_app_skills_dir(&app) {
                     let skill_path = app_dir.join(&dir_name);
@@ -613,12 +703,29 @@ impl SkillService {
                 repo_name: None,
                 repo_branch: None,
                 readme_url: None,
+                tree_commit_id: None,
                 apps,
                 installed_at: chrono::Utc::now().timestamp(),
             };
 
             // 保存到数据库
             db.save_skill(&skill)?;
+
+            // 同步到所有发现该 Skill 的应用目录（用 symlink 替换原始文件）
+            for app_str in &found_in {
+                let app = match app_str.as_str() {
+                    "claude" => AppType::Claude,
+                    "codex" => AppType::Codex,
+                    "gemini" => AppType::Gemini,
+                    "opencode" => AppType::OpenCode,
+                    "cursor" => AppType::Cursor,
+                    _ => continue,
+                };
+                if let Err(e) = Self::sync_to_app_dir(&skill.directory, &app) {
+                    log::warn!("导入后同步到 {:?} 失败: {:#}", app, e);
+                }
+            }
+
             imported.push(skill);
         }
 
@@ -919,6 +1026,51 @@ impl SkillService {
         Err(last_error.unwrap_or_else(|| anyhow!("所有分支的 Trees API 调用失败")))
     }
 
+    /// 解析指定技能目录的 tree SHA（安装时兜底）
+    async fn resolve_tree_commit_id(
+        &self,
+        repo: &SkillRepo,
+        skill_directory: &str,
+        install_name: &str,
+    ) -> Option<String> {
+        let tree = match self
+            .fetch_github_tree(&repo.owner, &repo.name, &repo.branch)
+            .await
+        {
+            Ok(tree) => tree,
+            Err(error) => {
+                log::debug!(
+                    "解析技能 tree commit 失败（{}/{}:{}）: {}",
+                    repo.owner,
+                    repo.name,
+                    skill_directory,
+                    error
+                );
+                return None;
+            }
+        };
+
+        let normalized_directory = skill_directory.trim().trim_matches('/').to_lowercase();
+        let normalized_install_name = install_name.trim().trim_matches('/').to_lowercase();
+        let skill_dirs = Self::extract_skill_dirs_from_tree(&tree);
+
+        skill_dirs.into_iter().find_map(|(dir, sha)| {
+            if sha.trim().is_empty() {
+                return None;
+            }
+
+            let normalized_dir = dir.trim().trim_matches('/').to_lowercase();
+            if normalized_dir == normalized_directory
+                || normalized_dir.ends_with(&format!("/{normalized_install_name}"))
+                || (!normalized_install_name.is_empty()
+                    && normalized_dir == normalized_install_name)
+            {
+                return Some(sha);
+            }
+            None
+        })
+    }
+
     /// 带缓存的仓库技能获取（对齐 vercel-labs/skills 的 check/update 模式）
     ///
     /// 流程：
@@ -978,7 +1130,14 @@ impl SkillService {
                 if !cached_skills.is_empty() {
                     let skills: Vec<DiscoverableSkill> = cached_skills
                         .iter()
-                        .filter_map(|c| serde_json::from_str(&c.cached_data).ok())
+                        .filter_map(|c| {
+                            let mut skill: DiscoverableSkill =
+                                serde_json::from_str(&c.cached_data).ok()?;
+                            if skill.tree_sha.is_none() && !c.tree_sha.is_empty() {
+                                skill.tree_sha = Some(c.tree_sha.clone());
+                            }
+                            Some(skill)
+                        })
                         .collect();
                     if !skills.is_empty() {
                         return Ok(skills);
@@ -1012,6 +1171,10 @@ impl SkillService {
                     // SHA 相同 → 使用缓存
                     if let Ok(skill) = serde_json::from_str::<DiscoverableSkill>(&cached.cached_data)
                     {
+                        let mut skill = skill;
+                        if skill.tree_sha.is_none() && !cached.tree_sha.is_empty() {
+                            skill.tree_sha = Some(cached.tree_sha.clone());
+                        }
                         result_skills.push(skill);
                         continue;
                     }
@@ -1045,12 +1208,18 @@ impl SkillService {
         for (dir, sha) in &skill_dirs {
             if updated_dirs.contains(dir) {
                 if let Some(skill) = cloned_map.get(dir.as_str()) {
-                    final_skills.push(skill.clone());
+                    let mut skill_with_sha = skill.clone();
+                    skill_with_sha.tree_sha = Some(sha.clone());
+                    final_skills.push(skill_with_sha.clone());
                     // 更新缓存
-                    self.save_single_skill_cache(repo, dir, sha, skill, db, now);
+                    self.save_single_skill_cache(repo, dir, sha, &skill_with_sha, db, now);
                 }
             } else if let Some(cached) = cached_map.get(dir.as_str()) {
                 if let Ok(skill) = serde_json::from_str::<DiscoverableSkill>(&cached.cached_data) {
+                    let mut skill = skill;
+                    if skill.tree_sha.is_none() && !cached.tree_sha.is_empty() {
+                        skill.tree_sha = Some(cached.tree_sha.clone());
+                    }
                     final_skills.push(skill);
                 }
             }
@@ -1194,7 +1363,7 @@ impl SkillService {
                 repo_name: repo.name.clone(),
                 repo_branch: repo.branch.clone(),
                 skill_directory: skill.directory.clone(),
-                tree_sha: String::new(), // 降级路径无 tree SHA
+                tree_sha: skill.tree_sha.clone().unwrap_or_default(), // 降级路径通常无 tree SHA
                 cached_data,
                 cached_at: now,
                 last_checked_at: now,
@@ -1281,6 +1450,7 @@ impl SkillService {
             repo_owner: repo.owner.clone(),
             repo_name: repo.name.clone(),
             repo_branch: repo.branch.clone(),
+            tree_sha: None,
         })
     }
 
@@ -1567,6 +1737,402 @@ impl SkillService {
         log::info!("已清空所有技能缓存");
         Ok(())
     }
+
+    /// 刷新单个已安装技能的远程元数据
+    pub async fn refresh_single_installed_from_remote(
+        &self,
+        db: &Arc<Database>,
+        skill_id: &str,
+    ) -> Result<SkillSingleRemoteRefreshResult> {
+        let mut installed_skill = db
+            .get_installed_skill(skill_id)?
+            .ok_or_else(|| anyhow!("Skill not found: {skill_id}"))?;
+
+        let (Some(repo_owner), Some(repo_name)) =
+            (installed_skill.repo_owner.clone(), installed_skill.repo_name.clone())
+        else {
+            return Ok(SkillSingleRemoteRefreshResult {
+                skill_id: installed_skill.id,
+                updated: false,
+                matched_remote: false,
+                tree_commit_id: installed_skill.tree_commit_id,
+            });
+        };
+
+        let repo_branch = installed_skill
+            .repo_branch
+            .clone()
+            .unwrap_or_else(|| "main".to_string());
+        let repo = SkillRepo {
+            owner: repo_owner.clone(),
+            name: repo_name.clone(),
+            branch: repo_branch,
+            enabled: true,
+        };
+
+        let discoverable_skills = self.fetch_repo_skills_cached(&repo, db).await?;
+        let install_name = installed_skill.directory.to_lowercase();
+        let remote_dir_hint = installed_skill
+            .id
+            .split_once(':')
+            .and_then(|(prefix, remote_dir)| {
+                if prefix.eq_ignore_ascii_case("local") {
+                    None
+                } else {
+                    Some(remote_dir.trim().to_lowercase())
+                }
+            })
+            .filter(|value| !value.is_empty());
+
+        let matched_remote_skill = remote_dir_hint
+            .as_ref()
+            .and_then(|remote_dir| {
+                discoverable_skills
+                    .iter()
+                    .find(|skill| skill.directory.to_lowercase() == *remote_dir)
+            })
+            .or_else(|| {
+                discoverable_skills.iter().find(|skill| {
+                    Path::new(&skill.directory)
+                        .file_name()
+                        .map(|segment| segment.to_string_lossy().to_lowercase())
+                        .unwrap_or_else(|| skill.directory.to_lowercase())
+                        == install_name
+                })
+            });
+
+        let mut changed = false;
+        let mut matched_remote = false;
+
+        if let Some(remote_skill) = matched_remote_skill {
+            matched_remote = true;
+
+            let remote_description = if remote_skill.description.trim().is_empty() {
+                None
+            } else {
+                Some(remote_skill.description.clone())
+            };
+
+            let remote_directory_for_resolve = remote_dir_hint
+                .clone()
+                .unwrap_or_else(|| remote_skill.directory.clone());
+
+            let remote_tree_commit = if let Some(tree_sha) = remote_skill
+                .tree_sha
+                .clone()
+                .filter(|value| !value.trim().is_empty())
+            {
+                Some(tree_sha)
+            } else {
+                self.resolve_tree_commit_id(
+                    &repo,
+                    &remote_directory_for_resolve,
+                    &installed_skill.directory,
+                )
+                .await
+            };
+
+            if installed_skill.name != remote_skill.name {
+                installed_skill.name = remote_skill.name.clone();
+                changed = true;
+            }
+            if installed_skill.description != remote_description {
+                installed_skill.description = remote_description;
+                changed = true;
+            }
+            if installed_skill.repo_branch.as_deref() != Some(remote_skill.repo_branch.as_str()) {
+                installed_skill.repo_branch = Some(remote_skill.repo_branch.clone());
+                changed = true;
+            }
+            if installed_skill.readme_url != remote_skill.readme_url {
+                installed_skill.readme_url = remote_skill.readme_url.clone();
+                changed = true;
+            }
+            if let Some(tree_commit_id) = remote_tree_commit {
+                if installed_skill.tree_commit_id.as_deref() != Some(tree_commit_id.as_str()) {
+                    installed_skill.tree_commit_id = Some(tree_commit_id);
+                    changed = true;
+                }
+            }
+        } else {
+            let remote_directory_for_resolve = remote_dir_hint
+                .clone()
+                .unwrap_or_else(|| installed_skill.directory.clone());
+            let resolved_tree_commit = self
+                .resolve_tree_commit_id(&repo, &remote_directory_for_resolve, &installed_skill.directory)
+                .await;
+            if let Some(tree_commit_id) = resolved_tree_commit {
+                if installed_skill.tree_commit_id.as_deref() != Some(tree_commit_id.as_str()) {
+                    installed_skill.tree_commit_id = Some(tree_commit_id);
+                    changed = true;
+                }
+            }
+        }
+
+        if changed {
+            db.save_skill(&installed_skill)?;
+        }
+
+        Ok(SkillSingleRemoteRefreshResult {
+            skill_id: installed_skill.id,
+            updated: changed,
+            matched_remote,
+            tree_commit_id: installed_skill.tree_commit_id,
+        })
+    }
+
+    /// 刷新已安装技能的远程元数据（名称/描述/README/tree commit id）
+    ///
+    /// 用于“技能管理 -> 刷新列表”：
+    /// 1. 仅针对“已安装且有 repo 信息”的技能
+    /// 2. 重新解析远程仓库（走 Trees API + 缓存）
+    /// 3. 回写数据库并返回更新统计
+    pub async fn refresh_installed_from_remote(
+        &self,
+        db: &Arc<Database>,
+    ) -> Result<SkillRemoteRefreshResult> {
+        let installed_map = db.get_all_installed_skills()?;
+        let mut installed: Vec<InstalledSkill> = installed_map.into_values().collect();
+
+        if installed.is_empty() {
+            return Ok(SkillRemoteRefreshResult {
+                checked_repos: 0,
+                scanned_skills: 0,
+                updated_skills: 0,
+            });
+        }
+
+        // 1. 去重后收集需要刷新的仓库集合
+        let mut repos_by_key: HashMap<String, SkillRepo> = HashMap::new();
+        for skill in &installed {
+            let (Some(repo_owner), Some(repo_name)) = (&skill.repo_owner, &skill.repo_name) else {
+                continue;
+            };
+
+            let repo_branch = skill
+                .repo_branch
+                .clone()
+                .unwrap_or_else(|| "main".to_string());
+            let repo_key = format!(
+                "{}/{}/{}",
+                repo_owner.to_lowercase(),
+                repo_name.to_lowercase(),
+                repo_branch.to_lowercase()
+            );
+
+            repos_by_key.entry(repo_key).or_insert(SkillRepo {
+                owner: repo_owner.clone(),
+                name: repo_name.clone(),
+                branch: repo_branch,
+                enabled: true,
+            });
+        }
+
+        let repos: Vec<SkillRepo> = repos_by_key.into_values().collect();
+        let checked_repos = repos.len();
+
+        // 2. 重新解析远程仓库，构建两类映射：
+        // - repo + full remote directory（优先，用于精确命中）
+        // - repo + install_name（兜底）
+        let mut discovered_by_repo_and_remote_dir: HashMap<
+            (String, String, String),
+            DiscoverableSkill,
+        > = HashMap::new();
+        let mut discovered_by_repo_and_install_name: HashMap<
+            (String, String, String),
+            DiscoverableSkill,
+        > = HashMap::new();
+
+        for repo in &repos {
+            match self.fetch_repo_skills_cached(repo, db).await {
+                Ok(discoverable_skills) => {
+                    for remote_skill in discoverable_skills {
+                        let remote_dir = remote_skill.directory.to_lowercase();
+                        let install_name = Path::new(&remote_skill.directory)
+                            .file_name()
+                            .map(|segment| segment.to_string_lossy().to_string())
+                            .unwrap_or_else(|| remote_skill.directory.clone())
+                            .to_lowercase();
+
+                        let remote_dir_key = (
+                            repo.owner.to_lowercase(),
+                            repo.name.to_lowercase(),
+                            remote_dir,
+                        );
+                        discovered_by_repo_and_remote_dir
+                            .entry(remote_dir_key)
+                            .or_insert(remote_skill.clone());
+
+                        let install_name_key = (
+                            repo.owner.to_lowercase(),
+                            repo.name.to_lowercase(),
+                            install_name,
+                        );
+                        discovered_by_repo_and_install_name
+                            .entry(install_name_key)
+                            .or_insert(remote_skill);
+                    }
+                }
+                Err(error) => {
+                    log::warn!(
+                        "刷新仓库 {}/{} 远程技能失败: {}",
+                        repo.owner,
+                        repo.name,
+                        error
+                    );
+                }
+            }
+        }
+
+        // 3. 对已安装技能进行回写更新
+        let mut scanned_skills: usize = 0;
+        let mut updated_skills: usize = 0;
+
+        for installed_skill in &mut installed {
+            let (Some(repo_owner), Some(repo_name)) =
+                (&installed_skill.repo_owner, &installed_skill.repo_name)
+            else {
+                continue;
+            };
+
+            scanned_skills += 1;
+
+            let install_name = installed_skill.directory.to_lowercase();
+            let repo_owner_lower = repo_owner.to_lowercase();
+            let repo_name_lower = repo_name.to_lowercase();
+            let remote_dir_hint = installed_skill
+                .id
+                .split_once(':')
+                .and_then(|(prefix, remote_dir)| {
+                    if prefix.eq_ignore_ascii_case("local") {
+                        None
+                    } else {
+                        Some(remote_dir.trim().to_lowercase())
+                    }
+                })
+                .filter(|value| !value.is_empty());
+
+            let remote_skill = remote_dir_hint
+                .as_ref()
+                .and_then(|remote_dir| {
+                    discovered_by_repo_and_remote_dir
+                        .get(&(repo_owner_lower.clone(), repo_name_lower.clone(), remote_dir.clone()))
+                })
+                .or_else(|| {
+                    discovered_by_repo_and_install_name.get(&(
+                        repo_owner_lower.clone(),
+                        repo_name_lower.clone(),
+                        install_name.clone(),
+                    ))
+                });
+
+            let mut changed = false;
+
+            if let Some(remote_skill) = remote_skill {
+                let repo_branch = installed_skill
+                    .repo_branch
+                    .clone()
+                    .unwrap_or_else(|| remote_skill.repo_branch.clone());
+                let repo = SkillRepo {
+                    owner: repo_owner.clone(),
+                    name: repo_name.clone(),
+                    branch: repo_branch,
+                    enabled: true,
+                };
+
+                let remote_directory_for_resolve = remote_dir_hint
+                    .clone()
+                    .unwrap_or_else(|| remote_skill.directory.clone());
+
+                let remote_tree_commit = if let Some(tree_sha) = remote_skill
+                    .tree_sha
+                    .clone()
+                    .filter(|value| !value.trim().is_empty())
+                {
+                    Some(tree_sha)
+                } else {
+                    self.resolve_tree_commit_id(
+                        &repo,
+                        &remote_directory_for_resolve,
+                        &installed_skill.directory,
+                    )
+                    .await
+                };
+
+                let remote_description = if remote_skill.description.trim().is_empty() {
+                    None
+                } else {
+                    Some(remote_skill.description.clone())
+                };
+
+                if installed_skill.name != remote_skill.name {
+                    installed_skill.name = remote_skill.name.clone();
+                    changed = true;
+                }
+                if installed_skill.description != remote_description {
+                    installed_skill.description = remote_description;
+                    changed = true;
+                }
+                if installed_skill.repo_branch.as_deref() != Some(remote_skill.repo_branch.as_str())
+                {
+                    installed_skill.repo_branch = Some(remote_skill.repo_branch.clone());
+                    changed = true;
+                }
+                if installed_skill.readme_url != remote_skill.readme_url {
+                    installed_skill.readme_url = remote_skill.readme_url.clone();
+                    changed = true;
+                }
+                if let Some(tree_commit_id) = remote_tree_commit {
+                    if installed_skill.tree_commit_id.as_deref() != Some(tree_commit_id.as_str()) {
+                        installed_skill.tree_commit_id = Some(tree_commit_id);
+                        changed = true;
+                    }
+                }
+            } else {
+                // 兜底：若远程列表未命中，至少尝试更新 tree commit id
+                let repo_branch = installed_skill
+                    .repo_branch
+                    .clone()
+                    .unwrap_or_else(|| "main".to_string());
+                let repo = SkillRepo {
+                    owner: repo_owner.clone(),
+                    name: repo_name.clone(),
+                    branch: repo_branch,
+                    enabled: true,
+                };
+
+                let remote_directory_for_resolve = remote_dir_hint
+                    .clone()
+                    .unwrap_or_else(|| installed_skill.directory.clone());
+
+                let resolved_tree_commit = self
+                    .resolve_tree_commit_id(
+                        &repo,
+                        &remote_directory_for_resolve,
+                        &installed_skill.directory,
+                    )
+                    .await;
+
+                if let Some(tree_commit_id) = resolved_tree_commit {
+                    if installed_skill.tree_commit_id.as_deref() != Some(tree_commit_id.as_str()) {
+                        installed_skill.tree_commit_id = Some(tree_commit_id);
+                        changed = true;
+                    }
+                }
+            }
+
+            if changed {
+                db.save_skill(installed_skill)?;
+                updated_skills += 1;
+            }
+        }
+
+        Ok(SkillRemoteRefreshResult {
+            checked_repos,
+            scanned_skills,
+            updated_skills,
+        })
+    }
 }
 
 // ========== 迁移支持 ==========
@@ -1651,6 +2217,7 @@ pub fn migrate_skills_to_ssot(db: &Arc<Database>) -> Result<usize> {
             repo_name: None,
             repo_branch: None,
             readme_url: None,
+            tree_commit_id: None,
             apps,
             installed_at: chrono::Utc::now().timestamp(),
         };

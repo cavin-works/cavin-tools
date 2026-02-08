@@ -28,7 +28,7 @@ export function MainContent({ tool }: MainContentProps) {
   const ToolComponent = tool.component;
 
   return (
-    <div className="flex-1 overflow-auto bg-neutral-50 dark:bg-neutral-900">
+    <div className="flex-1 overflow-hidden bg-neutral-50 dark:bg-neutral-900">
       <Suspense fallback={<ToolLoadingFallback name={tool.name} />}>
         <ToolComponent />
       </Suspense>

@@ -166,6 +166,9 @@ pub struct InstalledSkill {
     /// README URL
     #[serde(skip_serializing_if = "Option::is_none")]
     pub readme_url: Option<String>,
+    /// 安装时对应的 Git 树提交 ID（Tree SHA）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tree_commit_id: Option<String>,
     /// 应用启用状态
     pub apps: SkillApps,
     /// 安装时间（Unix 时间戳）

@@ -982,6 +982,8 @@
       "http429": "リクエストが多すぎます。時間をおいて再試行してください",
       "parseMetadataFailed": "スキルメタデータの解析に失敗しました",
       "getHomeDirFailed": "ユーザーのホームディレクトリを取得できません",
+      "importFailed": "スキルのインポートに失敗しました",
+      "scanFailed": "アプリディレクトリのスキャンに失敗しました",
       "networkError": "ネットワークエラー",
       "fsError": "ファイルシステムエラー",
       "unknownError": "不明なエラー",
@@ -1047,6 +1049,102 @@
       "gemini": "Gemini",
       "opencode": "OpenCode",
       "cursor": "Cursor"
+    },
+    "workspace": {
+      "manage": {
+        "title": "スキル管理",
+        "subtitle": "インストール済みの {{count}} 個のスキルを管理",
+        "searchPlaceholder": "スキル名、ソースを検索...",
+        "refreshList": "リストを更新",
+        "noSkills": "スキルなし",
+        "noSkillsHint": "「スキルをインストール」タブから新しいスキルを追加してください",
+        "repoPath": "リポジトリパス",
+        "description": "説明",
+        "noDescription": "未提供",
+        "source": "ソース",
+        "localImport": "ローカルインポート",
+        "syncToTools": "ツールに同期",
+        "sync": "同期",
+        "createdAt": "作成日時 {{time}}"
+      },
+      "local": {
+        "title": "既存スキルをスキャン",
+        "subtitle": "{{toolCount}} 個のツールをスキャンし、{{count}} 個の未管理スキルを発見",
+        "noSkills": "インポート可能なスキルが見つかりません",
+        "locations": "{{count}} 箇所",
+        "import": "インポート",
+        "rescan": "再スキャン",
+        "importAll": "一括インポート"
+      },
+      "install": {
+        "title": "スキルをインストール",
+        "subtitle": "ローカルフォルダまたは Git リポジトリからスキルをインストール",
+        "browse": "スキルを閲覧",
+        "localInstall": "ローカルインストール",
+        "gitInstall": "Git インストール",
+        "browseCategory": {
+          "hot": "人気",
+          "trending": "トレンド",
+          "allTime": "総合"
+        },
+        "loadFailed": "読み込み失敗",
+        "retryLater": "後でもう一度お試しください",
+        "noSkills": "表示するスキルがありません",
+        "installCount": "{{count}} 回インストール",
+        "prevPage": "前のページ",
+        "nextPage": "次のページ",
+        "pageNum": "{{page}} ページ目",
+        "pageNumTotal": "{{page}} / {{total}} ページ",
+        "dropzone": {
+          "title": "フォルダまたはアーカイブをここにドロップ",
+          "formats": ".zip / .skill アーカイブまたはスキルフォルダに対応"
+        },
+        "manualSelect": "または手動で選択",
+        "pathPlaceholder": "フォルダまたは .zip/.skill ファイルを選択",
+        "skillName": "スキル名（任意）",
+        "skillNameHint": "空欄の場合、SKILL.md またはファイル名から推測",
+        "installSkill": "スキルをインストール",
+        "gitRepo": "Git リポジトリ URL",
+        "gitPlaceholder": "https://github.com/user/repo または user/repo",
+        "gitFormats": "対応フォーマット",
+        "gitNameHint": "空欄の場合、自動推測"
+      },
+      "settings": {
+        "title": "設定",
+        "subtitle": "SkillsLM のグローバル設定を構成",
+        "toolStatus": "ツール状態",
+        "toolStatusDesc": "インストール済みの AI コーディングツールを検出",
+        "installed": "インストール済み",
+        "notInstalled": "未インストール",
+        "refreshStatus": "状態を更新"
+      },
+      "nav": {
+        "manage": "スキル管理",
+        "local": "ローカルスキル",
+        "install": "インストール",
+        "settings": "設定"
+      },
+      "toast": {
+        "installSuccess": "スキルをインストールしました: {{name}}",
+        "installFailed": "インストールに失敗しました",
+        "invalidRepo": "リポジトリ形式が無効です。インストールできません",
+        "noRepoUrl": "リポジトリ URL が見つかりません",
+        "openLinkFailed": "リンクを開けませんでした",
+        "gitInstallSuccess": "Git インストール成功",
+        "gitInstallFailed": "Git インストール失敗",
+        "invalidGitRepo": "有効な Git リポジトリ URL を入力してください",
+        "uninstallSuccess": "スキルをアンインストールしました: {{name}}",
+        "uninstallFailed": "アンインストールに失敗しました",
+        "syncFailed": "同期状態の更新に失敗しました",
+        "noImportable": "インポート可能なスキルがありません",
+        "importSuccess": "{{count}} 個のスキルをインポートしました",
+        "importFailed": "インポートに失敗しました",
+        "selectPathFirst": "先にローカルパスを選択してください",
+        "zipNotSupported": "現在のバージョンはツールディレクトリ内のスキルフォルダのインポートのみ対応",
+        "cannotIdentifyDir": "スキルディレクトリ名を識別できません",
+        "skillNotFoundInTools": "対応ツールのスキルディレクトリにスキルが見つかりません",
+        "noSkillInRepo": "リポジトリにインストール可能なスキルが見つかりません"
+      }
     }
   },
   "deeplink": {

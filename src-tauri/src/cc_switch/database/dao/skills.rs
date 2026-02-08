@@ -22,7 +22,7 @@ impl Database {
         let mut stmt = conn
             .prepare(
                 "SELECT id, name, description, directory, repo_owner, repo_name, repo_branch,
-                        readme_url, enabled_claude, enabled_codex, enabled_gemini, enabled_opencode, enabled_cursor, installed_at
+                        readme_url, tree_commit_id, enabled_claude, enabled_codex, enabled_gemini, enabled_opencode, enabled_cursor, installed_at
                  FROM skills ORDER BY name ASC",
             )
             .map_err(|e| AppError::Database(e.to_string()))?;
@@ -38,14 +38,15 @@ impl Database {
                     repo_name: row.get(5)?,
                     repo_branch: row.get(6)?,
                     readme_url: row.get(7)?,
+                    tree_commit_id: row.get(8)?,
                     apps: SkillApps {
-                        claude: row.get(8)?,
-                        codex: row.get(9)?,
-                        gemini: row.get(10)?,
-                        opencode: row.get(11)?,
-                        cursor: row.get(12)?,
+                        claude: row.get(9)?,
+                        codex: row.get(10)?,
+                        gemini: row.get(11)?,
+                        opencode: row.get(12)?,
+                        cursor: row.get(13)?,
                     },
-                    installed_at: row.get(13)?,
+                    installed_at: row.get(14)?,
                 })
             })
             .map_err(|e| AppError::Database(e.to_string()))?;
@@ -64,7 +65,7 @@ impl Database {
         let mut stmt = conn
             .prepare(
                 "SELECT id, name, description, directory, repo_owner, repo_name, repo_branch,
-                        readme_url, enabled_claude, enabled_codex, enabled_gemini, enabled_opencode, enabled_cursor, installed_at
+                        readme_url, tree_commit_id, enabled_claude, enabled_codex, enabled_gemini, enabled_opencode, enabled_cursor, installed_at
                  FROM skills WHERE id = ?1",
             )
             .map_err(|e| AppError::Database(e.to_string()))?;
@@ -79,14 +80,15 @@ impl Database {
                 repo_name: row.get(5)?,
                 repo_branch: row.get(6)?,
                 readme_url: row.get(7)?,
+                tree_commit_id: row.get(8)?,
                 apps: SkillApps {
-                    claude: row.get(8)?,
-                    codex: row.get(9)?,
-                    gemini: row.get(10)?,
-                    opencode: row.get(11)?,
-                    cursor: row.get(12)?,
+                    claude: row.get(9)?,
+                    codex: row.get(10)?,
+                    gemini: row.get(11)?,
+                    opencode: row.get(12)?,
+                    cursor: row.get(13)?,
                 },
-                installed_at: row.get(13)?,
+                installed_at: row.get(14)?,
             })
         });
 
@@ -103,8 +105,8 @@ impl Database {
         conn.execute(
             "INSERT OR REPLACE INTO skills
              (id, name, description, directory, repo_owner, repo_name, repo_branch,
-              readme_url, enabled_claude, enabled_codex, enabled_gemini, enabled_opencode, enabled_cursor, installed_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+              readme_url, tree_commit_id, enabled_claude, enabled_codex, enabled_gemini, enabled_opencode, enabled_cursor, installed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
             params![
                 skill.id,
                 skill.name,
@@ -114,6 +116,7 @@ impl Database {
                 skill.repo_name,
                 skill.repo_branch,
                 skill.readme_url,
+                skill.tree_commit_id,
                 skill.apps.claude,
                 skill.apps.codex,
                 skill.apps.gemini,

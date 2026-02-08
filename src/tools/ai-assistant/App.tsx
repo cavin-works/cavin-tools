@@ -621,6 +621,7 @@ function App() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
+          className={cn(currentView === "skills" && "h-full min-h-0")}
         >
           {content}
         </motion.div>
@@ -895,8 +896,8 @@ function App() {
       </header>
       )}
 
-      <main className={cn("flex-1 animate-fade-in", !isSkillsWorkspace && "pb-12")}>
-        <div className={cn(!isSkillsWorkspace && "pb-12")}>{renderContent()}</div>
+      <main className={cn("flex-1 min-h-0 animate-fade-in overflow-hidden", !isSkillsWorkspace && "pb-12")}>
+        <div className={cn(isSkillsWorkspace ? "h-full" : "pb-12")}>{renderContent()}</div>
       </main>
 
       <AddProviderDialog

@@ -982,6 +982,8 @@
       "http429": "Too many requests, please wait and retry",
       "parseMetadataFailed": "Failed to parse skill metadata",
       "getHomeDirFailed": "Unable to get user home directory",
+      "importFailed": "Failed to import skill",
+      "scanFailed": "Failed to scan app directories",
       "networkError": "Network error",
       "fsError": "File system error",
       "unknownError": "Unknown error",
@@ -1047,6 +1049,102 @@
       "gemini": "Gemini",
       "opencode": "OpenCode",
       "cursor": "Cursor"
+    },
+    "workspace": {
+      "manage": {
+        "title": "Skill Management",
+        "subtitle": "Managing {{count}} installed skills",
+        "searchPlaceholder": "Search skill name, source...",
+        "refreshList": "Refresh List",
+        "noSkills": "No Skills",
+        "noSkillsHint": "Go to \"Install Skills\" tab to add new skills",
+        "repoPath": "Repository Path",
+        "description": "Description",
+        "noDescription": "Not provided",
+        "source": "Source",
+        "localImport": "Local Import",
+        "syncToTools": "Sync to Tools",
+        "sync": "Sync",
+        "createdAt": "Created at {{time}}"
+      },
+      "local": {
+        "title": "Scan Existing Skills",
+        "subtitle": "Scanned {{toolCount}} tools, found {{count}} unmanaged skills",
+        "noSkills": "No importable skills found",
+        "locations": "{{count}} locations",
+        "import": "Import",
+        "rescan": "Rescan",
+        "importAll": "Import All"
+      },
+      "install": {
+        "title": "Install Skills",
+        "subtitle": "Install skills from local folder or Git repository",
+        "browse": "Browse Skills",
+        "localInstall": "Local Install",
+        "gitInstall": "Git Install",
+        "browseCategory": {
+          "hot": "Hot",
+          "trending": "Trending",
+          "allTime": "All Time"
+        },
+        "loadFailed": "Failed to load",
+        "retryLater": "Please retry later",
+        "noSkills": "No skills to display",
+        "installCount": "{{count}} installs",
+        "prevPage": "Previous",
+        "nextPage": "Next",
+        "pageNum": "Page {{page}}",
+        "pageNumTotal": "Page {{page}} / {{total}}",
+        "dropzone": {
+          "title": "Drop folder or archive here",
+          "formats": "Supports .zip / .skill archives or skill folders"
+        },
+        "manualSelect": "Or select manually",
+        "pathPlaceholder": "Select folder or .zip/.skill file",
+        "skillName": "Skill Name (optional)",
+        "skillNameHint": "Leave empty to infer from SKILL.md or filename",
+        "installSkill": "Install Skill",
+        "gitRepo": "Git Repository URL",
+        "gitPlaceholder": "https://github.com/user/repo or user/repo",
+        "gitFormats": "Supported formats",
+        "gitNameHint": "Leave empty to auto-infer"
+      },
+      "settings": {
+        "title": "Settings",
+        "subtitle": "Configure SkillsLM global settings",
+        "toolStatus": "Tool Status",
+        "toolStatusDesc": "Detect installed AI coding tools",
+        "installed": "Installed",
+        "notInstalled": "Not Installed",
+        "refreshStatus": "Refresh Status"
+      },
+      "nav": {
+        "manage": "Skills",
+        "local": "Local Skills",
+        "install": "Install",
+        "settings": "Settings"
+      },
+      "toast": {
+        "installSuccess": "Skill installed: {{name}}",
+        "installFailed": "Installation failed",
+        "invalidRepo": "Invalid repository format, cannot install",
+        "noRepoUrl": "No repository URL found",
+        "openLinkFailed": "Failed to open link",
+        "gitInstallSuccess": "Git installation successful",
+        "gitInstallFailed": "Git installation failed",
+        "invalidGitRepo": "Please enter a valid Git repository URL",
+        "uninstallSuccess": "Skill uninstalled: {{name}}",
+        "uninstallFailed": "Uninstall failed",
+        "syncFailed": "Failed to update sync status",
+        "noImportable": "No importable skills",
+        "importSuccess": "Successfully imported {{count}} skills",
+        "importFailed": "Import failed",
+        "selectPathFirst": "Please select a local path first",
+        "zipNotSupported": "Current version only supports importing skill folders from tool directories",
+        "cannotIdentifyDir": "Cannot identify skill directory name",
+        "skillNotFoundInTools": "Skill not found in supported tool directories",
+        "noSkillInRepo": "No installable skills found in repository"
+      }
     }
   },
   "deeplink": {

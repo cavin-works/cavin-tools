@@ -24,6 +24,7 @@ export interface InstalledSkill {
   repoName?: string;
   repoBranch?: string;
   readmeUrl?: string;
+  treeCommitId?: string;
   apps: SkillApps;
   installedAt: number;
 }
@@ -86,6 +87,7 @@ export interface SkillsShSkill {
   description?: string;
   url?: string;
   directory?: string;
+  installs?: number;
 }
 
 /** skills.sh 浏览结果 */
@@ -94,6 +96,21 @@ export interface SkillsShBrowseResult {
   page: number;
   hasMore: boolean;
   totalPages?: number;
+}
+
+/** 已安装技能远程刷新结果 */
+export interface SkillRemoteRefreshResult {
+  checkedRepos: number;
+  scannedSkills: number;
+  updatedSkills: number;
+}
+
+/** 单个已安装技能远程刷新结果 */
+export interface SkillSingleRemoteRefreshResult {
+  skillId: string;
+  updated: boolean;
+  matchedRemote: boolean;
+  treeCommitId?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -136,7 +153,7 @@ function readSkillsArray(payload: unknown): unknown[] {
     return [];
   }
 
-  const listKeys: string[] = ["data", "items", "skills", "result", "list"];
+  const listKeys: string[] = ["data", "items", "skills", "result", "results", "list"];
   for (const key of listKeys) {
     const candidate: unknown = payload[key];
     if (Array.isArray(candidate)) {
@@ -190,6 +207,15 @@ function mapSkillsShItem(item: unknown, index: number): SkillsShSkill | null {
     asString(item.skillId) ??
     undefined;
 
+  const installs: number | undefined =
+    typeof item.installs === "number"
+      ? item.installs
+      : typeof item.install_count === "number"
+        ? item.install_count
+        : typeof item.downloads === "number"
+          ? item.downloads
+          : undefined;
+
   return {
     id,
     name,
@@ -197,6 +223,7 @@ function mapSkillsShItem(item: unknown, index: number): SkillsShSkill | null {
     description,
     url,
     directory,
+    installs,
   };
 }
 
@@ -218,8 +245,13 @@ function parseSkillsShPagination(
   const rawHasMore: unknown = payload.has_more ?? payload.hasMore ?? payload.next_page;
   const rawTotal: unknown = payload.total ?? payload.count;
 
-  const totalPages: number | undefined =
+  let totalPages: number | undefined =
     typeof rawTotalPages === "number" && rawTotalPages > 0 ? rawTotalPages : undefined;
+
+  // 当 API 没有返回 totalPages 但返回了 total 时，从 total 和每页数量推算
+  if (totalPages === undefined && typeof rawTotal === "number" && rawTotal > 0 && count > 0) {
+    totalPages = Math.ceil(rawTotal / count);
+  }
 
   if (typeof rawHasMore === "boolean") {
     return { hasMore: rawHasMore, totalPages };
@@ -248,6 +280,16 @@ export const skillsApi = {
   /** 获取所有已安装的 Skills */
   async getInstalled(): Promise<InstalledSkill[]> {
     return await invoke("get_installed_skills");
+  },
+
+  /** 重新解析远程仓库并刷新已安装技能元数据 */
+  async refreshInstalledRemote(): Promise<SkillRemoteRefreshResult> {
+    return await invoke("refresh_installed_skills_remote");
+  },
+
+  /** 重新解析远程仓库并刷新单个已安装技能元数据 */
+  async refreshInstalledOneRemote(skillId: string): Promise<SkillSingleRemoteRefreshResult> {
+    return await invoke("refresh_installed_skill_remote", { skillId });
   },
 
   /** 安装 Skill（统一安装） */
@@ -292,7 +334,7 @@ export const skillsApi = {
     category: SkillsShCategory,
     page: number,
   ): Promise<SkillsShBrowseResult> {
-    const safePage: number = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safePage: number = Number.isFinite(page) && page >= 0 ? Math.floor(page) : 0;
     const payload: unknown = await invoke("browse_skills_sh", {
       category,
       page: safePage,
@@ -310,6 +352,28 @@ export const skillsApi = {
       hasMore: pagination.hasMore,
       totalPages: pagination.totalPages,
     };
+  },
+
+  /** 从 skills.sh 搜索技能 */
+  async searchSkills(query: string, limit: number = 50): Promise<SkillsShSkill[]> {
+    const normalizedQuery: string = query.trim();
+    if (normalizedQuery.length === 0) {
+      return [];
+    }
+
+    const safeLimit: number = Number.isFinite(limit)
+      ? Math.max(1, Math.min(100, Math.floor(limit)))
+      : 50;
+
+    const payload: unknown = await invoke("search_skills_sh", {
+      query: normalizedQuery,
+      limit: safeLimit,
+    });
+
+    const rawArray: unknown[] = readSkillsArray(payload);
+    return rawArray
+      .map((item: unknown, index: number) => mapSkillsShItem(item, index))
+      .filter((item: SkillsShSkill | null): item is SkillsShSkill => item !== null);
   },
 
   // ========== 兼容旧 API ==========

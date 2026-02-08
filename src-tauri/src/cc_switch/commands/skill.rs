@@ -7,9 +7,11 @@
 use crate::cc_switch::app_config::{AppType, InstalledSkill, UnmanagedSkill};
 use crate::cc_switch::error::format_skill_error;
 use crate::cc_switch::services::skill::{
-    DiscoverableSkill, Skill, SkillRepo, SkillService, SkillUpdateInfo,
+    DiscoverableSkill, Skill, SkillRemoteRefreshResult, SkillRepo, SkillService,
+    SkillSingleRemoteRefreshResult, SkillUpdateInfo,
 };
 use crate::cc_switch::store::AppState;
+use serde_json::json;
 use serde_json::Value;
 use std::sync::Arc;
 use tauri::State;
@@ -35,6 +37,33 @@ fn parse_app_type(app: &str) -> Result<AppType, String> {
 #[tauri::command]
 pub fn get_installed_skills(app_state: State<'_, AppState>) -> Result<Vec<InstalledSkill>, String> {
     SkillService::get_all_installed(&app_state.db).map_err(|e| e.to_string())
+}
+
+/// 重新解析远程仓库并刷新已安装技能元数据
+#[tauri::command]
+pub async fn refresh_installed_skills_remote(
+    service: State<'_, SkillServiceState>,
+    app_state: State<'_, AppState>,
+) -> Result<SkillRemoteRefreshResult, String> {
+    service
+        .0
+        .refresh_installed_from_remote(&app_state.db)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 重新解析远程仓库并刷新单个已安装技能元数据
+#[tauri::command]
+pub async fn refresh_installed_skill_remote(
+    skill_id: String,
+    service: State<'_, SkillServiceState>,
+    app_state: State<'_, AppState>,
+) -> Result<SkillSingleRemoteRefreshResult, String> {
+    service
+        .0
+        .refresh_single_installed_from_remote(&app_state.db, &skill_id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// 安装 Skill（新版统一安装）
@@ -109,7 +138,7 @@ pub async fn browse_skills_sh(category: String, page: u32) -> Result<Value, Stri
         _ => return Err(format!("不支持的分类: {category}")),
     };
 
-    let safe_page = if page == 0 { 1 } else { page };
+    let safe_page = page;
     let url = format!("https://skills.sh/api/skills/{normalized}/{safe_page}");
 
     // 复用全局 HTTP 客户端（含全局代理设置）
@@ -130,6 +159,47 @@ pub async fn browse_skills_sh(category: String, page: u32) -> Result<Value, Stri
         .json::<Value>()
         .await
         .map_err(|e| format!("解析 skills.sh 响应失败: {e}"))
+}
+
+/// 按关键词搜索 skills.sh 技能列表
+#[tauri::command]
+pub async fn search_skills_sh(query: String, limit: u32) -> Result<Value, String> {
+    let normalized_query = query.trim();
+    if normalized_query.is_empty() {
+        return Ok(json!({
+            "skills": [],
+            "total": 0,
+            "hasMore": false
+        }));
+    }
+
+    let safe_limit = limit.clamp(1, 100);
+
+    // 复用全局 HTTP 客户端（含全局代理设置）
+    let client = crate::cc_switch::proxy::http_client::get();
+    let response = client
+        .get("https://skills.sh/api/search")
+        .query(&[
+            ("q", normalized_query.to_string()),
+            ("limit", safe_limit.to_string()),
+        ])
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("请求 skills.sh 搜索接口失败: {e}"))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!(
+            "skills.sh 搜索接口返回错误状态: HTTP {}",
+            status.as_u16()
+        ));
+    }
+
+    response
+        .json::<Value>()
+        .await
+        .map_err(|e| format!("解析 skills.sh 搜索响应失败: {e}"))
 }
 
 /// 发现可安装的 Skills（从仓库获取）

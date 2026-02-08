@@ -982,6 +982,8 @@
       "http429": "请求过于频繁，请等待后重试",
       "parseMetadataFailed": "解析技能元数据失败",
       "getHomeDirFailed": "无法获取用户主目录",
+      "importFailed": "导入技能失败",
+      "scanFailed": "扫描应用目录失败",
       "networkError": "网络错误",
       "fsError": "文件系统错误",
       "unknownError": "未知错误",
@@ -1047,6 +1049,102 @@
       "gemini": "Gemini",
       "opencode": "OpenCode",
       "cursor": "Cursor"
+    },
+    "workspace": {
+      "manage": {
+        "title": "技能管理",
+        "subtitle": "管理已安装的 {{count}} 个技能",
+        "searchPlaceholder": "搜索技能名称、来源...",
+        "refreshList": "刷新列表",
+        "noSkills": "暂无技能",
+        "noSkillsHint": "前往「安装技能」页面添加新技能",
+        "repoPath": "仓库路径",
+        "description": "简介",
+        "noDescription": "未提供",
+        "source": "来源",
+        "localImport": "本地导入",
+        "syncToTools": "同步到工具",
+        "sync": "同步",
+        "createdAt": "创建于 {{time}}"
+      },
+      "local": {
+        "title": "扫描现有技能",
+        "subtitle": "扫描了 {{toolCount}} 个工具，发现 {{count}} 个未管理的技能",
+        "noSkills": "未发现可导入技能",
+        "locations": "{{count}} 个位置",
+        "import": "导入",
+        "rescan": "重新扫描",
+        "importAll": "一键导入"
+      },
+      "install": {
+        "title": "安装技能",
+        "subtitle": "从本地文件夹或 Git 仓库安装技能",
+        "browse": "浏览技能",
+        "localInstall": "本地安装",
+        "gitInstall": "Git 安装",
+        "browseCategory": {
+          "hot": "热门",
+          "trending": "趋势",
+          "allTime": "总榜"
+        },
+        "loadFailed": "加载失败",
+        "retryLater": "请稍后重试",
+        "noSkills": "暂无可展示技能",
+        "installCount": "{{count}} 次安装",
+        "prevPage": "上一页",
+        "nextPage": "下一页",
+        "pageNum": "第 {{page}} 页",
+        "pageNumTotal": "第 {{page}} / {{total}} 页",
+        "dropzone": {
+          "title": "拖拽文件夹或压缩包到此处",
+          "formats": "支持 .zip / .skill 压缩包或技能文件夹"
+        },
+        "manualSelect": "或手动选择",
+        "pathPlaceholder": "选择文件夹或 .zip/.skill 文件",
+        "skillName": "技能名称（可选）",
+        "skillNameHint": "留空则自动从 SKILL.md 或文件名推断",
+        "installSkill": "安装技能",
+        "gitRepo": "Git 仓库地址",
+        "gitPlaceholder": "https://github.com/user/repo 或 user/repo",
+        "gitFormats": "支持格式",
+        "gitNameHint": "留空则自动推断"
+      },
+      "settings": {
+        "title": "设置",
+        "subtitle": "配置 SkillsLM 的全局设置",
+        "toolStatus": "工具状态",
+        "toolStatusDesc": "检测已安装的 AI 编码工具",
+        "installed": "已安装",
+        "notInstalled": "未安装",
+        "refreshStatus": "刷新状态"
+      },
+      "nav": {
+        "manage": "技能管理",
+        "local": "本地技能",
+        "install": "安装技能",
+        "settings": "设置"
+      },
+      "toast": {
+        "installSuccess": "已安装技能: {{name}}",
+        "installFailed": "安装失败",
+        "invalidRepo": "仓库信息格式无效，无法安装",
+        "noRepoUrl": "未找到可打开的仓库地址",
+        "openLinkFailed": "打开链接失败",
+        "gitInstallSuccess": "Git 安装成功",
+        "gitInstallFailed": "Git 安装失败",
+        "invalidGitRepo": "请输入有效的 Git 仓库地址",
+        "uninstallSuccess": "已卸载技能: {{name}}",
+        "uninstallFailed": "卸载失败",
+        "syncFailed": "同步状态更新失败",
+        "noImportable": "没有可导入的技能",
+        "importSuccess": "成功导入 {{count}} 个技能",
+        "importFailed": "导入失败",
+        "selectPathFirst": "请先选择本地路径",
+        "zipNotSupported": "当前版本仅支持导入已在工具目录中的技能文件夹",
+        "cannotIdentifyDir": "无法识别技能目录名",
+        "skillNotFoundInTools": "未在已支持的工具技能目录中发现该技能",
+        "noSkillInRepo": "仓库中未发现可安装的技能"
+      }
     }
   },
   "deeplink": {

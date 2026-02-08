@@ -1,19 +1,15 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
-  CircleDashed,
   Download,
   ExternalLink,
   FileText,
   Folder,
-  Globe,
   Link as LinkIcon,
   Loader2,
-  Plus,
   RefreshCw,
-  Search,
-  Settings,
   Trash2,
   TrendingUp,
   Upload,
@@ -21,11 +17,19 @@ import {
   ChevronUp,
   Flame,
   Clock3,
+  Check,
+  Search,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ProviderIcon } from "../ProviderIcon";
 import {
   useAddSkillRepo,
   useImportSkillsFromApps,
@@ -82,13 +86,21 @@ const SKILL_APP_TOGGLES: Array<{ label: string; app: AppType }> = [
 
 const EXTERNAL_SYNC_APPS: string[] = ["Antigravity", "TRAE IDE"];
 
+const APP_ICON_MAP: Record<string, string> = {
+  claude: "claude",
+  codex: "openai",
+  gemini: "gemini",
+  opencode: "opencode",
+  cursor: "cursor",
+};
+
 const BROWSE_CATEGORY_META: Record<
   SkillsShCategory,
   { label: string; icon: typeof Flame }
 > = {
-  hot: { label: "热门", icon: Flame },
-  trending: { label: "趋势", icon: TrendingUp },
-  "all-time": { label: "总榜", icon: Clock3 },
+  "all-time": { label: "All Time (45,882)", icon: Clock3 },
+  trending: { label: "Trending (24h)", icon: TrendingUp },
+  hot: { label: "Hot", icon: Flame },
 };
 
 const TOOL_STATUS_ORDER: Array<{ id: string; name: string; code: string }> = [
@@ -177,11 +189,53 @@ function formatTimestamp(value: number): string {
   return date.toLocaleString("zh-CN", { hour12: false });
 }
 
-function resolveSkillSource(skill: InstalledSkill): string {
+function formatTreeCommitShort(value?: string): string {
+  if (!value || value.trim().length === 0) {
+    return "-";
+  }
+  const normalized: string = value.trim();
+  return normalized.length > 12 ? normalized.slice(0, 12) : normalized;
+}
+
+function normalizePathFragment(value: string): string {
+  return value
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+}
+
+function extractInstallName(value?: string): string | null {
+  if (!value) {
+    return null;
+  }
+  const normalized: string = normalizePathFragment(value);
+  if (normalized.length === 0) {
+    return null;
+  }
+  const segments: string[] = normalized.split("/").filter((segment: string) => segment.length > 0);
+  return segments.length > 0 ? segments[segments.length - 1] : null;
+}
+
+function extractRemoteDirectoryFromInstalledId(skillId: string): string | null {
+  const separatorIndex: number = skillId.indexOf(":");
+  if (separatorIndex <= 0) {
+    return null;
+  }
+  const prefix: string = skillId.slice(0, separatorIndex).toLowerCase();
+  if (prefix === "local") {
+    return null;
+  }
+  const rawDirectory: string = skillId.slice(separatorIndex + 1);
+  const normalized: string = normalizePathFragment(rawDirectory);
+  return normalized.length > 0 ? normalized : null;
+}
+
+function resolveSkillSource(skill: InstalledSkill, localLabel: string): string {
   if (skill.repoOwner && skill.repoName) {
     return `https://github.com/${skill.repoOwner}/${skill.repoName}`;
   }
-  return "本地导入";
+  return localLabel;
 }
 
 function ensureRepoUrl(item: SkillsShSkill): string | null {
@@ -304,16 +358,23 @@ async function loadToolStatuses(): Promise<ToolStatusView[]> {
 }
 
 export function SkillsWorkspace() {
+  const { t } = useTranslation();
   const [section, setSection] = useState<SkillsSection>("manage");
   const [installTab, setInstallTab] = useState<InstallTab>("browse");
-  const [browseCategory, setBrowseCategory] = useState<SkillsShCategory>("hot");
-  const [browsePage, setBrowsePage] = useState<number>(1);
+  const [browseCategory, setBrowseCategory] = useState<SkillsShCategory>("all-time");
+  const [browsePage, setBrowsePage] = useState<number>(0);
+  const [browseSearchInput, setBrowseSearchInput] = useState<string>("");
+  const [browseSearchQuery, setBrowseSearchQuery] = useState<string>("");
   const [manageQuery, setManageQuery] = useState<string>("");
   const [expandedSkillIds, setExpandedSkillIds] = useState<Set<string>>(new Set());
   const [localPathInput, setLocalPathInput] = useState<string>("");
   const [localSkillNameInput, setLocalSkillNameInput] = useState<string>("");
   const [gitRepoInput, setGitRepoInput] = useState<string>("");
   const [gitSkillNameInput, setGitSkillNameInput] = useState<string>("");
+  const [refreshingSection, setRefreshingSection] = useState<SkillsSection | null>(null);
+  const [refreshingSkillIds, setRefreshingSkillIds] = useState<Set<string>>(new Set());
+  const [installingBrowseSkillIds, setInstallingBrowseSkillIds] = useState<Set<string>>(new Set());
+  const [recentlyInstalledBrowseSkillIds, setRecentlyInstalledBrowseSkillIds] = useState<Set<string>>(new Set());
 
   const installedQuery = useInstalledSkills();
   const uninstallMutation = useUninstallSkill();
@@ -327,6 +388,14 @@ export function SkillsWorkspace() {
     queryKey: ["skills", "skills-sh", browseCategory, browsePage],
     queryFn: () => skillsApi.browseSkills(browseCategory, browsePage),
     enabled: section === "install" && installTab === "browse",
+  });
+  const browseSearchResultQuery = useQuery({
+    queryKey: ["skills", "skills-sh", "search", browseSearchQuery],
+    queryFn: () => skillsApi.searchSkills(browseSearchQuery, 50),
+    enabled:
+      section === "install" &&
+      installTab === "browse" &&
+      browseSearchQuery.trim().length > 0,
   });
 
   const toolStatusesQuery = useQuery({
@@ -343,7 +412,7 @@ export function SkillsWorkspace() {
     }
 
     return source.filter((skill: InstalledSkill) => {
-      const sourceText: string = resolveSkillSource(skill).toLowerCase();
+      const sourceText: string = resolveSkillSource(skill, t("skills.workspace.manage.localImport")).toLowerCase();
       return (
         skill.name.toLowerCase().includes(keyword) ||
         skill.directory.toLowerCase().includes(keyword) ||
@@ -354,8 +423,22 @@ export function SkillsWorkspace() {
   }, [installedQuery.data, manageQuery]);
 
   const unmanagedSkills = scanUnmanagedQuery.data ?? [];
-  const browseItems: SkillsShSkill[] = browseQuery.data?.items ?? [];
-  const browseHasMore: boolean = browseQuery.data?.hasMore ?? false;
+  const isBrowseSearching: boolean = browseSearchQuery.trim().length > 0;
+  const browseItems: SkillsShSkill[] = isBrowseSearching
+    ? browseSearchResultQuery.data ?? []
+    : browseQuery.data?.items ?? [];
+  const browseHasMore: boolean = isBrowseSearching ? false : browseQuery.data?.hasMore ?? false;
+  const browseTotalPages: number | undefined = isBrowseSearching
+    ? undefined
+    : browseQuery.data?.totalPages;
+  const browseLoading: boolean = isBrowseSearching
+    ? browseSearchResultQuery.isLoading || browseSearchResultQuery.isFetching
+    : browseQuery.isLoading || browseQuery.isFetching;
+  const browseIsError: boolean = isBrowseSearching
+    ? browseSearchResultQuery.isError
+    : browseQuery.isError;
+  const browseError: unknown = isBrowseSearching ? browseSearchResultQuery.error : browseQuery.error;
+  const installedSkills: InstalledSkill[] = installedQuery.data ?? [];
 
   useEffect(() => {
     if (section === "local") {
@@ -364,6 +447,16 @@ export function SkillsWorkspace() {
     // 仅在切换到本地技能页时触发一次扫描，避免渲染时重复 refetch。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setBrowseSearchQuery(browseSearchInput.trim());
+    }, 280);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [browseSearchInput]);
 
   const toggleExpanded = (skillId: string): void => {
     setExpandedSkillIds((previous: Set<string>) => {
@@ -377,25 +470,102 @@ export function SkillsWorkspace() {
     });
   };
 
-  const refreshCurrentSection = async (): Promise<void> => {
-    if (section === "manage") {
+  const handleRefreshSection = async (targetSection: SkillsSection): Promise<void> => {
+    setRefreshingSection(targetSection);
+    try {
+      if (targetSection === "manage") {
+        const refreshResult = await skillsApi.refreshInstalledRemote();
+        await installedQuery.refetch();
+        toast.success(
+          t("skills.workspace.manage.remoteRefreshDone", { defaultValue: "远程刷新完成" }),
+          {
+            description: t("skills.workspace.manage.remoteRefreshResult", {
+              defaultValue:
+                "检查仓库 {{checked}} 个，扫描已安装技能 {{scanned}} 个，更新 {{updated}} 个。",
+              checked: refreshResult.checkedRepos,
+              scanned: refreshResult.scannedSkills,
+              updated: refreshResult.updatedSkills,
+            }),
+          },
+        );
+        return;
+      }
+
+      if (targetSection === "local") {
+        await scanUnmanagedQuery.refetch();
+        return;
+      }
+
+      if (targetSection === "install" && installTab === "browse") {
+        if (browseSearchQuery.trim().length > 0) {
+          await browseSearchResultQuery.refetch();
+        } else {
+          await browseQuery.refetch();
+        }
+        return;
+      }
+
+      if (targetSection === "settings") {
+        await toolStatusesQuery.refetch();
+        return;
+      }
+    } catch (error) {
+      toast.error(t("skills.workspace.toast.refreshFailed", { defaultValue: "刷新失败" }), {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setRefreshingSection((current: SkillsSection | null) =>
+        current === targetSection ? null : current,
+      );
+    }
+  };
+
+  const handleRefreshSingleSkill = async (skill: InstalledSkill): Promise<void> => {
+    if (refreshingSkillIds.has(skill.id)) {
+      return;
+    }
+
+    setRefreshingSkillIds((previous: Set<string>) => {
+      const next = new Set(previous);
+      next.add(skill.id);
+      return next;
+    });
+
+    try {
+      const result = await skillsApi.refreshInstalledOneRemote(skill.id);
       await installedQuery.refetch();
-      return;
-    }
 
-    if (section === "local") {
-      await scanUnmanagedQuery.refetch();
-      return;
-    }
-
-    if (section === "install" && installTab === "browse") {
-      await browseQuery.refetch();
-      return;
-    }
-
-    if (section === "settings") {
-      await toolStatusesQuery.refetch();
-      return;
+      if (result.updated) {
+        toast.success(
+          t("skills.workspace.manage.singleRefreshUpdated", { defaultValue: "技能已刷新并更新" }),
+          {
+            description: t("skills.workspace.manage.singleRefreshUpdatedDesc", {
+              defaultValue: "{{name}} 已更新远程元数据。",
+              name: skill.name,
+            }),
+          },
+        );
+      } else {
+        toast.info(
+          t("skills.workspace.manage.singleRefreshNoChange", { defaultValue: "已刷新，无变化" }),
+          {
+            description: t("skills.workspace.manage.singleRefreshNoChangeDesc", {
+              defaultValue: "{{name}} 当前已是最新状态。",
+              name: skill.name,
+            }),
+          },
+        );
+      }
+    } catch (error) {
+      toast.error(t("skills.workspace.toast.refreshFailed", { defaultValue: "刷新失败" }), {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setRefreshingSkillIds((previous: Set<string>) => {
+        const next = new Set(previous);
+        next.delete(skill.id);
+        return next;
+      });
     }
   };
 
@@ -425,7 +595,7 @@ export function SkillsWorkspace() {
     );
 
     if (!pickedSkill) {
-      throw new Error("仓库中未发现可安装的技能");
+      throw new Error(t("skills.workspace.toast.noSkillInRepo"));
     }
 
     await installMutation.mutateAsync({
@@ -435,52 +605,124 @@ export function SkillsWorkspace() {
   };
 
   const handleInstallFromBrowse = async (item: SkillsShSkill): Promise<void> => {
-    const parsedTarget: RepoTarget | null = parseRepoTarget(item.repo);
-    if (!parsedTarget) {
-      toast.error("仓库信息格式无效，无法安装");
+    if (recentlyInstalledBrowseSkillIds.has(item.id)) {
+      toast.info(t("skills.workspace.install.alreadyInstalled", { defaultValue: "该技能已安装" }));
       return;
     }
+
+    const parsedTarget: RepoTarget | null = parseRepoTarget(item.repo);
+    if (!parsedTarget) {
+      toast.error(t("skills.workspace.toast.invalidRepo"));
+      return;
+    }
+
+    setInstallingBrowseSkillIds((previous: Set<string>) => {
+      const next: Set<string> = new Set(previous);
+      next.add(item.id);
+      return next;
+    });
 
     try {
       await installByRepoTarget(parsedTarget, item.name, item.directory);
       await installedQuery.refetch();
-      toast.success(`已安装技能: ${item.name}`);
+      await browseQuery.refetch();
+      setRecentlyInstalledBrowseSkillIds((previous: Set<string>) => {
+        const next: Set<string> = new Set(previous);
+        next.add(item.id);
+        return next;
+      });
+      toast.success(t("skills.workspace.toast.installSuccess", { name: item.name }));
     } catch (error) {
-      toast.error("安装失败", {
+      toast.error(t("skills.workspace.toast.installFailed"), {
         description: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      setInstallingBrowseSkillIds((previous: Set<string>) => {
+        const next: Set<string> = new Set(previous);
+        next.delete(item.id);
+        return next;
+      });
     }
+  };
+
+  const isBrowseSkillInstalled = (item: SkillsShSkill): boolean => {
+    if (recentlyInstalledBrowseSkillIds.has(item.id)) {
+      return true;
+    }
+
+    const parsedTarget: RepoTarget | null = parseRepoTarget(item.repo);
+    if (!parsedTarget) {
+      return false;
+    }
+
+    const repoOwner: string = parsedTarget.owner.toLowerCase();
+    const repoName: string = parsedTarget.name.toLowerCase();
+    const itemDirectory: string = normalizePathFragment(item.directory ?? "");
+    const itemInstallName: string =
+      extractInstallName(item.directory) ?? item.name.trim().toLowerCase();
+
+    const sameRepoInstalledSkills: InstalledSkill[] = installedSkills.filter(
+      (skill: InstalledSkill) =>
+        (skill.repoOwner ?? "").trim().toLowerCase() === repoOwner &&
+        (skill.repoName ?? "").trim().toLowerCase() === repoName,
+    );
+
+    if (sameRepoInstalledSkills.length === 0) {
+      return false;
+    }
+
+    for (const installed of sameRepoInstalledSkills) {
+      const installedRemoteDirectory: string | null = extractRemoteDirectoryFromInstalledId(
+        installed.id,
+      );
+      if (itemDirectory.length > 0 && installedRemoteDirectory) {
+        if (
+          installedRemoteDirectory === itemDirectory ||
+          installedRemoteDirectory.endsWith(`/${itemDirectory}`) ||
+          itemDirectory.endsWith(`/${installedRemoteDirectory}`)
+        ) {
+          return true;
+        }
+      }
+
+      const installedDirectory: string = installed.directory.trim().toLowerCase();
+      if (itemInstallName.length > 0 && installedDirectory === itemInstallName) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   const handleOpenBrowseItem = async (item: SkillsShSkill): Promise<void> => {
     const url: string | null = ensureRepoUrl(item);
     if (!url) {
-      toast.error("未找到可打开的仓库地址");
+      toast.error(t("skills.workspace.toast.noRepoUrl"));
       return;
     }
 
     try {
       await settingsApi.openExternal(url);
     } catch {
-      toast.error("打开链接失败");
+      toast.error(t("skills.workspace.toast.openLinkFailed"));
     }
   };
 
   const handleGitInstall = async (): Promise<void> => {
     const target: RepoTarget | null = parseRepoTarget(gitRepoInput);
     if (!target) {
-      toast.error("请输入有效的 Git 仓库地址");
+      toast.error(t("skills.workspace.toast.invalidGitRepo"));
       return;
     }
 
     try {
       await installByRepoTarget(target, gitSkillNameInput);
       await installedQuery.refetch();
-      toast.success("Git 安装成功");
+      toast.success(t("skills.workspace.toast.gitInstallSuccess"));
       setGitRepoInput("");
       setGitSkillNameInput("");
     } catch (error) {
-      toast.error("Git 安装失败", {
+      toast.error(t("skills.workspace.toast.gitInstallFailed"), {
         description: error instanceof Error ? error.message : String(error),
       });
     }
@@ -489,9 +731,9 @@ export function SkillsWorkspace() {
   const handleUninstall = async (skill: InstalledSkill): Promise<void> => {
     try {
       await uninstallMutation.mutateAsync(skill.id);
-      toast.success(`已卸载技能: ${skill.name}`);
+      toast.success(t("skills.workspace.toast.uninstallSuccess", { name: skill.name }));
     } catch (error) {
-      toast.error("卸载失败", {
+      toast.error(t("skills.workspace.toast.uninstallFailed"), {
         description: error instanceof Error ? error.message : String(error),
       });
     }
@@ -505,7 +747,7 @@ export function SkillsWorkspace() {
     try {
       await toggleMutation.mutateAsync({ id: skillId, app, enabled });
     } catch (error) {
-      toast.error("同步状态更新失败", {
+      toast.error(t("skills.workspace.toast.syncFailed"), {
         description: error instanceof Error ? error.message : String(error),
       });
     }
@@ -513,16 +755,16 @@ export function SkillsWorkspace() {
 
   const handleImportDirectories = async (directories: string[]): Promise<void> => {
     if (directories.length === 0) {
-      toast.info("没有可导入的技能");
+      toast.info(t("skills.workspace.toast.noImportable"));
       return;
     }
 
     try {
       const imported: InstalledSkill[] = await importMutation.mutateAsync(directories);
       await Promise.all([installedQuery.refetch(), scanUnmanagedQuery.refetch()]);
-      toast.success(`成功导入 ${imported.length} 个技能`);
+      toast.success(t("skills.workspace.toast.importSuccess", { count: imported.length }));
     } catch (error) {
-      toast.error("导入失败", {
+      toast.error(t("skills.workspace.toast.importFailed"), {
         description: error instanceof Error ? error.message : String(error),
       });
     }
@@ -564,12 +806,12 @@ export function SkillsWorkspace() {
   const handleLocalInstall = async (): Promise<void> => {
     const normalizedPath: string = localPathInput.trim();
     if (normalizedPath.length === 0) {
-      toast.error("请先选择本地路径");
+      toast.error(t("skills.workspace.toast.selectPathFirst"));
       return;
     }
 
     if (normalizedPath.endsWith(".zip") || normalizedPath.endsWith(".skill")) {
-      toast.info("当前版本仅支持导入已在工具目录中的技能文件夹");
+      toast.info(t("skills.workspace.toast.zipNotSupported"));
       return;
     }
 
@@ -580,7 +822,7 @@ export function SkillsWorkspace() {
       .pop() ?? "";
 
     if (guessedDirectory.length === 0) {
-      toast.error("无法识别技能目录名");
+      toast.error(t("skills.workspace.toast.cannotIdentifyDir"));
       return;
     }
 
@@ -591,7 +833,7 @@ export function SkillsWorkspace() {
     );
 
     if (!hit) {
-      toast.info("未在已支持的工具技能目录中发现该技能");
+      toast.info(t("skills.workspace.toast.skillNotFoundInTools"));
       return;
     }
 
@@ -600,267 +842,241 @@ export function SkillsWorkspace() {
     setLocalSkillNameInput("");
   };
 
-  const navItems: Array<{
-    key: SkillsSection;
-    label: string;
-    icon: typeof CircleDashed;
-  }> = [
-    { key: "manage", label: "技能管理", icon: CircleDashed },
-    { key: "local", label: "本地技能", icon: Search },
-    { key: "install", label: "安装技能", icon: Plus },
-    { key: "settings", label: "设置", icon: Settings },
-  ];
-
   return (
-    <div className="h-full w-full overflow-hidden bg-[#090a0d] text-[#f8fafc]">
-      <div className="flex h-full min-h-0">
-        <aside className="w-[210px] shrink-0 border-r border-white/10 bg-[#0b0d11] px-6 py-6">
-          <div className="mb-7 flex items-center gap-3 border-b border-white/10 pb-6">
-            <div className="grid size-8 place-items-center rounded-lg border border-[#45f06f]/40 bg-[#0f1f13]">
-              <Box className="size-4 text-[#45f06f]" />
-            </div>
-            <span className="text-[34px] font-semibold leading-none tracking-tight">
-              SkillsLM
-            </span>
-          </div>
+    <div className="flex h-full min-h-0 flex-col px-6 pb-4 pt-4">
+      {/* Tab navigation */}
+      <Tabs value={section} onValueChange={(v) => setSection(v as SkillsSection)} className="flex-1 flex flex-col min-h-0">
+        <TabsList className="flex-shrink-0 mb-4">
+          <TabsTrigger value="manage">
+            {t("skills.workspace.nav.manage")}
+            {installedQuery.data && installedQuery.data.length > 0 && (
+              <span className="ml-1 text-muted-foreground">({installedQuery.data.length})</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="local">{t("skills.workspace.nav.local")}</TabsTrigger>
+          <TabsTrigger value="install">{t("skills.workspace.nav.install")}</TabsTrigger>
+          <TabsTrigger value="settings">{t("skills.workspace.nav.settings")}</TabsTrigger>
+        </TabsList>
 
-          <nav className="space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active: boolean = section === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setSection(item.key)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-[22px] font-semibold transition-all",
-                    active
-                      ? "bg-[#1a1d22] text-[#45f06f]"
-                      : "text-[#98a2b3] hover:bg-white/5 hover:text-white",
-                  )}
-                >
-                  <Icon className="size-5" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <section className="min-w-0 flex-1 overflow-auto px-8 pb-8 pt-7">
-          {section === "manage" && (
-            <div className="mx-auto max-w-[1400px] space-y-6">
-              <header className="space-y-2">
-                <h2 className="text-[52px] font-bold leading-tight">技能管理</h2>
-                <p className="text-[26px] text-[#8f98a8]">
-                  管理已安装的 {installedQuery.data?.length ?? 0} 个技能
-                </p>
-              </header>
-
+        <div className="flex-1 min-h-0">
+          <TabsContent value="manage" className="mt-0 h-full min-h-0">
+            <div className="mx-auto flex h-full w-full max-w-[1400px] min-h-0 flex-col gap-6">
               <Input
                 value={manageQuery}
                 onChange={(event: ChangeEvent<HTMLInputElement>) =>
                   setManageQuery(event.target.value)
                 }
-                placeholder="搜索技能名称、来源..."
-                className="h-14 border-white/10 bg-[#111318] text-[20px] text-white placeholder:text-[#667085]"
+                placeholder={t("skills.workspace.manage.searchPlaceholder")}
+                className="h-10"
               />
 
-              {installedQuery.isLoading ? (
-                <div className="grid h-[360px] place-items-center rounded-2xl border border-white/10 bg-[#111318] text-[#98a2b3]">
-                  <Loader2 className="mb-2 size-8 animate-spin" />
-                  <span className="text-[18px]">加载中...</span>
-                </div>
-              ) : managedSkills.length === 0 ? (
-                <div className="grid min-h-[360px] place-items-center rounded-2xl border border-white/10 bg-[#0e1014] p-8 text-center">
-                  <div>
-                    <Box className="mx-auto mb-3 size-12 text-[#4b5565]" />
-                    <p className="text-[36px] font-semibold text-[#8891a3]">暂无技能</p>
-                    <p className="mt-2 text-[22px] text-[#677184]">
-                      前往“安装技能”页面添加新技能
-                    </p>
+              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                {installedQuery.isLoading ? (
+                  <div className="grid min-h-[200px] place-items-center rounded-2xl border border-border bg-muted text-muted-foreground">
+                    <Loader2 className="mb-2 size-8 animate-spin" />
+                    <span className="text-xs">{t("skills.loading")}</span>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {managedSkills.map((skill: InstalledSkill) => {
-                    const expanded: boolean = expandedSkillIds.has(skill.id);
-                    const sourceText: string = resolveSkillSource(skill);
-                    const sourceTypeText: string = sourceText.startsWith("http")
-                      ? "git"
-                      : "local";
+                ) : managedSkills.length === 0 ? (
+                  <EmptyState
+                    icon={<Box className="size-6 text-muted-foreground" />}
+                    title={t("skills.workspace.manage.noSkills")}
+                    description={t("skills.workspace.manage.noSkillsHint")}
+                    className="min-h-[200px] rounded-2xl border border-border bg-muted/50"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {managedSkills.map((skill: InstalledSkill) => {
+                      const expanded: boolean = expandedSkillIds.has(skill.id);
+                      const sourceText: string = resolveSkillSource(skill, t("skills.workspace.manage.localImport"));
+                      const sourceTypeText: string = sourceText.startsWith("http")
+                        ? "git"
+                        : "local";
+                      const treeCommitShort: string = formatTreeCommitShort(skill.treeCommitId);
+                      const refreshingSingleSkill: boolean = refreshingSkillIds.has(skill.id);
 
-                    return (
-                      <article
-                        key={skill.id}
-                        className="overflow-hidden rounded-2xl border border-white/10 bg-[#121419]"
-                      >
-                        <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-3 text-[34px] font-semibold">
-                              <LinkIcon className="size-5 text-[#6b7280]" />
-                              <span className="truncate">{skill.name}</span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-3 text-[18px] text-[#667085]">
-                              <span className="truncate">{sourceText}</span>
-                              <span>创建于 {formatTimestamp(skill.installedAt)}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (skill.readmeUrl) {
-                                  void settingsApi.openExternal(skill.readmeUrl);
-                                }
-                              }}
-                              disabled={!skill.readmeUrl}
-                              className="size-9 text-[#45f06f] hover:bg-[#1c2028] hover:text-[#45f06f]"
-                            >
-                              <FileText className="size-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => void installedQuery.refetch()}
-                              className="size-9 text-[#98a2b3] hover:bg-[#1c2028] hover:text-white"
-                            >
-                              <RefreshCw className="size-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => void handleUninstall(skill)}
-                              className="size-9 text-[#98a2b3] hover:bg-[#27161a] hover:text-[#f43f5e]"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => toggleExpanded(skill.id)}
-                              className="size-9 text-[#98a2b3] hover:bg-[#1c2028] hover:text-white"
-                            >
-                              {expanded ? (
-                                <ChevronUp className="size-4" />
-                              ) : (
-                                <ChevronDown className="size-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {expanded && (
-                          <div className="space-y-5 px-5 py-4">
-                            <div className="space-y-2 text-[20px]">
-                              <p>
-                                <span className="mr-2 text-[#7f8899]">仓库路径</span>
-                                <span className="text-[#d0d7e4]">{skill.directory}</span>
-                              </p>
-                              <p>
-                                <span className="mr-2 text-[#7f8899]">简介</span>
-                                <span className="text-[#d0d7e4]">
-                                  {skill.description || "未提供"}
+                      return (
+                        <article
+                          key={skill.id}
+                          className="overflow-hidden rounded-2xl border border-border bg-card"
+                        >
+                          <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-3 text-base font-semibold text-foreground">
+                                <LinkIcon className="size-4 text-muted-foreground" />
+                                <span className="truncate">{skill.name}</span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                <span className="truncate">{sourceText}</span>
+                                <span>{t("skills.workspace.manage.createdAt", { time: formatTimestamp(skill.installedAt) })}</span>
+                                <span className="font-mono" title={skill.treeCommitId ?? "-"}>
+                                  {t("skills.workspace.manage.treeCommit", { defaultValue: "Tree 提交" })}: {treeCommitShort}
                                 </span>
-                              </p>
-                              <p className="flex items-center gap-2">
-                                <span className="mr-2 text-[#7f8899]">来源</span>
-                                <span className="text-[#d0d7e4]">{sourceText}</span>
-                                <span className="rounded-md bg-[#25303f] px-2 py-[2px] text-xs uppercase tracking-wide text-[#aab4c6]">
-                                  {sourceTypeText}
-                                </span>
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="mb-2 text-[18px] text-[#8f98a8]">同步到工具</p>
-                              <div className="flex flex-wrap gap-2">
-                                {SKILL_APP_TOGGLES.map(
-                                  (item: { label: string; app: AppType }) => {
-                                    const enabled: boolean = skill.apps[item.app];
-                                    return (
-                                      <div
-                                        key={`${skill.id}-${item.app}`}
-                                        className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#1a1d23] px-3 py-2"
-                                      >
-                                        <span className="text-[18px] text-[#d7dce6]">
-                                          {item.label}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            void handleToggleApp(skill.id, item.app, !enabled)
-                                          }
-                                          className={cn(
-                                            "rounded-md px-3 py-1 text-sm font-semibold",
-                                            enabled
-                                              ? "bg-[#45f06f] text-[#0b160f]"
-                                              : "bg-[#2a2f38] text-[#98a2b3]",
-                                          )}
-                                        >
-                                          同步
-                                        </button>
-                                      </div>
-                                    );
-                                  },
-                                )}
-                                {EXTERNAL_SYNC_APPS.map((name: string) => (
-                                  <div
-                                    key={`${skill.id}-${name}`}
-                                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#1a1d23] px-3 py-2"
-                                  >
-                                    <span className="text-[18px] text-[#d7dce6]">{name}</span>
-                                    <span className="rounded-md bg-[#45f06f] px-3 py-1 text-sm font-semibold text-[#0b160f]">
-                                      同步
-                                    </span>
-                                  </div>
-                                ))}
                               </div>
                             </div>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (skill.readmeUrl) {
+                                    void settingsApi.openExternal(skill.readmeUrl);
+                                  }
+                                }}
+                                disabled={!skill.readmeUrl}
+                                className="size-9 text-primary hover:bg-accent hover:text-primary"
+                              >
+                                <FileText className="size-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => void handleRefreshSingleSkill(skill)}
+                                disabled={refreshingSingleSkill}
+                                className="size-9 text-muted-foreground hover:bg-accent hover:text-foreground"
+                              >
+                                <RefreshCw
+                                  className={cn(
+                                    "size-4",
+                                    refreshingSingleSkill && "animate-spin",
+                                  )}
+                                />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => void handleUninstall(skill)}
+                                className="size-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleExpanded(skill.id)}
+                                className="size-9 text-muted-foreground hover:bg-accent hover:text-foreground"
+                              >
+                                {expanded ? (
+                                  <ChevronUp className="size-4" />
+                                ) : (
+                                  <ChevronDown className="size-4" />
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
+
+                          {expanded && (
+                            <div className="space-y-5 px-5 py-4">
+                              <div className="space-y-2 text-sm">
+                                <p>
+                                  <span className="mr-2 text-muted-foreground">{t("skills.workspace.manage.repoPath")}</span>
+                                  <span className="text-foreground">{skill.directory}</span>
+                                </p>
+                                <p>
+                                  <span className="mr-2 text-muted-foreground">{t("skills.workspace.manage.description")}</span>
+                                  <span className="text-foreground">
+                                    {skill.description || t("skills.workspace.manage.noDescription")}
+                                  </span>
+                                </p>
+                                <p className="flex items-center gap-2">
+                                  <span className="mr-2 text-muted-foreground">{t("skills.workspace.manage.source")}</span>
+                                  <span className="text-foreground">{sourceText}</span>
+                                  <Badge variant="secondary" className="uppercase text-xs">
+                                    {sourceTypeText}
+                                  </Badge>
+                                </p>
+                                <p className="flex items-center gap-2">
+                                  <span className="mr-2 text-muted-foreground">
+                                    {t("skills.workspace.manage.treeCommitId", { defaultValue: "Tree 提交 ID" })}
+                                  </span>
+                                  <span className="font-mono text-foreground" title={skill.treeCommitId ?? "-"}>
+                                    {skill.treeCommitId ?? "-"}
+                                  </span>
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="mb-2 text-xs text-muted-foreground">{t("skills.workspace.manage.syncToTools")}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {SKILL_APP_TOGGLES.map(
+                                    (item: { label: string; app: AppType }) => {
+                                      const enabled: boolean = skill.apps[item.app];
+                                      return (
+                                        <div
+                                          key={`${skill.id}-${item.app}`}
+                                          className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2"
+                                        >
+                                          <span className="text-xs text-foreground">
+                                            {item.label}
+                                          </span>
+                                          <Switch
+                                            checked={enabled}
+                                            onCheckedChange={(checked) =>
+                                              void handleToggleApp(skill.id, item.app, checked)
+                                            }
+                                          />
+                                        </div>
+                                      );
+                                    },
+                                  )}
+                                  {EXTERNAL_SYNC_APPS.map((name: string) => (
+                                    <div
+                                      key={`${skill.id}-${name}`}
+                                      className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2"
+                                    >
+                                      <span className="text-xs text-foreground">{name}</span>
+                                      <Switch checked disabled />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               <Button
                 type="button"
-                variant="outline"
-                onClick={() => void refreshCurrentSection()}
-                className="h-12 border-white/15 bg-[#272b32] px-6 text-[22px] text-white hover:bg-[#313742]"
+                variant="secondary"
+                onClick={() => void handleRefreshSection("manage")}
+                disabled={refreshingSection === "manage"}
+                className="h-10 px-4 text-sm"
               >
-                <RefreshCw className="size-4" />
-                刷新列表
+                <RefreshCw
+                  className={cn(
+                    "size-4",
+                    refreshingSection === "manage" && "animate-spin",
+                  )}
+                />
+                {refreshingSection === "manage"
+                  ? t("skills.workspace.manage.refreshing", { defaultValue: "刷新中..." })
+                  : t("skills.workspace.manage.refreshList")}
               </Button>
             </div>
-          )}
+          </TabsContent>
 
-          {section === "local" && (
-            <div className="mx-auto max-w-[1400px] space-y-6">
-              <header className="space-y-2">
-                <h2 className="text-[52px] font-bold leading-tight">扫描现有技能</h2>
-                <p className="text-[26px] text-[#8f98a8]">
-                  扫描了 7 个工具，发现 {unmanagedSkills.length} 个未管理的技能
-                </p>
-              </header>
+          <TabsContent value="local" className="mt-0 h-full min-h-0">
+            <div className="mx-auto flex h-full w-full max-w-[1400px] min-h-0 flex-col gap-6">
+              <p className="text-sm text-muted-foreground">
+                {t("skills.workspace.local.subtitle", { toolCount: SKILL_APP_TOGGLES.length, count: unmanagedSkills.length })}
+              </p>
 
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-[#121419] p-4">
+              <div className="min-h-0 flex-1 overflow-y-auto space-y-3 rounded-2xl border border-border bg-card p-4">
                 {scanUnmanagedQuery.isFetching ? (
-                  <div className="grid h-24 place-items-center text-[18px] text-[#98a2b3]">
+                  <div className="grid h-24 place-items-center text-muted-foreground">
                     <Loader2 className="size-6 animate-spin" />
                   </div>
                 ) : unmanagedSkills.length === 0 ? (
-                  <div className="grid h-24 place-items-center text-[20px] text-[#98a2b3]">
-                    未发现可导入技能
+                  <div className="grid h-24 place-items-center text-sm text-muted-foreground">
+                    {t("skills.workspace.local.noSkills")}
                   </div>
                 ) : (
                   unmanagedSkills.map(
@@ -872,32 +1088,39 @@ export function SkillsWorkspace() {
                     }) => (
                       <div
                         key={item.directory}
-                        className="overflow-hidden rounded-xl border border-white/10 bg-[#1a1d23]"
+                        className="overflow-hidden rounded-xl border border-border bg-muted"
                       >
                         <div className="flex items-center justify-between gap-4 px-4 py-3">
                           <div>
-                            <p className="text-[30px] font-semibold">{item.name}</p>
-                            <p className="text-[18px] text-[#8f98a8]">
-                              {item.foundIn.length} 个位置
+                            <p className="text-base font-semibold text-foreground">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {t("skills.workspace.local.locations", { count: item.foundIn.length })}
                             </p>
                           </div>
                           <Button
                             type="button"
                             onClick={() => void handleImportDirectories([item.directory])}
-                            className="h-10 rounded-xl bg-[#45f06f] px-5 text-[#0c1a10] hover:bg-[#3ade64]"
+                            className="h-9 rounded-xl px-5"
                           >
-                            导入
+                            {t("skills.workspace.local.import")}
                           </Button>
                         </div>
-                        <div className="space-y-2 border-t border-white/10 px-4 py-3">
+                        <div className="space-y-2 border-t border-border px-4 py-3">
                           {item.foundIn.map((app: string) => (
                             <div
                               key={`${item.directory}-${app}`}
-                              className="flex items-center gap-3 text-[18px] text-[#95a0b4]"
+                              className="flex items-center gap-3 text-xs text-muted-foreground"
                             >
-                              <LinkIcon className="size-4" />
+                              <ProviderIcon
+                                icon={APP_ICON_MAP[app] ?? app}
+                                name={app}
+                                size={16}
+                              />
                               <span>{app}</span>
-                              <span className="truncate text-[#6f7a8f]">
+                              <span className="truncate text-muted-foreground/70">
                                 {item.directory}
                               </span>
                             </div>
@@ -912,12 +1135,18 @@ export function SkillsWorkspace() {
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => void refreshCurrentSection()}
-                  className="h-12 border-white/15 bg-[#272b32] px-6 text-[22px] text-white hover:bg-[#313742]"
+                  variant="secondary"
+                  onClick={() => void handleRefreshSection("local")}
+                  disabled={refreshingSection === "local"}
+                  className="h-10 px-4 text-sm"
                 >
-                  <RefreshCw className="size-4" />
-                  重新扫描
+                  <RefreshCw
+                    className={cn(
+                      "size-4",
+                      refreshingSection === "local" && "animate-spin",
+                    )}
+                  />
+                  {t("skills.workspace.local.rescan")}
                 </Button>
                 <Button
                   type="button"
@@ -934,204 +1163,265 @@ export function SkillsWorkspace() {
                       ),
                     )
                   }
-                  className="h-12 rounded-xl bg-[#45f06f] px-6 text-[22px] text-[#0c1a10] hover:bg-[#3ade64]"
+                  className="h-10 px-4 text-sm"
                 >
                   <Download className="size-4" />
-                  一键导入
+                  {t("skills.workspace.local.importAll")}
                 </Button>
               </div>
             </div>
-          )}
+          </TabsContent>
 
-          {section === "install" && (
-            <div className="mx-auto max-w-[1400px] space-y-6">
-              <header className="space-y-2">
-                <h2 className="text-[52px] font-bold leading-tight">安装技能</h2>
-                <p className="text-[26px] text-[#8f98a8]">从本地文件夹或 Git 仓库安装技能</p>
-              </header>
+          <TabsContent value="install" className="mt-0 h-full min-h-0">
+            <div className="mx-auto flex h-full w-full max-w-[1400px] min-h-0 flex-col gap-6">
+              <p className="text-sm text-muted-foreground">{t("skills.workspace.install.subtitle")}</p>
 
-              <div className="flex flex-wrap gap-2">
-                <InstallModeButton
-                  active={installTab === "browse"}
-                  icon={Globe}
-                  label="浏览技能"
-                  onClick={() => setInstallTab("browse")}
-                />
-                <InstallModeButton
-                  active={installTab === "local"}
-                  icon={Folder}
-                  label="本地安装"
-                  onClick={() => setInstallTab("local")}
-                />
-                <InstallModeButton
-                  active={installTab === "git"}
-                  icon={LinkIcon}
-                  label="Git 安装"
-                  onClick={() => setInstallTab("git")}
-                />
-              </div>
+              <Tabs value={installTab} onValueChange={(v) => setInstallTab(v as InstallTab)} className="flex min-h-0 flex-1 flex-col">
+                <TabsList className="flex-shrink-0">
+                  <TabsTrigger value="browse">{t("skills.workspace.install.browse")}</TabsTrigger>
+                  <TabsTrigger value="local">{t("skills.workspace.install.localInstall")}</TabsTrigger>
+                  <TabsTrigger value="git">{t("skills.workspace.install.gitInstall")}</TabsTrigger>
+                </TabsList>
 
-              {installTab === "browse" && (
-                <div className="rounded-2xl border border-white/10 bg-[#121419] p-4">
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {(Object.keys(BROWSE_CATEGORY_META) as SkillsShCategory[]).map(
-                      (category: SkillsShCategory) => {
-                        const categoryMeta = BROWSE_CATEGORY_META[category];
-                        const Icon = categoryMeta.icon;
-                        const active: boolean = browseCategory === category;
-                        return (
-                          <button
-                            key={category}
-                            type="button"
-                            onClick={() => {
-                              setBrowseCategory(category);
-                              setBrowsePage(1);
-                            }}
-                            className={cn(
-                              "flex items-center gap-2 rounded-lg border px-3 py-2 text-[18px] font-semibold",
-                              active
-                                ? "border-white/20 bg-[#1f2430] text-white"
-                                : "border-white/10 bg-[#151820] text-[#8f98a8] hover:text-white",
-                            )}
-                          >
-                            <Icon className="size-4" />
-                            {categoryMeta.label}
-                          </button>
-                        );
-                      },
-                    )}
+              <TabsContent value="browse" className="mt-4 min-h-0 flex-1">
+                <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border bg-card p-4">
+                  <div className="mb-3 flex flex-shrink-0 items-center gap-2">
+                    <div className="relative w-full max-w-[560px]">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={browseSearchInput}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                          setBrowseSearchInput(event.target.value)
+                        }
+                        placeholder={t("skills.workspace.install.searchPlaceholder", {
+                          defaultValue: "搜索 skills.sh 技能（关键词）",
+                        })}
+                        className="h-9 border-border bg-muted pl-9 pr-9 text-sm"
+                      />
+                      {browseSearchInput.trim().length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBrowseSearchInput("");
+                            setBrowseSearchQuery("");
+                          }}
+                          className="absolute right-2 top-1/2 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                          aria-label={t("common.clear", { defaultValue: "清空" })}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="max-h-[560px] overflow-auto pr-1">
-                    {browseQuery.isLoading || browseQuery.isFetching ? (
-                      <div className="grid h-40 place-items-center text-[#98a2b3]">
+                  {!isBrowseSearching && (
+                    <div className="mb-4 flex flex-shrink-0 flex-wrap gap-2">
+                      {(Object.keys(BROWSE_CATEGORY_META) as SkillsShCategory[]).map(
+                        (category: SkillsShCategory) => {
+                          const categoryMeta = BROWSE_CATEGORY_META[category];
+                          const Icon = categoryMeta.icon;
+                          const active: boolean = browseCategory === category;
+                          return (
+                            <button
+                              key={category}
+                              type="button"
+                              onClick={() => {
+                                setBrowseCategory(category);
+                                setBrowsePage(0);
+                                if (browseSearchInput.trim().length > 0) {
+                                  setBrowseSearchInput("");
+                                  setBrowseSearchQuery("");
+                                }
+                              }}
+                              className={cn(
+                                "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all duration-200",
+                                active
+                                  ? "border-border bg-accent text-foreground"
+                                  : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              <Icon className="size-4" />
+                              {categoryMeta.label}
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
+
+                  <div className="min-h-0 flex-1 overflow-auto pr-1">
+                    {browseLoading ? (
+                      <div className="grid min-h-[120px] place-items-center text-muted-foreground">
                         <Loader2 className="size-7 animate-spin" />
                       </div>
-                    ) : browseQuery.isError ? (
-                      <div className="grid h-40 place-items-center text-center">
-                        <p className="text-[20px] text-[#f87171]">加载失败</p>
-                        <p className="mt-1 text-[16px] text-[#98a2b3]">
-                          {browseQuery.error instanceof Error
-                            ? browseQuery.error.message
-                            : "请稍后重试"}
+                    ) : browseIsError ? (
+                      <div className="grid min-h-[120px] place-items-center text-center">
+                        <p className="text-sm text-destructive">{t("skills.workspace.install.loadFailed")}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {browseError instanceof Error
+                            ? browseError.message
+                            : t("skills.workspace.install.retryLater")}
                         </p>
                       </div>
                     ) : browseItems.length === 0 ? (
-                      <div className="grid h-40 place-items-center text-[20px] text-[#98a2b3]">
-                        暂无可展示技能
+                      <div className="grid min-h-[120px] place-items-center text-sm text-muted-foreground">
+                        {isBrowseSearching
+                          ? t("skills.workspace.install.noSearchResults", { defaultValue: "未找到匹配技能" })
+                          : t("skills.workspace.install.noSkills")}
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
-                        {browseItems.map((item: SkillsShSkill) => (
-                          <div
-                            key={item.id}
-                            className="rounded-xl border border-white/10 bg-[#1a1d23] px-4 py-3"
-                          >
-                            <p className="truncate text-[28px] font-semibold">{item.name}</p>
-                            <p className="truncate text-[18px] text-[#8f98a8]">{item.repo}</p>
-                            <div className="mt-3 flex items-center justify-end gap-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => void handleOpenBrowseItem(item)}
-                                className="size-8 rounded-md bg-[#2a2f38] text-[#9aa4b7] hover:bg-[#363d48] hover:text-white"
-                              >
-                                <ExternalLink className="size-4" />
-                              </Button>
-                              <Button
-                                type="button"
-                                onClick={() => void handleInstallFromBrowse(item)}
-                                className="size-8 rounded-md bg-[#45f06f] p-0 text-[#0c1a10] hover:bg-[#3ade64]"
-                              >
-                                <Download className="size-4" />
-                              </Button>
+                        {browseItems.map((item: SkillsShSkill) => {
+                          const installed: boolean = isBrowseSkillInstalled(item);
+                          const installing: boolean = installingBrowseSkillIds.has(item.id);
+                          return (
+                            <div
+                              key={item.id}
+                              className="rounded-xl border border-border bg-muted px-4 py-3 transition-all duration-200 hover:bg-accent"
+                            >
+                              <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">{item.repo}</p>
+                              <div className="mt-3 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-xs">
+                                  {item.installs != null && (
+                                    <span className="text-muted-foreground">
+                                      {t("skills.workspace.install.installCount", { count: item.installs })}
+                                    </span>
+                                  )}
+                                  {installing && (
+                                    <span className="text-primary">
+                                      {t("skills.workspace.install.installing", { defaultValue: "安装中..." })}
+                                    </span>
+                                  )}
+                                  {installed && !installing && (
+                                    <span className="text-primary">
+                                      {t("skills.workspace.install.installed", { defaultValue: "已安装" })}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="ml-auto flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="icon"
+                                    onClick={() => void handleOpenBrowseItem(item)}
+                                    className="size-8"
+                                  >
+                                    <ExternalLink className="size-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    onClick={() => void handleInstallFromBrowse(item)}
+                                    disabled={installing || installed}
+                                    className="size-8"
+                                  >
+                                    {installing ? (
+                                      <Loader2 className="size-4 animate-spin" />
+                                    ) : installed ? (
+                                      <Check className="size-4" />
+                                    ) : (
+                                      <Download className="size-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-center justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={browsePage <= 1}
-                      onClick={() => setBrowsePage((page: number) => Math.max(1, page - 1))}
-                      className="h-9 border-white/15 bg-[#272b32] text-white hover:bg-[#313742]"
-                    >
-                      上一页
-                    </Button>
-                    <span className="text-[18px] text-[#98a2b3]">第 {browsePage} 页</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={!browseHasMore}
-                      onClick={() => setBrowsePage((page: number) => page + 1)}
-                      className="h-9 border-white/15 bg-[#272b32] text-white hover:bg-[#313742]"
-                    >
-                      下一页
-                    </Button>
-                  </div>
+                  {!isBrowseSearching && (
+                    <div className="mt-4 flex flex-shrink-0 items-center justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={browsePage <= 0}
+                        onClick={() => setBrowsePage((page: number) => Math.max(0, page - 1))}
+                        className="h-9 text-sm"
+                        aria-label={t("skills.workspace.install.prevPage")}
+                      >
+                        {t("skills.workspace.install.prevPage")}
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        {browseTotalPages
+                          ? t("skills.workspace.install.pageNumTotal", { page: browsePage, total: browseTotalPages })
+                          : t("skills.workspace.install.pageNum", { page: browsePage })}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={!browseHasMore}
+                        onClick={() => setBrowsePage((page: number) => page + 1)}
+                        className="h-9 text-sm"
+                        aria-label={t("skills.workspace.install.nextPage")}
+                      >
+                        {t("skills.workspace.install.nextPage")}
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </TabsContent>
 
-              {installTab === "local" && (
-                <div className="max-w-[860px] space-y-4 rounded-2xl border border-white/10 bg-[#121419] p-6">
+              <TabsContent value="local" className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                <div className="h-full max-w-[860px] space-y-4 rounded-2xl border border-border bg-card p-6">
                   <div
                     onDrop={handleDropLocalFile}
                     onDragOver={(event: DragEvent<HTMLDivElement>) => event.preventDefault()}
-                    className="grid h-40 place-items-center rounded-xl border border-dashed border-white/20 bg-[#0f1117] text-center"
+                    className="grid h-40 place-items-center rounded-xl border border-dashed border-border bg-input text-center"
+                    role="region"
+                    aria-label="drop zone"
                   >
                     <div>
-                      <Upload className="mx-auto mb-3 size-7 text-[#5f6b81]" />
-                      <p className="text-[22px] text-[#9aa4b7]">拖拽文件夹或压缩包到此处</p>
-                      <p className="text-[16px] text-[#667085]">支持 .zip / .skill 压缩包或技能文件夹</p>
+                      <Upload className="mx-auto mb-3 size-7 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">{t("skills.workspace.install.dropzone.title")}</p>
+                      <p className="text-xs text-muted-foreground">{t("skills.workspace.install.dropzone.formats")}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[24px] font-semibold">或手动选择</p>
+                    <p className="text-sm font-semibold text-foreground">{t("skills.workspace.install.manualSelect")}</p>
                     <div className="flex gap-2">
                       <Input
                         value={localPathInput}
                         onChange={(event: ChangeEvent<HTMLInputElement>) =>
                           setLocalPathInput(event.target.value)
                         }
-                        placeholder="选择文件夹或 .zip/.skill 文件"
-                        className="h-11 border-white/10 bg-[#0f1117] text-[18px] text-white placeholder:text-[#667085]"
+                        placeholder={t("skills.workspace.install.pathPlaceholder")}
+                        className="h-10"
                       />
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
                         onClick={() => void handleLocalPickDirectory()}
-                        className="h-11 w-11 border-white/15 bg-[#272b32] text-white hover:bg-[#313742]"
+                        className="h-10 w-10 border-border bg-muted text-foreground hover:bg-accent hover:text-foreground"
                       >
-                        <Folder className="size-4" />
+                        <Folder className="size-4 text-foreground" />
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
                         onClick={() => void handleLocalPickFile()}
-                        className="h-11 w-11 border-white/15 bg-[#272b32] text-white hover:bg-[#313742]"
+                        className="h-10 w-10 border-border bg-muted text-foreground hover:bg-accent hover:text-foreground"
                       >
-                        <FileText className="size-4" />
+                        <FileText className="size-4 text-foreground" />
                       </Button>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[24px] font-semibold">技能名称（可选）</p>
+                    <p className="text-sm font-semibold text-foreground">{t("skills.workspace.install.skillName")}</p>
                     <Input
                       value={localSkillNameInput}
                       onChange={(event: ChangeEvent<HTMLInputElement>) =>
                         setLocalSkillNameInput(event.target.value)
                       }
-                      placeholder="留空则自动从 SKILL.md 或文件名推断"
-                      className="h-11 border-white/10 bg-[#0f1117] text-[18px] text-white placeholder:text-[#667085]"
+                      placeholder={t("skills.workspace.install.skillNameHint")}
+                      className="h-10"
                     />
                   </div>
 
@@ -1139,44 +1429,44 @@ export function SkillsWorkspace() {
                     type="button"
                     onClick={() => void handleLocalInstall()}
                     disabled={importMutation.isPending}
-                    className="h-11 rounded-xl bg-[#3b3f47] px-6 text-[20px] text-[#d6dae3] hover:bg-[#4a5060]"
+                    className="h-10 px-4 text-sm"
                   >
-                    安装技能
+                    {t("skills.workspace.install.installSkill")}
                   </Button>
                 </div>
-              )}
+              </TabsContent>
 
-              {installTab === "git" && (
-                <div className="max-w-[860px] space-y-4 rounded-2xl border border-white/10 bg-[#121419] p-6">
+              <TabsContent value="git" className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                <div className="h-full max-w-[860px] space-y-4 rounded-2xl border border-border bg-card p-6">
                   <div className="space-y-2">
-                    <p className="text-[24px] font-semibold">Git 仓库地址</p>
+                    <p className="text-sm font-semibold text-foreground">{t("skills.workspace.install.gitRepo")}</p>
                     <Input
                       value={gitRepoInput}
                       onChange={(event: ChangeEvent<HTMLInputElement>) =>
                         setGitRepoInput(event.target.value)
                       }
-                      placeholder="https://github.com/user/repo 或 user/repo"
-                      className="h-11 border-white/10 bg-[#0f1117] text-[18px] text-white placeholder:text-[#667085]"
+                      placeholder={t("skills.workspace.install.gitPlaceholder")}
+                      className="h-10"
                     />
-                    <p className="text-[16px] leading-7 text-[#667085]">
-                      支持格式：
+                    <p className="text-xs leading-6 text-muted-foreground">
+                      {t("skills.workspace.install.gitFormats")}:
                       <br />
                       • https://github.com/user/repo
                       <br />
-                      • user/repo（GitHub 简写）
-                      <br />• https://github.com/user/repo/tree/main/skills/my-skill（指定子路径）
+                      • user/repo (GitHub)
+                      <br />• https://github.com/user/repo/tree/main/skills/my-skill
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[24px] font-semibold">技能名称（可选）</p>
+                    <p className="text-sm font-semibold text-foreground">{t("skills.workspace.install.skillName")}</p>
                     <Input
                       value={gitSkillNameInput}
                       onChange={(event: ChangeEvent<HTMLInputElement>) =>
                         setGitSkillNameInput(event.target.value)
                       }
-                      placeholder="留空则自动推断"
-                      className="h-11 border-white/10 bg-[#0f1117] text-[18px] text-white placeholder:text-[#667085]"
+                      placeholder={t("skills.workspace.install.gitNameHint")}
+                      className="h-10"
                     />
                   </div>
 
@@ -1184,29 +1474,28 @@ export function SkillsWorkspace() {
                     type="button"
                     onClick={() => void handleGitInstall()}
                     disabled={addRepoMutation.isPending || installMutation.isPending}
-                    className="h-11 rounded-xl bg-[#3b3f47] px-6 text-[20px] text-[#d6dae3] hover:bg-[#4a5060]"
+                    className="h-10 px-4 text-sm"
                   >
-                    安装技能
+                    {t("skills.workspace.install.installSkill")}
                   </Button>
                 </div>
-              )}
+              </TabsContent>
+              </Tabs>
             </div>
-          )}
+          </TabsContent>
 
-          {section === "settings" && (
-            <div className="mx-auto max-w-[1400px] space-y-6">
-              <header className="space-y-2">
-                <h2 className="text-[52px] font-bold leading-tight">设置</h2>
-                <p className="text-[26px] text-[#8f98a8]">配置 SkillsLM 的全局设置</p>
-              </header>
+          <TabsContent value="settings" className="mt-0 h-full min-h-0">
+            <div className="mx-auto flex h-full w-full max-w-[1400px] min-h-0 flex-col gap-6">
+              <p className="text-sm text-muted-foreground">{t("skills.workspace.settings.subtitle")}</p>
 
-              <div className="rounded-2xl border border-white/10 bg-[#121419] p-6">
-                <h3 className="text-[36px] font-semibold">工具状态</h3>
-                <p className="mt-1 text-[20px] text-[#8f98a8]">检测已安装的 AI 编码工具</p>
+              <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold text-foreground">{t("skills.workspace.settings.toolStatus")}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t("skills.workspace.settings.toolStatusDesc")}</p>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
                   {toolStatusesQuery.isLoading ? (
-                    <div className="col-span-full grid h-28 place-items-center text-[#98a2b3]">
+                    <div className="col-span-full grid h-28 place-items-center text-muted-foreground">
                       <Loader2 className="size-6 animate-spin" />
                     </div>
                   ) : (
@@ -1216,66 +1505,48 @@ export function SkillsWorkspace() {
                         className={cn(
                           "rounded-xl border px-4 py-3",
                           item.installed
-                            ? "border-[#1f6c33] bg-[#10301a]"
-                            : "border-white/10 bg-[#1b1e25]",
+                            ? "border-primary/30 bg-primary/10"
+                            : "border-border bg-muted",
                         )}
                       >
                         <p
                           className={cn(
-                            "text-[16px] font-semibold",
-                            item.installed ? "text-[#45f06f]" : "text-[#6f7a8f]",
+                            "text-xs font-semibold",
+                            item.installed ? "text-primary" : "text-muted-foreground",
                           )}
                         >
-                          {item.installed ? "√ 已安装" : "未安装"}
+                          {item.installed ? `✓ ${t("skills.workspace.settings.installed")}` : t("skills.workspace.settings.notInstalled")}
                         </p>
-                        <p className="mt-1 text-[30px] font-semibold">{item.name}</p>
-                        <p className="text-[18px] text-[#6f7a8f]">
+                        <p className="mt-1 text-base font-semibold text-foreground">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {item.version || item.code}
                         </p>
                       </div>
                     ))
                   )}
+                  </div>
                 </div>
 
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => void refreshCurrentSection()}
-                  className="mt-6 h-12 border-white/15 bg-[#272b32] px-6 text-[22px] text-white hover:bg-[#313742]"
+                  variant="secondary"
+                  onClick={() => void handleRefreshSection("settings")}
+                  disabled={refreshingSection === "settings"}
+                  className="mt-6"
                 >
-                  <RefreshCw className="size-4" />
-                  刷新状态
+                  <RefreshCw
+                    className={cn(
+                      "size-4",
+                      refreshingSection === "settings" && "animate-spin",
+                    )}
+                  />
+                  {t("skills.workspace.settings.refreshStatus")}
                 </Button>
               </div>
             </div>
-          )}
-        </section>
-      </div>
+          </TabsContent>
+        </div>
+      </Tabs>
     </div>
-  );
-}
-
-interface InstallModeButtonProps {
-  active: boolean;
-  icon: typeof Globe;
-  label: string;
-  onClick: () => void;
-}
-
-function InstallModeButton({ active, icon: Icon, label, onClick }: InstallModeButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-2 rounded-xl border px-5 py-3 text-[22px] font-semibold transition-colors",
-        active
-          ? "border-white/20 bg-[#2c313b] text-white"
-          : "border-white/10 bg-[#171a20] text-[#8f98a8] hover:text-white",
-      )}
-    >
-      <Icon className="size-5" />
-      {label}
-    </button>
   );
 }
