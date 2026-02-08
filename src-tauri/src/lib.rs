@@ -1163,6 +1163,8 @@ pub fn run() {
             cc_switch::commands::delete_env_vars,
             cc_switch::commands::restore_env_backup,
             cc_switch::commands::get_installed_skills,
+            cc_switch::commands::get_installed_skill_file_tree,
+            cc_switch::commands::read_installed_skill_file,
             cc_switch::commands::refresh_installed_skills_remote,
             cc_switch::commands::refresh_installed_skill_remote,
             cc_switch::commands::install_skill_unified,

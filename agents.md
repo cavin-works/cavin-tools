@@ -25,6 +25,7 @@
 样式: TailwindCSS 4.x + shadcn/ui
 状态: Zustand 5.0.2
 后端: Tauri 2.x + Rust + FFmpeg
+package: pnpm
 ```
 
 ---

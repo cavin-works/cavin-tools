@@ -10,6 +10,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -23,6 +24,8 @@ use crate::cc_switch::error::format_skill_error;
 
 /// Git clone 超时（对齐 vercel-labs/skills 的 CLONE_TIMEOUT_MS = 60000）
 const CLONE_TIMEOUT_SECS: u64 = 60;
+const MAX_SKILL_FILE_TREE_ENTRIES: usize = 5000;
+const MAX_SKILL_FILE_PREVIEW_BYTES: usize = 512 * 1024;
 
 // ========== 数据结构 ==========
 
@@ -240,6 +243,44 @@ pub struct SkillSingleRemoteRefreshResult {
     pub tree_commit_id: Option<String>,
 }
 
+/// 已安装技能文件树条目
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillFileTreeEntry {
+    pub name: String,
+    pub path: String,
+    #[serde(rename = "isDir")]
+    pub is_dir: bool,
+    #[serde(rename = "byteSize", skip_serializing_if = "Option::is_none")]
+    pub byte_size: Option<u64>,
+}
+
+/// 已安装技能文件树结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillFileTreeResult {
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+    #[serde(rename = "skillName")]
+    pub skill_name: String,
+    pub directory: String,
+    pub entries: Vec<SkillFileTreeEntry>,
+    pub truncated: bool,
+}
+
+/// 已安装技能文件内容结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillFileContentResult {
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+    pub path: String,
+    pub content: String,
+    #[serde(rename = "isBinary")]
+    pub is_binary: bool,
+    #[serde(rename = "isTruncated")]
+    pub is_truncated: bool,
+    #[serde(rename = "byteSize")]
+    pub byte_size: u64,
+}
+
 // ========== SkillService ==========
 
 pub struct SkillService;
@@ -366,6 +407,98 @@ impl SkillService {
         }
 
         Ok(skills)
+    }
+
+    /// 获取单个已安装技能的文件树
+    pub fn get_installed_skill_file_tree(
+        db: &Arc<Database>,
+        skill_id: &str,
+    ) -> Result<SkillFileTreeResult> {
+        let (installed_skill, skill_root) = Self::resolve_installed_skill_root(db, skill_id)?;
+        let mut entries: Vec<SkillFileTreeEntry> = Vec::new();
+        let mut truncated = false;
+        Self::collect_skill_file_tree_entries(
+            &skill_root,
+            &skill_root,
+            &mut entries,
+            &mut truncated,
+        )?;
+
+        Ok(SkillFileTreeResult {
+            skill_id: installed_skill.id,
+            skill_name: installed_skill.name,
+            directory: installed_skill.directory,
+            entries,
+            truncated,
+        })
+    }
+
+    /// 读取单个已安装技能的文件内容
+    pub fn read_installed_skill_file(
+        db: &Arc<Database>,
+        skill_id: &str,
+        relative_path: &str,
+    ) -> Result<SkillFileContentResult> {
+        let (installed_skill, skill_root) = Self::resolve_installed_skill_root(db, skill_id)?;
+
+        let normalized_relative_path = relative_path.trim().replace('\\', "/");
+        if normalized_relative_path.is_empty() {
+            return Err(anyhow!("文件路径不能为空"));
+        }
+
+        let relative = Path::new(&normalized_relative_path);
+        for component in relative.components() {
+            use std::path::Component;
+            match component {
+                Component::CurDir | Component::Normal(_) => {}
+                Component::ParentDir | Component::Prefix(_) | Component::RootDir => {
+                    return Err(anyhow!("非法文件路径: {normalized_relative_path}"));
+                }
+            }
+        }
+
+        let target_file = skill_root.join(relative);
+        if !target_file.exists() {
+            return Err(anyhow!("文件不存在: {normalized_relative_path}"));
+        }
+
+        let canonical_target = target_file.canonicalize()?;
+        if !canonical_target.starts_with(&skill_root) {
+            return Err(anyhow!("非法文件路径（越界访问）: {normalized_relative_path}"));
+        }
+        if !canonical_target.is_file() {
+            return Err(anyhow!("目标不是文件: {normalized_relative_path}"));
+        }
+
+        let metadata = fs::metadata(&canonical_target)?;
+        let byte_size = metadata.len();
+
+        let mut file = fs::File::open(&canonical_target)?;
+        let mut bytes: Vec<u8> = Vec::new();
+        file.by_ref()
+            .take((MAX_SKILL_FILE_PREVIEW_BYTES + 1) as u64)
+            .read_to_end(&mut bytes)?;
+
+        let is_truncated = bytes.len() > MAX_SKILL_FILE_PREVIEW_BYTES;
+        if is_truncated {
+            bytes.truncate(MAX_SKILL_FILE_PREVIEW_BYTES);
+        }
+
+        let is_binary = bytes.iter().take(8192).any(|value| *value == 0);
+        let content = if is_binary {
+            "[Binary file preview is not supported.]".to_string()
+        } else {
+            String::from_utf8_lossy(&bytes).to_string()
+        };
+
+        Ok(SkillFileContentResult {
+            skill_id: installed_skill.id,
+            path: normalized_relative_path,
+            content,
+            is_binary,
+            is_truncated,
+            byte_size,
+        })
     }
 
     /// 安装 Skill
@@ -1735,6 +1868,111 @@ impl SkillService {
     pub fn clear_cache(db: &Arc<Database>) -> Result<()> {
         db.clear_all_skill_cache()?;
         log::info!("已清空所有技能缓存");
+        Ok(())
+    }
+
+    /// 解析已安装技能根目录（SSOT 下真实路径），并做越界防护
+    fn resolve_installed_skill_root(
+        db: &Arc<Database>,
+        skill_id: &str,
+    ) -> Result<(InstalledSkill, PathBuf)> {
+        let installed_skill = db
+            .get_installed_skill(skill_id)?
+            .ok_or_else(|| anyhow!("Skill not found: {skill_id}"))?;
+
+        let ssot_dir = Self::get_ssot_dir()?;
+        let canonical_ssot = ssot_dir.canonicalize().unwrap_or(ssot_dir);
+
+        let skill_root = canonical_ssot.join(&installed_skill.directory);
+        if !skill_root.exists() {
+            return Err(anyhow!(
+                "技能目录不存在: {}",
+                skill_root.to_string_lossy()
+            ));
+        }
+
+        let canonical_skill_root = skill_root.canonicalize()?;
+        if !canonical_skill_root.starts_with(&canonical_ssot) {
+            return Err(anyhow!(
+                "技能目录非法（越界访问）: {}",
+                canonical_skill_root.to_string_lossy()
+            ));
+        }
+        if !canonical_skill_root.is_dir() {
+            return Err(anyhow!(
+                "技能目录不是文件夹: {}",
+                canonical_skill_root.to_string_lossy()
+            ));
+        }
+
+        Ok((installed_skill, canonical_skill_root))
+    }
+
+    /// 递归收集技能目录树
+    fn collect_skill_file_tree_entries(
+        root: &Path,
+        current: &Path,
+        entries: &mut Vec<SkillFileTreeEntry>,
+        truncated: &mut bool,
+    ) -> Result<()> {
+        if *truncated {
+            return Ok(());
+        }
+
+        let mut children: Vec<fs::DirEntry> = fs::read_dir(current)?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        children.sort_by(|a, b| {
+            a.file_name()
+                .to_string_lossy()
+                .to_lowercase()
+                .cmp(&b.file_name().to_string_lossy().to_lowercase())
+        });
+
+        for entry in children {
+            if entries.len() >= MAX_SKILL_FILE_TREE_ENTRIES {
+                *truncated = true;
+                return Ok(());
+            }
+
+            let path = entry.path();
+            let metadata = fs::symlink_metadata(&path)?;
+            let file_type = metadata.file_type();
+
+            if file_type.is_symlink() {
+                continue;
+            }
+
+            let relative_path = path
+                .strip_prefix(root)
+                .map_err(|_| anyhow!("技能文件树解析失败（路径越界）"))?;
+            if relative_path.as_os_str().is_empty() {
+                continue;
+            }
+
+            let normalized_relative_path = relative_path.to_string_lossy().replace('\\', "/");
+            let name = entry.file_name().to_string_lossy().to_string();
+
+            if metadata.is_dir() {
+                entries.push(SkillFileTreeEntry {
+                    name,
+                    path: normalized_relative_path,
+                    is_dir: true,
+                    byte_size: None,
+                });
+                Self::collect_skill_file_tree_entries(root, &path, entries, truncated)?;
+                if *truncated {
+                    return Ok(());
+                }
+            } else if metadata.is_file() {
+                entries.push(SkillFileTreeEntry {
+                    name,
+                    path: normalized_relative_path,
+                    is_dir: false,
+                    byte_size: Some(metadata.len()),
+                });
+            }
+        }
+
         Ok(())
     }
 

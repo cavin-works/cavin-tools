@@ -1,6 +1,19 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css";
 import {
   Box,
   Download,
@@ -14,6 +27,7 @@ import {
   TrendingUp,
   Upload,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Flame,
   Clock3,
@@ -28,7 +42,15 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ProviderIcon } from "../ProviderIcon";
 import {
   useAddSkillRepo,
@@ -45,6 +67,8 @@ import {
 import { settingsApi } from "@ai-assistant/lib/api";
 import {
   skillsApi,
+  type SkillFileContentResult,
+  type SkillFileTreeEntry,
   type SkillsShCategory,
   type SkillsShSkill,
 } from "@ai-assistant/lib/api/skills";
@@ -74,6 +98,14 @@ interface TauriConfigStatus {
 
 interface LocalFileWithPath extends File {
   path?: string;
+}
+
+interface SkillFileTreeNode {
+  name: string;
+  path: string;
+  isDir: boolean;
+  byteSize?: number;
+  children: SkillFileTreeNode[];
 }
 
 const SKILL_APP_TOGGLES: Array<{ label: string; app: AppType }> = [
@@ -231,6 +263,289 @@ function extractRemoteDirectoryFromInstalledId(skillId: string): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function sortSkillFileTreeNodes(nodes: SkillFileTreeNode[]): SkillFileTreeNode[] {
+  const sorted: SkillFileTreeNode[] = [...nodes].sort((a, b) => {
+    if (a.isDir !== b.isDir) {
+      return a.isDir ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name, "zh-CN", { sensitivity: "base" });
+  });
+
+  return sorted.map((node: SkillFileTreeNode) => ({
+    ...node,
+    children: sortSkillFileTreeNodes(node.children),
+  }));
+}
+
+function buildSkillFileTreeNodes(entries: SkillFileTreeEntry[]): SkillFileTreeNode[] {
+  const root: SkillFileTreeNode = {
+    name: "__root__",
+    path: "",
+    isDir: true,
+    children: [],
+  };
+  const nodeByPath: Map<string, SkillFileTreeNode> = new Map();
+  nodeByPath.set("", root);
+
+  const sortedEntries: SkillFileTreeEntry[] = [...entries].sort((a, b) =>
+    a.path.localeCompare(b.path, "en", { sensitivity: "base" }),
+  );
+
+  for (const entry of sortedEntries) {
+    const normalizedPath: string = entry.path.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    if (normalizedPath.length === 0) {
+      continue;
+    }
+
+    const segments: string[] = normalizedPath
+      .split("/")
+      .map((segment: string) => segment.trim())
+      .filter((segment: string) => segment.length > 0);
+    if (segments.length === 0) {
+      continue;
+    }
+
+    let parentPath = "";
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment: string = segments[index];
+      const currentPath: string = parentPath ? `${parentPath}/${segment}` : segment;
+      const isLeaf: boolean = index === segments.length - 1;
+      const shouldBeDir: boolean = isLeaf ? entry.isDir : true;
+      const byteSize: number | undefined = isLeaf ? entry.byteSize : undefined;
+
+      let currentNode: SkillFileTreeNode | undefined = nodeByPath.get(currentPath);
+      if (!currentNode) {
+        currentNode = {
+          name: segment,
+          path: currentPath,
+          isDir: shouldBeDir,
+          byteSize,
+          children: [],
+        };
+        nodeByPath.set(currentPath, currentNode);
+        const parentNode: SkillFileTreeNode | undefined = nodeByPath.get(parentPath);
+        if (parentNode) {
+          parentNode.children.push(currentNode);
+        }
+      } else if (isLeaf) {
+        currentNode.isDir = shouldBeDir;
+        currentNode.byteSize = byteSize;
+      }
+
+      parentPath = currentPath;
+    }
+  }
+
+  return sortSkillFileTreeNodes(root.children);
+}
+
+function findFirstReadableFile(nodes: SkillFileTreeNode[]): string | null {
+  for (const node of nodes) {
+    if (node.isDir) {
+      const nested: string | null = findFirstReadableFile(node.children);
+      if (nested) {
+        return nested;
+      }
+      continue;
+    }
+    return node.path;
+  }
+  return null;
+}
+
+function formatFileByteSize(value?: number): string {
+  if (value == null || Number.isNaN(value) || value < 0) {
+    return "-";
+  }
+  if (value < 1024) {
+    return `${value} B`;
+  }
+  const kb: number = value / 1024;
+  if (kb < 1024) {
+    return `${kb.toFixed(1)} KB`;
+  }
+  const mb: number = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
+}
+
+function isMarkdownPath(path: string): boolean {
+  const normalizedPath: string = path.trim().toLowerCase();
+  return (
+    normalizedPath.endsWith(".md") ||
+    normalizedPath.endsWith(".markdown") ||
+    normalizedPath.endsWith(".mdx")
+  );
+}
+
+function resolveCodeLanguage(path: string): string | null {
+  const normalizedPath: string = path.trim().toLowerCase();
+  const extension: string = normalizedPath.includes(".")
+    ? normalizedPath.slice(normalizedPath.lastIndexOf(".") + 1)
+    : "";
+
+  const byExtension: Record<string, string> = {
+    ts: "typescript",
+    tsx: "typescript",
+    js: "javascript",
+    jsx: "javascript",
+    json: "json",
+    md: "markdown",
+    yml: "yaml",
+    yaml: "yaml",
+    toml: "ini",
+    sh: "bash",
+    bash: "bash",
+    zsh: "bash",
+    ps1: "powershell",
+    rs: "rust",
+    py: "python",
+    go: "go",
+    java: "java",
+    kt: "kotlin",
+    swift: "swift",
+    css: "css",
+    html: "xml",
+    xml: "xml",
+    sql: "sql",
+    c: "c",
+    h: "c",
+    cpp: "cpp",
+    cc: "cpp",
+    cxx: "cpp",
+    hpp: "cpp",
+    hxx: "cpp",
+    rb: "ruby",
+    php: "php",
+    vue: "xml",
+    svelte: "xml",
+    ini: "ini",
+    conf: "ini",
+    env: "ini",
+    dockerfile: "dockerfile",
+  };
+
+  if (extension.length > 0 && byExtension[extension]) {
+    return byExtension[extension];
+  }
+
+  const fileName: string =
+    normalizedPath.split("/").filter((segment: string) => segment.length > 0).pop() ?? "";
+  if (fileName === "dockerfile") {
+    return "dockerfile";
+  }
+
+  return null;
+}
+
+function collectDirectoryPaths(nodes: SkillFileTreeNode[]): string[] {
+  const paths: string[] = [];
+  const visit = (items: SkillFileTreeNode[]): void => {
+    for (const item of items) {
+      if (!item.isDir) {
+        continue;
+      }
+      paths.push(item.path);
+      if (item.children.length > 0) {
+        visit(item.children);
+      }
+    }
+  };
+  visit(nodes);
+  return paths;
+}
+
+function collectAncestorDirectoryPaths(path: string): string[] {
+  const normalizedPath: string = path.trim().replace(/\\/g, "/");
+  const segments: string[] = normalizedPath
+    .split("/")
+    .map((segment: string) => segment.trim())
+    .filter((segment: string) => segment.length > 0);
+
+  if (segments.length <= 1) {
+    return [];
+  }
+
+  const ancestors: string[] = [];
+  for (let index = 1; index < segments.length; index += 1) {
+    ancestors.push(segments.slice(0, index).join("/"));
+  }
+  return ancestors;
+}
+
+function filterSkillFileTreeNodes(
+  nodes: SkillFileTreeNode[],
+  keyword: string,
+): SkillFileTreeNode[] {
+  const normalizedKeyword: string = keyword.trim().toLowerCase();
+  if (normalizedKeyword.length === 0) {
+    return nodes;
+  }
+
+  const walk = (items: SkillFileTreeNode[]): SkillFileTreeNode[] => {
+    const result: SkillFileTreeNode[] = [];
+
+    for (const item of items) {
+      const children: SkillFileTreeNode[] = item.isDir ? walk(item.children) : [];
+      const selfMatched: boolean =
+        item.name.toLowerCase().includes(normalizedKeyword) ||
+        item.path.toLowerCase().includes(normalizedKeyword);
+
+      if (item.isDir) {
+        if (selfMatched || children.length > 0) {
+          result.push({
+            ...item,
+            children,
+          });
+        }
+        continue;
+      }
+
+      if (selfMatched) {
+        result.push({
+          ...item,
+          children: [],
+        });
+      }
+    }
+
+    return result;
+  };
+
+  return walk(nodes);
+}
+
+function highlightMatchedText(text: string, keyword: string): ReactNode {
+  const normalizedKeyword: string = keyword.trim();
+  if (normalizedKeyword.length === 0) {
+    return text;
+  }
+
+  const lowerText: string = text.toLowerCase();
+  const lowerKeyword: string = normalizedKeyword.toLowerCase();
+  const nodes: ReactNode[] = [];
+
+  let start = 0;
+  let index = lowerText.indexOf(lowerKeyword);
+  while (index !== -1) {
+    if (index > start) {
+      nodes.push(text.slice(start, index));
+    }
+    nodes.push(
+      <mark key={`${text}-${index}`} className="rounded bg-primary/25 px-0.5 text-foreground">
+        {text.slice(index, index + normalizedKeyword.length)}
+      </mark>,
+    );
+    start = index + normalizedKeyword.length;
+    index = lowerText.indexOf(lowerKeyword, start);
+  }
+
+  if (start < text.length) {
+    nodes.push(text.slice(start));
+  }
+
+  return <>{nodes}</>;
+}
+
 function resolveSkillSource(skill: InstalledSkill, localLabel: string): string {
   if (skill.repoOwner && skill.repoName) {
     return `https://github.com/${skill.repoOwner}/${skill.repoName}`;
@@ -375,6 +690,19 @@ export function SkillsWorkspace() {
   const [refreshingSkillIds, setRefreshingSkillIds] = useState<Set<string>>(new Set());
   const [installingBrowseSkillIds, setInstallingBrowseSkillIds] = useState<Set<string>>(new Set());
   const [recentlyInstalledBrowseSkillIds, setRecentlyInstalledBrowseSkillIds] = useState<Set<string>>(new Set());
+  const [skillViewerOpen, setSkillViewerOpen] = useState<boolean>(false);
+  const [skillViewerTarget, setSkillViewerTarget] = useState<InstalledSkill | null>(null);
+  const [skillViewerTreeEntries, setSkillViewerTreeEntries] = useState<SkillFileTreeEntry[]>([]);
+  const [skillViewerTreeTruncated, setSkillViewerTreeTruncated] = useState<boolean>(false);
+  const [skillViewerTreeLoading, setSkillViewerTreeLoading] = useState<boolean>(false);
+  const [skillViewerTreeError, setSkillViewerTreeError] = useState<string | null>(null);
+  const [skillViewerTreeSearch, setSkillViewerTreeSearch] = useState<string>("");
+  const [skillViewerExpandedDirs, setSkillViewerExpandedDirs] = useState<Set<string>>(new Set());
+  const [skillViewerSelectedPath, setSkillViewerSelectedPath] = useState<string>("");
+  const [skillViewerContent, setSkillViewerContent] = useState<SkillFileContentResult | null>(null);
+  const [skillViewerContentLoading, setSkillViewerContentLoading] = useState<boolean>(false);
+  const [skillViewerContentError, setSkillViewerContentError] = useState<string | null>(null);
+  const skillViewerReadSeqRef = useRef<number>(0);
 
   const installedQuery = useInstalledSkills();
   const uninstallMutation = useUninstallSkill();
@@ -439,6 +767,16 @@ export function SkillsWorkspace() {
     : browseQuery.isError;
   const browseError: unknown = isBrowseSearching ? browseSearchResultQuery.error : browseQuery.error;
   const installedSkills: InstalledSkill[] = installedQuery.data ?? [];
+  const skillViewerTreeNodes: SkillFileTreeNode[] = useMemo(
+    () => buildSkillFileTreeNodes(skillViewerTreeEntries),
+    [skillViewerTreeEntries],
+  );
+  const skillViewerTreeSearchKeyword: string = skillViewerTreeSearch.trim().toLowerCase();
+  const skillViewerFilteredTreeNodes: SkillFileTreeNode[] = useMemo(
+    () => filterSkillFileTreeNodes(skillViewerTreeNodes, skillViewerTreeSearchKeyword),
+    [skillViewerTreeNodes, skillViewerTreeSearchKeyword],
+  );
+  const skillViewerForceExpandTree: boolean = skillViewerTreeSearchKeyword.length > 0;
 
   useEffect(() => {
     if (section === "local") {
@@ -753,6 +1091,121 @@ export function SkillsWorkspace() {
     }
   };
 
+  const handleCloseSkillViewer = (): void => {
+    skillViewerReadSeqRef.current += 1;
+    setSkillViewerOpen(false);
+    setSkillViewerTarget(null);
+    setSkillViewerTreeEntries([]);
+    setSkillViewerTreeTruncated(false);
+    setSkillViewerTreeLoading(false);
+    setSkillViewerTreeError(null);
+    setSkillViewerTreeSearch("");
+    setSkillViewerExpandedDirs(new Set());
+    setSkillViewerSelectedPath("");
+    setSkillViewerContent(null);
+    setSkillViewerContentLoading(false);
+    setSkillViewerContentError(null);
+  };
+
+  const loadSkillViewerFileContent = async (
+    skillId: string,
+    relativePath: string,
+  ): Promise<void> => {
+    const normalizedPath: string = relativePath.trim();
+    if (normalizedPath.length === 0) {
+      return;
+    }
+
+    const requestSeq: number = skillViewerReadSeqRef.current + 1;
+    skillViewerReadSeqRef.current = requestSeq;
+
+    setSkillViewerSelectedPath(normalizedPath);
+    setSkillViewerContentLoading(true);
+    setSkillViewerContentError(null);
+    try {
+      const fileContent: SkillFileContentResult = await skillsApi.readInstalledSkillFile(
+        skillId,
+        normalizedPath,
+      );
+      if (skillViewerReadSeqRef.current !== requestSeq) {
+        return;
+      }
+      setSkillViewerContent(fileContent);
+    } catch (error) {
+      if (skillViewerReadSeqRef.current !== requestSeq) {
+        return;
+      }
+      const message: string = error instanceof Error ? error.message : String(error);
+      setSkillViewerContent(null);
+      setSkillViewerContentError(message);
+      toast.error(t("skills.workspace.manage.readFileFailed", { defaultValue: "读取技能文件失败" }), {
+        description: message,
+      });
+    } finally {
+      if (skillViewerReadSeqRef.current === requestSeq) {
+        setSkillViewerContentLoading(false);
+      }
+    }
+  };
+
+  const handleOpenSkillViewer = async (skill: InstalledSkill): Promise<void> => {
+    setSkillViewerOpen(true);
+    setSkillViewerTarget(skill);
+    setSkillViewerTreeEntries([]);
+    setSkillViewerTreeTruncated(false);
+    setSkillViewerTreeLoading(true);
+    setSkillViewerTreeError(null);
+    setSkillViewerTreeSearch("");
+    setSkillViewerExpandedDirs(new Set());
+    setSkillViewerSelectedPath("");
+    setSkillViewerContent(null);
+    setSkillViewerContentLoading(false);
+    setSkillViewerContentError(null);
+    skillViewerReadSeqRef.current += 1;
+
+    try {
+      const treeResult = await skillsApi.getInstalledSkillFileTree(skill.id);
+      setSkillViewerTreeEntries(treeResult.entries);
+      setSkillViewerTreeTruncated(treeResult.truncated);
+      const allDirPaths: string[] = collectDirectoryPaths(
+        buildSkillFileTreeNodes(treeResult.entries),
+      );
+      setSkillViewerExpandedDirs(new Set(allDirPaths));
+
+      const firstFilePath: string | null = findFirstReadableFile(
+        buildSkillFileTreeNodes(treeResult.entries),
+      );
+      if (firstFilePath) {
+        await loadSkillViewerFileContent(skill.id, firstFilePath);
+      }
+    } catch (error) {
+      const message: string = error instanceof Error ? error.message : String(error);
+      setSkillViewerTreeError(message);
+      toast.error(t("skills.workspace.manage.loadFileTreeFailed", { defaultValue: "加载技能文件树失败" }), {
+        description: message,
+      });
+    } finally {
+      setSkillViewerTreeLoading(false);
+    }
+  };
+
+  const handleSelectSkillViewerFile = async (relativePath: string): Promise<void> => {
+    if (!skillViewerTarget) {
+      return;
+    }
+    const ancestorPaths: string[] = collectAncestorDirectoryPaths(relativePath);
+    if (ancestorPaths.length > 0) {
+      setSkillViewerExpandedDirs((previous: Set<string>) => {
+        const next = new Set(previous);
+        for (const ancestorPath of ancestorPaths) {
+          next.add(ancestorPath);
+        }
+        return next;
+      });
+    }
+    await loadSkillViewerFileContent(skillViewerTarget.id, relativePath);
+  };
+
   const handleImportDirectories = async (directories: string[]): Promise<void> => {
     if (directories.length === 0) {
       toast.info(t("skills.workspace.toast.noImportable"));
@@ -842,6 +1295,193 @@ export function SkillsWorkspace() {
     setLocalSkillNameInput("");
   };
 
+  const toggleSkillViewerDirectory = (directoryPath: string): void => {
+    setSkillViewerExpandedDirs((previous: Set<string>) => {
+      const next = new Set(previous);
+      if (next.has(directoryPath)) {
+        next.delete(directoryPath);
+      } else {
+        next.add(directoryPath);
+      }
+      return next;
+    });
+  };
+
+  const renderHighlightedCodeBlock = (content: string, filePath?: string): JSX.Element => {
+    const preferredLanguage: string | null = filePath ? resolveCodeLanguage(filePath) : null;
+    let highlightedHtml: string;
+
+    if (preferredLanguage && hljs.getLanguage(preferredLanguage)) {
+      highlightedHtml = hljs.highlight(content, { language: preferredLanguage }).value;
+    } else {
+      highlightedHtml = hljs.highlightAuto(content).value;
+    }
+
+    return (
+      <pre className="overflow-x-auto rounded-lg border border-border bg-muted p-3 text-xs leading-6">
+        <code
+          className="hljs font-mono"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        />
+      </pre>
+    );
+  };
+
+  const renderMarkdownPreview = (content: string): JSX.Element => (
+    <div className="space-y-3 text-sm leading-7 text-foreground">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          h1: ({ children }) => <h1 className="mt-4 text-2xl font-semibold">{children}</h1>,
+          h2: ({ children }) => <h2 className="mt-4 text-xl font-semibold">{children}</h2>,
+          h3: ({ children }) => <h3 className="mt-3 text-lg font-semibold">{children}</h3>,
+          p: ({ children }) => <p className="text-sm leading-7 text-foreground">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc space-y-1 pl-6 text-sm">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal space-y-1 pl-6 text-sm">{children}</ol>,
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-border pl-3 italic text-muted-foreground">
+              {children}
+            </blockquote>
+          ),
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              className="text-primary underline underline-offset-2"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {children}
+            </a>
+          ),
+          code: ({ className, children, ...props }) => {
+            const isBlock = typeof className === "string" && className.includes("language-");
+            if (isBlock) {
+              return (
+                <code className={cn("font-mono text-xs", className)} {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs text-foreground">
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="overflow-x-auto rounded-lg border border-border bg-muted p-3 text-xs leading-6">
+              {children}
+            </pre>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+
+  const renderSkillContentPreview = (): JSX.Element => {
+    if (skillViewerContentLoading) {
+      return (
+        <div className="grid h-24 place-items-center text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+        </div>
+      );
+    }
+
+    if (skillViewerContentError) {
+      return (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          {skillViewerContentError}
+        </div>
+      );
+    }
+
+    if (!skillViewerContent) {
+      return (
+        <div className="text-xs text-muted-foreground">
+          {t("skills.workspace.manage.selectFileToPreview", {
+            defaultValue: "选择文件后在这里预览内容。",
+          })}
+        </div>
+      );
+    }
+
+    if (skillViewerContent.isBinary) {
+      return renderHighlightedCodeBlock(skillViewerContent.content, skillViewerContent.path);
+    }
+
+    if (isMarkdownPath(skillViewerContent.path)) {
+      return renderMarkdownPreview(skillViewerContent.content);
+    }
+
+    return renderHighlightedCodeBlock(skillViewerContent.content, skillViewerContent.path);
+  };
+
+  const renderSkillFileTreeNodes = (
+    nodes: SkillFileTreeNode[],
+    depth: number = 0,
+  ): JSX.Element[] =>
+    nodes.map((node: SkillFileTreeNode) => {
+      const isSelected: boolean = !node.isDir && skillViewerSelectedPath === node.path;
+      const paddingLeft: number = 12 + depth * 14;
+
+      if (node.isDir) {
+        const isExpanded: boolean =
+          skillViewerForceExpandTree || skillViewerExpandedDirs.has(node.path);
+
+        return (
+          <div key={node.path} className="space-y-1">
+            <button
+              type="button"
+              className="flex h-8 w-full items-center gap-1 rounded-md pr-2 text-left text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+              style={{ paddingLeft: `${paddingLeft}px` }}
+              title={node.path}
+              onClick={() => toggleSkillViewerDirectory(node.path)}
+            >
+              {isExpanded ? (
+                <ChevronDown className="size-3.5 shrink-0" />
+              ) : (
+                <ChevronRight className="size-3.5 shrink-0" />
+              )}
+              <Folder className="size-3.5 shrink-0" />
+              <span className="min-w-0 flex-1 truncate">
+                {highlightMatchedText(node.name, skillViewerTreeSearchKeyword)}
+              </span>
+            </button>
+            {isExpanded && node.children.length > 0
+              ? renderSkillFileTreeNodes(node.children, depth + 1)
+              : null}
+          </div>
+        );
+      }
+
+      return (
+        <button
+          key={node.path}
+          type="button"
+          onClick={() => void handleSelectSkillViewerFile(node.path)}
+          className={cn(
+            "flex h-8 w-full items-center gap-2 rounded-md pr-2 text-left text-xs transition-colors",
+            isSelected
+              ? "bg-primary/15 text-primary"
+              : "text-foreground hover:bg-accent hover:text-foreground",
+          )}
+          style={{ paddingLeft: `${paddingLeft + 18}px` }}
+          title={node.path}
+        >
+          <FileText className="size-3.5 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">
+            {highlightMatchedText(node.name, skillViewerTreeSearchKeyword)}
+          </span>
+          <span className="shrink-0 text-[10px] text-muted-foreground">
+            {formatFileByteSize(node.byteSize)}
+          </span>
+        </button>
+      );
+    });
+
   return (
     <div className="flex h-full min-h-0 flex-col px-6 pb-4 pt-4">
       {/* Tab navigation */}
@@ -919,12 +1559,7 @@ export function SkillsWorkspace() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
-                                  if (skill.readmeUrl) {
-                                    void settingsApi.openExternal(skill.readmeUrl);
-                                  }
-                                }}
-                                disabled={!skill.readmeUrl}
+                                onClick={() => void handleOpenSkillViewer(skill)}
                                 className="size-9 text-primary hover:bg-accent hover:text-primary"
                               >
                                 <FileText className="size-4" />
@@ -1547,6 +2182,132 @@ export function SkillsWorkspace() {
           </TabsContent>
         </div>
       </Tabs>
+
+      <Dialog
+        open={skillViewerOpen}
+        onOpenChange={(open: boolean) => {
+          if (open) {
+            setSkillViewerOpen(true);
+            return;
+          }
+          handleCloseSkillViewer();
+        }}
+      >
+        <DialogContent className="h-[80vh] max-h-[80vh] max-w-[1120px] p-0" zIndex="top">
+          <DialogHeader className="space-y-1 px-5 py-4">
+            <DialogTitle>
+              {t("skills.workspace.manage.viewerTitle", {
+                defaultValue: "技能文件",
+              })}
+              {skillViewerTarget ? ` · ${skillViewerTarget.name}` : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {skillViewerTarget
+                ? t("skills.workspace.manage.viewerSubtitle", {
+                    defaultValue: "目录：{{directory}}",
+                    directory: skillViewerTarget.directory,
+                  })
+                : t("skills.workspace.manage.viewerSubtitleFallback", {
+                    defaultValue: "查看技能文件内容",
+                  })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <aside className="flex w-[340px] min-w-[280px] flex-col border-r border-border bg-muted/25">
+              <div className="border-b border-border px-4 py-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {t("skills.workspace.manage.fileTree", { defaultValue: "文件树" })}
+                </p>
+                <div className="relative mt-2">
+                  <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={skillViewerTreeSearch}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setSkillViewerTreeSearch(event.target.value)
+                    }
+                    placeholder={t("skills.workspace.manage.fileTreeSearchPlaceholder", {
+                      defaultValue: "搜索文件名或路径",
+                    })}
+                    className="h-8 border-border bg-background pl-8 pr-8 text-xs"
+                  />
+                  {skillViewerTreeSearch.trim().length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSkillViewerTreeSearch("")}
+                      className="absolute right-1.5 top-1/2 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                      aria-label={t("common.clear", { defaultValue: "清空" })}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </div>
+                {skillViewerTreeTruncated && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("skills.workspace.manage.fileTreeTruncated", {
+                      defaultValue: "文件过多，仅展示前 5000 项。",
+                    })}
+                  </p>
+                )}
+              </div>
+              <ScrollArea className="min-h-0 flex-1 px-2 py-2">
+                {skillViewerTreeLoading ? (
+                  <div className="grid h-24 place-items-center text-muted-foreground">
+                    <Loader2 className="size-5 animate-spin" />
+                  </div>
+                ) : skillViewerTreeError ? (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                    {skillViewerTreeError}
+                  </div>
+                ) : skillViewerFilteredTreeNodes.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                    {skillViewerTreeSearchKeyword.length > 0
+                      ? t("skills.workspace.manage.noSearchFiles", {
+                          defaultValue: "没有匹配的文件。",
+                        })
+                      : t("skills.workspace.manage.noFiles", {
+                          defaultValue: "当前技能没有可读文件。",
+                        })}
+                  </div>
+                ) : (
+                  <div className="space-y-1">{renderSkillFileTreeNodes(skillViewerFilteredTreeNodes)}</div>
+                )}
+              </ScrollArea>
+            </aside>
+
+            <section className="min-h-0 flex-1 bg-background">
+              <div className="border-b border-border px-4 py-3">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {skillViewerSelectedPath.length > 0
+                    ? skillViewerSelectedPath
+                    : t("skills.workspace.manage.selectFile", { defaultValue: "请选择左侧文件" })}
+                </p>
+                {skillViewerContent && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("skills.workspace.manage.fileSize", {
+                      defaultValue: "大小：{{size}}",
+                      size: formatFileByteSize(skillViewerContent.byteSize),
+                    })}
+                    {skillViewerContent.isTruncated
+                      ? t("skills.workspace.manage.fileTruncated", {
+                          defaultValue: "（内容过长，仅展示前 512KB）",
+                        })
+                      : ""}
+                    {skillViewerContent.isBinary
+                      ? t("skills.workspace.manage.fileBinary", {
+                          defaultValue: "（二进制文件）",
+                        })
+                      : ""}
+                  </p>
+                )}
+              </div>
+              <ScrollArea className="h-full min-h-0 px-4 py-3">
+                {renderSkillContentPreview()}
+              </ScrollArea>
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

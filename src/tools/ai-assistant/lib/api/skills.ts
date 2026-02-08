@@ -113,6 +113,33 @@ export interface SkillSingleRemoteRefreshResult {
   treeCommitId?: string;
 }
 
+/** 已安装技能文件树条目 */
+export interface SkillFileTreeEntry {
+  name: string;
+  path: string;
+  isDir: boolean;
+  byteSize?: number;
+}
+
+/** 已安装技能文件树 */
+export interface SkillFileTreeResult {
+  skillId: string;
+  skillName: string;
+  directory: string;
+  entries: SkillFileTreeEntry[];
+  truncated: boolean;
+}
+
+/** 已安装技能文件内容 */
+export interface SkillFileContentResult {
+  skillId: string;
+  path: string;
+  content: string;
+  isBinary: boolean;
+  isTruncated: boolean;
+  byteSize: number;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -290,6 +317,19 @@ export const skillsApi = {
   /** 重新解析远程仓库并刷新单个已安装技能元数据 */
   async refreshInstalledOneRemote(skillId: string): Promise<SkillSingleRemoteRefreshResult> {
     return await invoke("refresh_installed_skill_remote", { skillId });
+  },
+
+  /** 获取单个已安装技能的文件树 */
+  async getInstalledSkillFileTree(skillId: string): Promise<SkillFileTreeResult> {
+    return await invoke("get_installed_skill_file_tree", { skillId });
+  },
+
+  /** 读取单个已安装技能文件内容 */
+  async readInstalledSkillFile(
+    skillId: string,
+    relativePath: string,
+  ): Promise<SkillFileContentResult> {
+    return await invoke("read_installed_skill_file", { skillId, relativePath });
   },
 
   /** 安装 Skill（统一安装） */

@@ -7,8 +7,8 @@
 use crate::cc_switch::app_config::{AppType, InstalledSkill, UnmanagedSkill};
 use crate::cc_switch::error::format_skill_error;
 use crate::cc_switch::services::skill::{
-    DiscoverableSkill, Skill, SkillRemoteRefreshResult, SkillRepo, SkillService,
-    SkillSingleRemoteRefreshResult, SkillUpdateInfo,
+    DiscoverableSkill, Skill, SkillFileContentResult, SkillFileTreeResult, SkillRemoteRefreshResult,
+    SkillRepo, SkillService, SkillSingleRemoteRefreshResult, SkillUpdateInfo,
 };
 use crate::cc_switch::store::AppState;
 use serde_json::json;
@@ -37,6 +37,26 @@ fn parse_app_type(app: &str) -> Result<AppType, String> {
 #[tauri::command]
 pub fn get_installed_skills(app_state: State<'_, AppState>) -> Result<Vec<InstalledSkill>, String> {
     SkillService::get_all_installed(&app_state.db).map_err(|e| e.to_string())
+}
+
+/// 获取单个已安装技能的文件树
+#[tauri::command]
+pub fn get_installed_skill_file_tree(
+    skill_id: String,
+    app_state: State<'_, AppState>,
+) -> Result<SkillFileTreeResult, String> {
+    SkillService::get_installed_skill_file_tree(&app_state.db, &skill_id).map_err(|e| e.to_string())
+}
+
+/// 读取单个已安装技能的文件内容
+#[tauri::command]
+pub fn read_installed_skill_file(
+    skill_id: String,
+    relative_path: String,
+    app_state: State<'_, AppState>,
+) -> Result<SkillFileContentResult, String> {
+    SkillService::read_installed_skill_file(&app_state.db, &skill_id, &relative_path)
+        .map_err(|e| e.to_string())
 }
 
 /// 重新解析远程仓库并刷新已安装技能元数据
