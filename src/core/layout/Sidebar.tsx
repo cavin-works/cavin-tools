@@ -17,6 +17,8 @@ import {
   SmilePlus,
   Download,
   Activity,
+  Bot,
+  Book,
 } from "lucide-react";
 import { useAppStore } from "../store/appStore";
 import { TOOL_CATEGORIES } from "../tool-registry/toolRegistry";
@@ -35,6 +37,9 @@ function getToolIcon(
     Code,
     Type,
     Activity,
+    Bot,
+    Book,
+    Wrench,
   };
   return iconMap[iconName] || Wrench;
 }

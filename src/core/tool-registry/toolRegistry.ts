@@ -6,7 +6,11 @@ import watermarkRemoverToolConfig from '@/tools/image/watermark-remover/tool.con
 import backgroundRemoverToolConfig from '@/tools/image/background-remover/tool.config';
 import processManagerToolConfig from '@/tools/dev/process-manager/tool.config';
 import characterToolsToolConfig from '@/tools/text/character-tools/tool.config';
-import aiAssistantToolConfig from '@/tools/ai-assistant/tool.config';
+// AI 助手工具（已拆分为独立工具）
+import aiProvidersToolConfig from '@/tools/ai-assistant/ai-providers.tool.config';
+import aiSkillsToolConfig from '@/tools/ai-assistant/ai-skills.tool.config';
+import aiPromptsToolConfig from '@/tools/ai-assistant/ai-prompts.tool.config';
+import aiMcpToolConfig from '@/tools/ai-assistant/ai-mcp.tool.config';
 
 /**
  * 工具注册表
@@ -22,7 +26,11 @@ export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'background-remover': backgroundRemoverToolConfig,
   'process-manager': processManagerToolConfig,
   'character-tools': characterToolsToolConfig,
-  'ai-assistant': aiAssistantToolConfig,
+  // AI 助手工具（已拆分为独立工具）
+  'ai-providers': aiProvidersToolConfig,
+  'ai-skills': aiSkillsToolConfig,
+  'ai-prompts': aiPromptsToolConfig,
+  'ai-mcp': aiMcpToolConfig,
 };
 
 /**
