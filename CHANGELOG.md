@@ -1,3 +1,15 @@
+## [0.1.8](https://github.com/cavin-works/cavin-tools/compare/v0.1.7...v0.1.8) (2026-02-09)
+
+
+### ✨ 新功能
+
+* **ai-assistant:** add assistant section pages and configs ([0484af7](https://github.com/cavin-works/cavin-tools/commit/0484af7647992c9113aa9c7a9e281a3db977dc7d))
+* **ai-assistant:** 增强技能管理系统 ([83b2946](https://github.com/cavin-works/cavin-tools/commit/83b294683b9c8e82cb88ffbd2bdcf1a62284faab))
+* **ai-assistant:** 实现 Skill 缓存系统 ([5259a04](https://github.com/cavin-works/cavin-tools/commit/5259a043d96c13eef7197da37689aa9288c957d4))
+* **ai-assistant:** 添加技能文件内容预览功能 ([e290e52](https://github.com/cavin-works/cavin-tools/commit/e290e52bd08ac631afed6240be63ddf3f24cf6b9))
+
+
+
 ## [0.1.7](https://github.com/cavin-works/cavin-tools/compare/v0.1.6...v0.1.7) (2026-02-04)
 
 

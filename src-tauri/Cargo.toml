@@ -1,6 +1,6 @@
 [package]
 name = "mnemosyne"
-version = "0.1.7"
+version = "0.1.8"
 description = "Mnemosyne - All-in-One Toolkit with AI Assistant"
 authors = ["you"]
 edition = "2021"
