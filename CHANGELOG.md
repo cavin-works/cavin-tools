@@ -1,3 +1,12 @@
+## [0.1.9](https://github.com/cavin-works/cavin-tools/compare/v0.1.8...v0.1.9) (2026-02-10)
+
+
+### 🐛 Bug 修复
+
+* **layout:** 优化 macOS 标题栏拖动区域实现 ([c4865d7](https://github.com/cavin-works/cavin-tools/commit/c4865d78c9436d16049b83b9598b70936a7bf59b))
+
+
+
 ## [0.1.8](https://github.com/cavin-works/cavin-tools/compare/v0.1.7...v0.1.8) (2026-02-09)
 
 
