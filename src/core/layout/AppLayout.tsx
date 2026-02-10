@@ -6,6 +6,7 @@ import { getToolById } from '../tool-registry/toolRegistry';
 import { checkUpdate } from '@/lib/updateUtils';
 import { UpdateDialog } from '@/components/UpdateDialog';
 import { UpdateCompleteDialog } from '@/components/UpdateCompleteDialog';
+import { isMac } from '@/lib/platform';
 
 /**
  * 主应用布局
@@ -77,7 +78,14 @@ export function AppLayout() {
   const currentTool = currentToolId ? (getToolById(currentToolId) ?? null) : null;
 
   return (
-    <div className="flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden">
+    <div className="relative flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden">
+      {isMac() && (
+        <div
+          data-tauri-drag-region
+          className="absolute top-0 left-0 right-0 h-10 z-[100]"
+          aria-hidden="true"
+        />
+      )}
       <Sidebar />
       <MainContent tool={currentTool} />
       <UpdateDialog 

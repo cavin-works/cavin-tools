@@ -108,14 +108,6 @@ export function Sidebar() {
 
       {/* 顶部品牌区 */}
       <div className={`flex-shrink-0 relative ${isMac() ? "pt-10 pb-4 px-4" : "p-4"}`}>
-        {/* macOS 拖动区域 - 整个区域可拖动 */}
-        {isMac() && (
-          <div
-            data-tauri-drag-region
-            className="absolute inset-0 pointer-events-none"
-            style={{ margin: '0 -1rem' }}
-          />
-        )}
         <div className="relative flex items-center gap-3">
           {/* Logo 和标题可拖动 */}
           <div
