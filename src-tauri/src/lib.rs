@@ -17,6 +17,7 @@ pub mod ffmpeg;
 pub mod image_converter;
 pub mod models;
 pub mod process_manager;
+pub mod sticky_notes;
 pub mod updater;
 pub mod watermark_remover;
 
@@ -750,6 +751,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             // Initialize app config directory override
             cc_switch::app_store::refresh_app_config_dir_override(app.handle());
@@ -1000,6 +1002,14 @@ pub fn run() {
                 skill_service,
             )));
 
+            // Initialize NoteWindowManager for sticky notes
+            app.manage(sticky_notes::NoteWindowManager::new());
+
+            // Register sticky notes global shortcuts
+            if let Err(e) = sticky_notes::register_global_shortcuts(app.handle()) {
+                log::warn!("Failed to register sticky notes shortcuts: {}", e);
+            }
+
             // Initialize global proxy HTTP client
             {
                 let db = &app.state::<AppState>().db;
@@ -1075,6 +1085,18 @@ pub fn run() {
             query_ports_by_pid_command,
             updater::check_update,
             updater::download_and_install_update,
+            // ============================================================
+            // Sticky Notes Commands
+            // ============================================================
+            sticky_notes::load_sticky_notes,
+            sticky_notes::save_sticky_notes,
+            sticky_notes::detach_note_window,
+            sticky_notes::attach_note_window,
+            sticky_notes::update_note_window_state,
+            sticky_notes::set_desktop_mode,
+            sticky_notes::start_window_dragging,
+            sticky_notes::toggle_pin_all_notes,
+            sticky_notes::show_hide_all_notes,
             // ============================================================
             // CC Switch Commands (AI Assistant)
             // ============================================================

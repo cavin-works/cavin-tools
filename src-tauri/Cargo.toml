@@ -37,6 +37,7 @@ tauri-plugin-log = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-store = "2"
 tauri-plugin-deep-link = "2"
+tauri-plugin-global-shortcut = "2"
 
 # Async runtime
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "sync", "full"] }
@@ -92,9 +93,14 @@ ndarray = "0.15"
 [target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))'.dependencies]
 tauri-plugin-single-instance = "2"
 
-# Platform-specific: Windows registry
+# Platform-specific: Windows registry and API
 [target.'cfg(target_os = "windows")'.dependencies]
 winreg = "0.52"
+windows = { version = "0.58", features = [
+  "Win32_Foundation",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_System_LibraryLoader",
+] }
 
 # Platform-specific: macOS Objective-C bindings
 [target.'cfg(target_os = "macos")'.dependencies]

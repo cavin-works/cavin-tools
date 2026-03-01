@@ -7,6 +7,15 @@ import { checkUpdate } from '@/lib/updateUtils';
 import { UpdateDialog } from '@/components/UpdateDialog';
 import { UpdateCompleteDialog } from '@/components/UpdateCompleteDialog';
 import { isMac } from '@/lib/platform';
+import { TodoWidget } from '@/tools/sticky-notes/TodoWidget';
+
+/**
+ * 检查是否是 Todo 小部件窗口
+ */
+function isTodoWidgetPath(): boolean {
+  const path = window.location.pathname;
+  return path === '/todo-widget';
+}
 
 /**
  * 主应用布局
@@ -14,10 +23,10 @@ import { isMac } from '@/lib/platform';
  * 侧边栏 + 主内容区的整体布局
  */
 export function AppLayout() {
-  const { 
-    currentToolId, 
-    setCurrentToolId, 
-    settings, 
+  const {
+    currentToolId,
+    setCurrentToolId,
+    settings,
     theme,
     showUpdateDialog,
     showUpdateCompleteDialog,
@@ -26,15 +35,20 @@ export function AppLayout() {
     setUpdateAvailable
   } = useAppStore();
 
+  // 检查是否是独立窗口
+  const isTodoWidget = isTodoWidgetPath();
+
   // 初始化默认工具
   useEffect(() => {
+    if (isTodoWidget) return; // 独立窗口不需要初始化工具
+
     if (!currentToolId && settings.defaultTool) {
       const defaultTool = getToolById(settings.defaultTool);
       if (defaultTool) {
         setCurrentToolId(settings.defaultTool);
       }
     }
-  }, [currentToolId, settings.defaultTool, setCurrentToolId]);
+  }, [currentToolId, settings.defaultTool, setCurrentToolId, isTodoWidget]);
 
   // 启动时静默检查更新
   useEffect(() => {
@@ -77,6 +91,11 @@ export function AppLayout() {
 
   const currentTool = currentToolId ? (getToolById(currentToolId) ?? null) : null;
 
+  // 如果是 Todo 小部件窗口，渲染 TodoWidget 组件
+  if (isTodoWidget) {
+    return <TodoWidget />;
+  }
+
   return (
     <div className="relative flex h-screen bg-neutral-50 dark:bg-neutral-900 overflow-hidden">
       {isMac() && (
@@ -88,13 +107,13 @@ export function AppLayout() {
       )}
       <Sidebar />
       <MainContent tool={currentTool} />
-      <UpdateDialog 
-        open={showUpdateDialog} 
-        onOpenChange={setShowUpdateDialog} 
+      <UpdateDialog
+        open={showUpdateDialog}
+        onOpenChange={setShowUpdateDialog}
       />
-      <UpdateCompleteDialog 
-        open={showUpdateCompleteDialog} 
-        onOpenChange={setShowUpdateCompleteDialog} 
+      <UpdateCompleteDialog
+        open={showUpdateCompleteDialog}
+        onOpenChange={setShowUpdateCompleteDialog}
       />
     </div>
   );

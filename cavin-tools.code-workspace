@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+  "settings": {
+    "i18n-ally.localesPaths": [
+      "src/tools/dev/ai-provider-manager-v2/i18n"
+    ]
+  }
+}

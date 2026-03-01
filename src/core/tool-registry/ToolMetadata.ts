@@ -3,7 +3,7 @@ import { ComponentType } from 'react';
 /**
  * 工具分类
  */
-export type ToolCategoryType = 'video' | 'image' | 'file' | 'dev' | 'text';
+export type ToolCategoryType = 'video' | 'image' | 'file' | 'dev' | 'text' | 'productivity';
 
 /**
  * 工具状态

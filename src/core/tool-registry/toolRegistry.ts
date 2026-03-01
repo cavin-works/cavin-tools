@@ -11,6 +11,8 @@ import aiProvidersToolConfig from '@/tools/ai-assistant/ai-providers.tool.config
 import aiSkillsToolConfig from '@/tools/ai-assistant/ai-skills.tool.config';
 import aiPromptsToolConfig from '@/tools/ai-assistant/ai-prompts.tool.config';
 import aiMcpToolConfig from '@/tools/ai-assistant/ai-mcp.tool.config';
+// 生产力工具
+import stickyNotesToolConfig from '@/tools/sticky-notes/tool.config';
 
 /**
  * 工具注册表
@@ -31,6 +33,8 @@ export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'ai-skills': aiSkillsToolConfig,
   'ai-prompts': aiPromptsToolConfig,
   'ai-mcp': aiMcpToolConfig,
+  // 生产力工具
+  'sticky-notes': stickyNotesToolConfig,
 };
 
 /**
@@ -71,6 +75,13 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
     icon: 'Type',
     description: '文本处理、格式化等工具',
     tools: Object.values(TOOL_REGISTRY).filter((t) => t.category === 'text'),
+  },
+  {
+    id: 'productivity',
+    name: '效率工具',
+    icon: 'Zap',
+    description: '提升工作效率的工具',
+    tools: Object.values(TOOL_REGISTRY).filter((t) => t.category === 'productivity'),
   },
 ];
 

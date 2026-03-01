@@ -19,6 +19,9 @@ import {
   Activity,
   Bot,
   Book,
+  StickyNote,
+  Zap,
+  CheckCircle2,
 } from "lucide-react";
 import { useAppStore } from "../store/appStore";
 import { TOOL_CATEGORIES } from "../tool-registry/toolRegistry";
@@ -40,6 +43,9 @@ function getToolIcon(
     Bot,
     Book,
     Wrench,
+    StickyNote,
+    Zap,
+    CheckCircle2,
   };
   return iconMap[iconName] || Wrench;
 }
@@ -49,7 +55,7 @@ function getToolIcon(
  */
 export function Sidebar() {
   const [expandedCategories] = useState<Set<string>>(
-    new Set(["video", "image", "dev", "text"]),
+    new Set(["video", "image", "dev", "text", "productivity"]),
   );
   const {
     currentToolId,
