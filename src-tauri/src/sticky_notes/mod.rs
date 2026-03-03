@@ -111,6 +111,16 @@ pub struct HotkeyConfig {
     pub quick_add: String,
 }
 
+impl PartialEq for HotkeyConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.toggle == other.toggle
+            && self.toggle_pin == other.toggle_pin
+            && self.quick_add == other.quick_add
+    }
+}
+
+impl Eq for HotkeyConfig {}
+
 /// Global Todo configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -185,6 +195,27 @@ impl NoteWindowManager {
 }
 
 impl Default for NoteWindowManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Runtime state for sticky-notes global shortcut registration
+pub struct StickyNotesShortcutManager {
+    shortcuts: Mutex<Vec<Shortcut>>,
+    hotkeys: Mutex<Option<HotkeyConfig>>,
+}
+
+impl StickyNotesShortcutManager {
+    pub fn new() -> Self {
+        Self {
+            shortcuts: Mutex::new(Vec::new()),
+            hotkeys: Mutex::new(None),
+        }
+    }
+}
+
+impl Default for StickyNotesShortcutManager {
     fn default() -> Self {
         Self::new()
     }
@@ -390,6 +421,10 @@ pub async fn save_sticky_notes(app: AppHandle, data: TodoStoreData) -> Result<()
         .save()
         .map_err(|e| format!("Failed to save store: {}", e))?;
 
+    if let Err(e) = apply_global_shortcuts_from_config(&app, &data.config.hotkeys) {
+        log::warn!("Failed to update sticky notes shortcuts from config: {}", e);
+    }
+
     Ok(())
 }
 
@@ -425,16 +460,23 @@ pub async fn detach_note_window(
         "便签"
     };
 
-    let window = WebviewWindowBuilder::new(&app, &label, url)
+    let builder = WebviewWindowBuilder::new(&app, &label, url)
         .title(title)
         .inner_size(window_state.width as f64, window_state.height as f64)
         .position(window_state.x as f64, window_state.y as f64)
         .decorations(false)
-        .transparent(true)
         .always_on_top(window_state.is_pinned)
-        .skip_taskbar(window_state.is_desktop_mode)
+        .skip_taskbar(window_state.is_desktop_mode);
+
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.transparent(true);
+
+    let window = builder
         .build()
         .map_err(|e| format!("Failed to create window: {}", e))?;
+
+    #[cfg(not(target_os = "windows"))]
+    let _ = &window;
 
     // Embed window into desktop if desktop mode is enabled
     if window_state.is_desktop_mode {
@@ -596,43 +638,139 @@ pub async fn show_hide_all_notes(app: AppHandle, visible: bool) -> Result<(), St
 
 /// Register global shortcuts for sticky notes
 pub fn register_global_shortcuts(app: &AppHandle) -> Result<(), String> {
-    // Quick create note: Ctrl/Cmd + Alt + N
-    let quick_create_shortcut = Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyN);
+    if app.try_state::<StickyNotesShortcutManager>().is_none() {
+        app.manage(StickyNotesShortcutManager::new());
+    }
 
-    app.global_shortcut()
-        .on_shortcut(quick_create_shortcut, |app, _shortcut, _event| {
-            log::info!("Quick create note shortcut triggered");
-            if let Err(e) = app.emit("quick-create-note", ()) {
-                log::error!("Failed to emit quick-create-note event: {}", e);
-            }
+    let configured_hotkeys = app
+        .store("sticky-notes")
+        .ok()
+        .and_then(|store| {
+            store
+                .get("config")
+                .and_then(|v| serde_json::from_value::<TodoConfig>(v.clone()).ok())
+                .map(|c| c.hotkeys)
         })
-        .map_err(|e| format!("Failed to register quick create shortcut: {}", e))?;
+        .unwrap_or_else(|| get_default_config().hotkeys);
 
-    // Toggle pin all notes: Ctrl/Cmd + Alt + P
-    let toggle_pin_shortcut = Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyP);
-
-    app.global_shortcut()
-        .on_shortcut(toggle_pin_shortcut, |app, _shortcut, _event| {
-            log::info!("Toggle pin all notes shortcut triggered");
-            // Toggle state - we'll let the frontend handle the toggle logic
-            if let Err(e) = app.emit("toggle-pin-all-notes-shortcut", ()) {
-                log::error!("Failed to emit toggle-pin-all-notes event: {}", e);
-            }
-        })
-        .map_err(|e| format!("Failed to register toggle pin shortcut: {}", e))?;
-
-    // Show/hide all notes: Ctrl/Cmd + Alt + H
-    let show_hide_shortcut = Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyH);
-
-    app.global_shortcut()
-        .on_shortcut(show_hide_shortcut, |app, _shortcut, _event| {
-            log::info!("Show/hide all notes shortcut triggered");
-            if let Err(e) = app.emit("show-hide-all-notes-shortcut", ()) {
-                log::error!("Failed to emit show-hide-all-notes event: {}", e);
-            }
-        })
-        .map_err(|e| format!("Failed to register show/hide shortcut: {}", e))?;
-
+    apply_global_shortcuts_from_config(app, &configured_hotkeys)?;
     log::info!("Sticky notes global shortcuts registered successfully");
     Ok(())
+}
+
+fn apply_global_shortcuts_from_config(app: &AppHandle, hotkeys: &HotkeyConfig) -> Result<(), String> {
+    let manager = app
+        .try_state::<StickyNotesShortcutManager>()
+        .ok_or_else(|| "StickyNotesShortcutManager is not initialized".to_string())?;
+
+    if let Ok(current_hotkeys) = manager.hotkeys.lock() {
+        if current_hotkeys.as_ref() == Some(hotkeys) {
+            return Ok(());
+        }
+    }
+
+    let old_shortcuts = if let Ok(registered) = manager.shortcuts.lock() {
+        registered.clone()
+    } else {
+        Vec::new()
+    };
+
+    for shortcut in old_shortcuts {
+        if let Err(e) = app.global_shortcut().unregister(shortcut) {
+            log::warn!("Failed to unregister sticky note shortcut: {}", e);
+        }
+    }
+
+    let quick_add_shortcut = match parse_shortcut(&hotkeys.quick_add) {
+        Ok(shortcut) => shortcut,
+        Err(_) => Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyN),
+    };
+    let toggle_pin_shortcut = match parse_shortcut(&hotkeys.toggle_pin) {
+        Ok(shortcut) => shortcut,
+        Err(_) => Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyP),
+    };
+    let toggle_shortcut = match parse_shortcut(&hotkeys.toggle) {
+        Ok(shortcut) => shortcut,
+        Err(_) => Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyT),
+    };
+
+    let mut registered_shortcuts: Vec<Shortcut> = Vec::new();
+
+    match app.global_shortcut().on_shortcut(quick_add_shortcut, |app, _shortcut, _event| {
+        log::info!("Quick create note shortcut triggered");
+        if let Err(e) = app.emit("quick-create-note", ()) {
+            log::error!("Failed to emit quick-create-note event: {}", e);
+        }
+    }) {
+        Ok(_) => registered_shortcuts.push(quick_add_shortcut),
+        Err(e) => log::warn!("Failed to register quick create shortcut: {}", e),
+    }
+
+    match app.global_shortcut().on_shortcut(toggle_pin_shortcut, |app, _shortcut, _event| {
+        log::info!("Toggle pin all notes shortcut triggered");
+        if let Err(e) = app.emit("toggle-pin-all-notes-shortcut", ()) {
+            log::error!("Failed to emit toggle-pin-all-notes event: {}", e);
+        }
+    }) {
+        Ok(_) => registered_shortcuts.push(toggle_pin_shortcut),
+        Err(e) => log::warn!("Failed to register toggle pin shortcut: {}", e),
+    }
+
+    match app.global_shortcut().on_shortcut(toggle_shortcut, |app, _shortcut, _event| {
+        log::info!("Show/hide all notes shortcut triggered");
+        if let Err(e) = app.emit("show-hide-all-notes-shortcut", ()) {
+            log::error!("Failed to emit show-hide-all-notes event: {}", e);
+        }
+    }) {
+        Ok(_) => registered_shortcuts.push(toggle_shortcut),
+        Err(e) => log::warn!("Failed to register show/hide shortcut: {}", e),
+    }
+
+    if registered_shortcuts.is_empty() {
+        return Err("Failed to register any sticky notes shortcuts".to_string());
+    }
+
+    if let Ok(mut registered) = manager.shortcuts.lock() {
+        *registered = registered_shortcuts;
+    }
+    if let Ok(mut current_hotkeys) = manager.hotkeys.lock() {
+        *current_hotkeys = Some(hotkeys.clone());
+    }
+
+    Ok(())
+}
+
+fn parse_shortcut(shortcut: &str) -> Result<Shortcut, String> {
+    let mut candidates: Vec<String> = vec![shortcut.to_string()];
+    candidates.push(shortcut.replace("CmdOrCtrl", "CommandOrControl"));
+
+    #[cfg(target_os = "macos")]
+    {
+        candidates.push(shortcut.replace("CommandOrControl", "Super"));
+        candidates.push(shortcut.replace("CmdOrCtrl", "Super"));
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        candidates.push(shortcut.replace("CommandOrControl", "Control"));
+        candidates.push(shortcut.replace("CmdOrCtrl", "Control"));
+    }
+
+    candidates.dedup();
+
+    let mut last_error: Option<String> = None;
+    for candidate in candidates {
+        match Shortcut::try_from(candidate.as_str()) {
+            Ok(parsed) => return Ok(parsed),
+            Err(err) => {
+                last_error = Some(err.to_string());
+            }
+        }
+    }
+
+    Err(format!(
+        "Invalid shortcut '{}': {}",
+        shortcut,
+        last_error.unwrap_or_else(|| "unknown parse error".to_string())
+    ))
 }

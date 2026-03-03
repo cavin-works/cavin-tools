@@ -37,7 +37,11 @@
       "Bash(git push:*)",
       "Bash(git tag:*)",
       "Bash(node scripts/update-version.cjs:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Skill(ui-ux-pro-max)",
+      "Bash(python3:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

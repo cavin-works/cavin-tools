@@ -236,7 +236,20 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   // 显示小部件
   showWidget: async () => {
     try {
-      await invoke('show_hide_all_notes', { visible: true });
+      const { config } = get();
+      await invoke('detach_note_window', {
+        noteId: 'todo-widget',
+        windowState: {
+          x: config.widget.position.x,
+          y: config.widget.position.y,
+          width: config.widget.width,
+          height: config.widget.height,
+          isDetached: true,
+          isPinned: config.widget.isPinned,
+          isDesktopMode: config.widget.isDesktopMode,
+          opacity: config.widget.opacity,
+        },
+      });
     } catch (err) {
       console.error('显示小部件失败:', err);
     }

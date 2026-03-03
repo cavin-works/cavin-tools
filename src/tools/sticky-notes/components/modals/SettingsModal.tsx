@@ -3,6 +3,7 @@ import { X, Keyboard, Monitor, Palette, Check } from 'lucide-react';
 import { useTodoStore } from '../../store/stickyNotesStore';
 import type { WidgetTheme, ThemeColors } from '../../types';
 import { WIDGET_THEMES, THEME_LABELS, DEFAULT_CONFIG } from '../../types';
+import { isMac } from '@/lib/platform';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -14,6 +15,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   // 获取 widget 配置，使用默认值作为 fallback
   const widgetConfig = config.widget || DEFAULT_CONFIG.widget;
   const hotkeysConfig = config.hotkeys || DEFAULT_CONFIG.hotkeys;
+  const modifierLabel = isMac() ? 'Cmd' : 'Ctrl';
 
   const handleThemeChange = (theme: WidgetTheme) => {
     updateConfig({
@@ -229,19 +231,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               <div className="flex items-center justify-between p-2 bg-muted rounded">
                 <span className="text-sm text-foreground">切换显示</span>
                 <kbd className="px-2 py-1 text-xs bg-background text-foreground rounded border border-border font-mono">
-                  {hotkeysConfig.toggle.replace('CommandOrControl', 'Ctrl')}
+                  {hotkeysConfig.toggle.replace('CommandOrControl', modifierLabel)}
                 </kbd>
               </div>
               <div className="flex items-center justify-between p-2 bg-muted rounded">
                 <span className="text-sm text-foreground">置顶/取消置顶</span>
                 <kbd className="px-2 py-1 text-xs bg-background text-foreground rounded border border-border font-mono">
-                  {hotkeysConfig.togglePin.replace('CommandOrControl', 'Ctrl')}
+                  {hotkeysConfig.togglePin.replace('CommandOrControl', modifierLabel)}
                 </kbd>
               </div>
               <div className="flex items-center justify-between p-2 bg-muted rounded">
                 <span className="text-sm text-foreground">快速添加任务</span>
                 <kbd className="px-2 py-1 text-xs bg-background text-foreground rounded border border-border font-mono">
-                  {hotkeysConfig.quickAdd.replace('CommandOrControl', 'Ctrl')}
+                  {hotkeysConfig.quickAdd.replace('CommandOrControl', modifierLabel)}
                 </kbd>
               </div>
             </div>
