@@ -110,11 +110,8 @@ jobs:
           releaseBody: ${{ steps.changelog.outputs.NOTES }}
           releaseDraft: false
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.target && format(\'--target {0}\', matrix.target) || \'\' }} ${{ matrix.args || \'\' }}
 
-      - name: Build Intel Mac (x86_64)
-        if: matrix.platform == 'macos-latest'
-        run: |
           rustup target add x86_64-apple-darwin
           pnpm tauri build --target x86_64-apple-darwin --no-default-features --features custom-protocol
 
@@ -129,9 +126,6 @@ jobs:
         uses: actions/checkout@v4
 
 
-      - name: Build Intel Mac (x86_64)
-        if: matrix.platform == 'macos-latest'
-        run: |
           rustup target add x86_64-apple-darwin
           pnpm tauri build --target x86_64-apple-darwin --no-default-features --features custom-protocol
       - name: Download signature files from Release
