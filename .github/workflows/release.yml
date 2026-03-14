@@ -112,6 +112,12 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
+      - name: Build Intel Mac (x86_64)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          rustup target add x86_64-apple-darwin
+          pnpm tauri build --target x86_64-apple-darwin --no-default-features --features custom-protocol
+
   # 单独的 job 上传 latest.json，等待所有构建完成后执行
   upload-latest:
     needs: release
@@ -122,6 +128,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+
+      - name: Build Intel Mac (x86_64)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          rustup target add x86_64-apple-darwin
+          pnpm tauri build --target x86_64-apple-darwin --no-default-features --features custom-protocol
       - name: Download signature files from Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

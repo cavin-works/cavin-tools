@@ -12,7 +12,6 @@ use tauri::{Manager, RunEvent};
 // ============================================================
 // Mnemosyne modules (video/image processing)
 // ============================================================
-#[cfg(feature = "background-remover")]
 pub mod background_remover;
 pub mod ffmpeg;
 pub mod image_converter;
@@ -354,16 +353,12 @@ async fn batch_remove_watermarks(
     .await
 }
 
-#[cfg(feature = "background-remover")]
-#[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn check_bg_model_status() -> Result<background_remover::ModelInfo, String> {
     background_remover::check_model_status()
 }
 #[cfg(feature = "background-remover")]
 
-#[cfg(feature = "background-remover")]
-#[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn download_bg_model(window: tauri::Window) -> Result<String, String> {
     let window_clone = window.clone();
@@ -374,8 +369,6 @@ async fn download_bg_model(window: tauri::Window) -> Result<String, String> {
 }
 #[cfg(feature = "background-remover")]
 
-#[cfg(feature = "background-remover")]
-#[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn remove_image_background(
     input_path: String,
@@ -384,7 +377,6 @@ async fn remove_image_background(
     background_remover::remove_background(input_path, params).await
 }
 
-#[cfg(feature = "background-remover")]
 #[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn batch_remove_image_backgrounds(
@@ -1086,13 +1078,9 @@ pub fn run() {
             batch_convert_images,
             remove_watermark,
             batch_remove_watermarks,
-            #[cfg(feature = "background-remover")]
             check_bg_model_status,
-            #[cfg(feature = "background-remover")]
             download_bg_model,
-            #[cfg(feature = "background-remover")]
             remove_image_background,
-            #[cfg(feature = "background-remover")]
             batch_remove_image_backgrounds,
             get_processes,
             search_processes,
