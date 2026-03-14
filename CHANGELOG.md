@@ -9,6 +9,7 @@
 * pass Cargo flags via -- for Intel Mac builds ([0775512](https://github.com/cavin-works/cavin-tools/commit/0775512c8db445a1a11ad1f891ead956f56579e8))
 * remove incorrect conditional compilation for batch_remove_watermarks ([524ea28](https://github.com/cavin-works/cavin-tools/commit/524ea2880d088acc300e4999d2fd8ced1669755b))
 * remove incorrect conditional compilation in batch_remove_watermarks ([c01a4c0](https://github.com/cavin-works/cavin-tools/commit/c01a4c09b4668b0ab6d441109ce32896a4723fd2))
+* remove malformed YAML lines from workflow ([87d0d41](https://github.com/cavin-works/cavin-tools/commit/87d0d415ab9f409eebaa1321f732f17554c811c5))
 * remove malformed YAML lines from workflow ([49053ad](https://github.com/cavin-works/cavin-tools/commit/49053ad272c13f67c88feee6350d7a96585dddd1))
 
 
