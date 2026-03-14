@@ -1,6 +1,14 @@
 ## [0.1.11](https://github.com/cavin-works/cavin-tools/compare/v0.1.10...v0.1.11) (2026-03-14)
 
 
+### 🐛 Bug 修复
+
+* add Intel Mac to build matrix in GitHub Actions ([04548db](https://github.com/cavin-works/cavin-tools/commit/04548db6e8ecf7a6bf414dc3e37d159d50d8633a))
+* correct GitHub Actions expression syntax ([92401ef](https://github.com/cavin-works/cavin-tools/commit/92401ef019715d20fa3ad8b63cf8058f1f836cac))
+* remove incorrect conditional compilation for batch_remove_watermarks ([524ea28](https://github.com/cavin-works/cavin-tools/commit/524ea2880d088acc300e4999d2fd8ced1669755b))
+* remove malformed YAML lines from workflow ([49053ad](https://github.com/cavin-works/cavin-tools/commit/49053ad272c13f67c88feee6350d7a96585dddd1))
+
+
 ### ✨ 新功能
 
 * add Intel Mac build script ([63220be](https://github.com/cavin-works/cavin-tools/commit/63220be0a4b8dfc8c83140f7b500b4401b661d3a))
