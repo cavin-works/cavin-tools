@@ -1,3 +1,13 @@
+## [0.1.11](https://github.com/cavin-works/cavin-tools/compare/v0.1.10...v0.1.11) (2026-03-14)
+
+
+### ✨ 新功能
+
+* add Intel Mac build script ([63220be](https://github.com/cavin-works/cavin-tools/commit/63220be0a4b8dfc8c83140f7b500b4401b661d3a))
+* add Intel Mac build support with conditional background-remover feature ([41adf94](https://github.com/cavin-works/cavin-tools/commit/41adf9490e72ab91782d85548419e9097326dbd8))
+
+
+
 ## [0.1.10](https://github.com/cavin-works/cavin-tools/compare/v0.1.9...v0.1.10) (2026-03-03)
 
 
