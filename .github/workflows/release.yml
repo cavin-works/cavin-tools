@@ -110,7 +110,7 @@ jobs:
           releaseBody: ${{ steps.changelog.outputs.NOTES }}
           releaseDraft: false
           prerelease: false
-          args: ${{ matrix.target && format(\'--target {0}\', matrix.target) || \'\' }} ${{ matrix.args || \'\' }}
+          args: ${{ matrix.target && format('--target {0}', matrix.target) || '' }} ${{ matrix.args }}
 
 
   # 单独的 job 上传 latest.json，等待所有构建完成后执行
