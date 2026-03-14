@@ -348,7 +348,6 @@ async fn batch_remove_watermarks(
                 "total": total,
                 "percentage": (current as f32 / total as f32 * 100.0)
             }),
-#[cfg(feature = "background-remover")]
         );
     })
     .await
