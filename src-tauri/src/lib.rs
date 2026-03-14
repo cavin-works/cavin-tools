@@ -1085,7 +1085,6 @@ pub fn run() {
             convert_image,
             batch_convert_images,
             remove_watermark,
-            batch_remove_watermarks,
             #[cfg(feature = "background-remover")]
             check_bg_model_status,
             #[cfg(feature = "background-remover")]
