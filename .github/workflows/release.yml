@@ -112,8 +112,6 @@ jobs:
           prerelease: false
           args: ${{ matrix.target && format(\'--target {0}\', matrix.target) || \'\' }} ${{ matrix.args || \'\' }}
 
-          rustup target add x86_64-apple-darwin
-          pnpm tauri build --target x86_64-apple-darwin --no-default-features --features custom-protocol
 
   # 单独的 job 上传 latest.json，等待所有构建完成后执行
   upload-latest:
