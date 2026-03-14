@@ -6,6 +6,7 @@
 * add Intel Mac to build matrix in GitHub Actions ([04548db](https://github.com/cavin-works/cavin-tools/commit/04548db6e8ecf7a6bf414dc3e37d159d50d8633a))
 * correct GitHub Actions expression syntax ([92401ef](https://github.com/cavin-works/cavin-tools/commit/92401ef019715d20fa3ad8b63cf8058f1f836cac))
 * remove incorrect conditional compilation for batch_remove_watermarks ([524ea28](https://github.com/cavin-works/cavin-tools/commit/524ea2880d088acc300e4999d2fd8ced1669755b))
+* remove incorrect conditional compilation in batch_remove_watermarks ([c01a4c0](https://github.com/cavin-works/cavin-tools/commit/c01a4c09b4668b0ab6d441109ce32896a4723fd2))
 * remove malformed YAML lines from workflow ([49053ad](https://github.com/cavin-works/cavin-tools/commit/49053ad272c13f67c88feee6350d7a96585dddd1))
 
 
@@ -13,6 +14,7 @@
 
 * add Intel Mac build script ([63220be](https://github.com/cavin-works/cavin-tools/commit/63220be0a4b8dfc8c83140f7b500b4401b661d3a))
 * add Intel Mac build support with conditional background-remover feature ([41adf94](https://github.com/cavin-works/cavin-tools/commit/41adf9490e72ab91782d85548419e9097326dbd8))
+* add Intel Mac to build matrix ([3aa85fc](https://github.com/cavin-works/cavin-tools/commit/3aa85fc0bb0ec5cd1549ec06ce155bb6029a01c2))
 
 
 
