@@ -127,9 +127,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
-          rustup target add x86_64-apple-darwin
-          pnpm tauri build --target x86_64-apple-darwin --no-default-features --features custom-protocol
       - name: Download signature files from Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
