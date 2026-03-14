@@ -6,6 +6,7 @@
 * add Intel Mac to build matrix in GitHub Actions ([04548db](https://github.com/cavin-works/cavin-tools/commit/04548db6e8ecf7a6bf414dc3e37d159d50d8633a))
 * configure Rust target for Intel Mac builds ([64bb57c](https://github.com/cavin-works/cavin-tools/commit/64bb57cffaa57cdafd2c1a5ed1644e962cc9d06e))
 * correct GitHub Actions expression syntax ([92401ef](https://github.com/cavin-works/cavin-tools/commit/92401ef019715d20fa3ad8b63cf8058f1f836cac))
+* pass Cargo flags via -- for Intel Mac builds ([0775512](https://github.com/cavin-works/cavin-tools/commit/0775512c8db445a1a11ad1f891ead956f56579e8))
 * remove incorrect conditional compilation for batch_remove_watermarks ([524ea28](https://github.com/cavin-works/cavin-tools/commit/524ea2880d088acc300e4999d2fd8ced1669755b))
 * remove incorrect conditional compilation in batch_remove_watermarks ([c01a4c0](https://github.com/cavin-works/cavin-tools/commit/c01a4c09b4668b0ab6d441109ce32896a4723fd2))
 * remove malformed YAML lines from workflow ([49053ad](https://github.com/cavin-works/cavin-tools/commit/49053ad272c13f67c88feee6350d7a96585dddd1))
