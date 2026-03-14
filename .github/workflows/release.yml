@@ -26,7 +26,7 @@ jobs:
           # Intel Mac (x86_64) - 无背景去除功能
           - platform: macos-latest
             target: x86_64-apple-darwin
-            args: --no-default-features --features custom-protocol
+            args: -- --no-default-features --features custom-protocol
 
     runs-on: ${{ matrix.platform }}
     outputs:
