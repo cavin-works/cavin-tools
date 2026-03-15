@@ -21,10 +21,14 @@ import { useRequestLogs, usageKeys } from "@ai-assistant/lib/query/usage";
 import { useQueryClient } from "@tanstack/react-query";
 import type { LogFilters } from "@ai-assistant/types/usage";
 import { ChevronLeft, ChevronRight, RefreshCw, Search, X } from "lucide-react";
+import { RequestDetailPanel } from "./RequestDetailPanel";
 
 export function RequestLogTable() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+
+  // 详情弹窗状态
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
   // 默认时间范围：过去24小时
   const getDefaultFilters = (): LogFilters => {
@@ -288,7 +292,11 @@ export function RequestLogTable() {
                   </TableRow>
                 ) : (
                   logs.map((log) => (
-                    <TableRow key={log.requestId}>
+                    <TableRow
+                      key={log.requestId}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedRequestId(log.requestId)}
+                    >
                       <TableCell>
                         {new Date(log.createdAt * 1000).toLocaleString(
                           dateLocale,
@@ -452,6 +460,14 @@ export function RequestLogTable() {
             </div>
           )}
         </>
+      )}
+
+      {/* 请求详情弹窗 */}
+      {selectedRequestId && (
+        <RequestDetailPanel
+          requestId={selectedRequestId}
+          onClose={() => setSelectedRequestId(null)}
+        />
       )}
     </div>
   );
