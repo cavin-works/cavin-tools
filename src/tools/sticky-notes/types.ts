@@ -175,8 +175,8 @@ export const THEME_LABELS: Record<WidgetTheme, string> = {
 export const DEFAULT_CONFIG: TodoConfig = {
   widget: {
     position: { x: 100, y: 100 },
-    width: 320,
-    height: 400,
+    width: 360,
+    height: 460,
     opacity: 0.9,
     isDesktopMode: true,
     isPinned: false,

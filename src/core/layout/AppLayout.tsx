@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { useAppStore } from '../store/appStore';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
@@ -34,6 +35,7 @@ export function AppLayout() {
     setShowUpdateCompleteDialog,
     setUpdateAvailable
   } = useAppStore();
+  const [pendingTodoInputFocus, setPendingTodoInputFocus] = useState(false);
 
   // 检查是否是独立窗口
   const isTodoWidget = isTodoWidgetPath();
@@ -88,6 +90,38 @@ export function AppLayout() {
       }
     }
   }, [theme]);
+
+  useEffect(() => {
+    if (isTodoWidget) return;
+
+    let unlisten: (() => void) | undefined;
+
+    const registerTodoMainListener = async () => {
+      unlisten = await listen('sticky-notes-open-main-for-input', () => {
+        setCurrentToolId('sticky-notes');
+        setPendingTodoInputFocus(true);
+      });
+    };
+
+    void registerTodoMainListener();
+
+    return () => {
+      unlisten?.();
+    };
+  }, [isTodoWidget, setCurrentToolId]);
+
+  useEffect(() => {
+    if (isTodoWidget || !pendingTodoInputFocus || currentToolId !== 'sticky-notes') {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('todo:focus-main-input'));
+      setPendingTodoInputFocus(false);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [currentToolId, isTodoWidget, pendingTodoInputFocus]);
 
   const currentTool = currentToolId ? (getToolById(currentToolId) ?? null) : null;
 

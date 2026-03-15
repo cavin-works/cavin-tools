@@ -4,12 +4,24 @@ import { listen } from '@tauri-apps/api/event';
 import type {
   TodoTask,
   TodoConfig,
+  TodoWidgetConfig,
   TodoStatus,
   TodoPriority,
   TodoStoreData,
   WidgetPosition,
 } from '../types';
 import { DEFAULT_CONFIG } from '../types';
+
+const toWindowState = (widget: TodoWidgetConfig) => ({
+  x: widget.position.x,
+  y: widget.position.y,
+  width: widget.width,
+  height: widget.height,
+  isDetached: true,
+  isPinned: widget.isPinned,
+  isDesktopMode: widget.isDesktopMode,
+  opacity: widget.opacity,
+});
 
 interface TodoState {
   // 数据状态
@@ -24,6 +36,7 @@ interface TodoState {
 
   // 数据操作
   loadTasks: () => Promise<void>;
+  reloadTasks: () => Promise<void>;
   saveTasks: () => Promise<void>;
 
   // 任务操作
@@ -94,6 +107,26 @@ export const useTodoStore = create<TodoState>((set, get) => ({
         initialized: true,
       });
       console.warn('加载任务数据失败，使用默认配置:', err);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  reloadTasks: async () => {
+    const { isLoading } = get();
+    if (isLoading) return;
+
+    set({ isLoading: true, error: null });
+
+    try {
+      const data = await invoke<TodoStoreData>('load_sticky_notes');
+      set({
+        tasks: data?.tasks || [],
+        config: data?.config || DEFAULT_CONFIG,
+        initialized: true,
+      });
+    } catch (err) {
+      console.warn('重新加载任务数据失败:', err);
     } finally {
       set({ isLoading: false });
     }
@@ -178,12 +211,13 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   // 更新小部件位置
   updateWidgetPosition: async (position) => {
     const { config, updateConfig } = get();
+    const nextWidget = { ...config.widget, position };
     await updateConfig({
-      widget: { ...config.widget, position },
+      widget: nextWidget,
     });
     await invoke('update_note_window_state', {
       noteId: 'todo-widget',
-      state: { ...config.widget, position },
+      state: toWindowState(nextWidget),
     });
   },
 
@@ -206,24 +240,44 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   // 设置桌面嵌入模式
   setDesktopMode: async (enabled) => {
     const { config, updateConfig } = get();
+    const nextWidget = {
+      ...config.widget,
+      isDesktopMode: enabled,
+      isPinned: enabled ? false : config.widget.isPinned,
+    };
     await updateConfig({
-      widget: { ...config.widget, isDesktopMode: enabled },
+      widget: nextWidget,
+    });
+    await invoke('set_desktop_mode', {
+      noteId: 'todo-widget',
+      desktopMode: enabled,
     });
     await invoke('update_note_window_state', {
       noteId: 'todo-widget',
-      state: { ...config.widget, isDesktopMode: enabled },
+      state: toWindowState(nextWidget),
     });
   },
 
   // 设置置顶
   setPinned: async (pinned) => {
     const { config, updateConfig } = get();
+    const nextWidget = {
+      ...config.widget,
+      isPinned: pinned,
+      isDesktopMode: pinned ? false : config.widget.isDesktopMode,
+    };
     await updateConfig({
-      widget: { ...config.widget, isPinned: pinned },
+      widget: nextWidget,
     });
+    if (pinned && config.widget.isDesktopMode) {
+      await invoke('set_desktop_mode', {
+        noteId: 'todo-widget',
+        desktopMode: false,
+      });
+    }
     await invoke('update_note_window_state', {
       noteId: 'todo-widget',
-      state: { ...config.widget, isPinned: pinned },
+      state: toWindowState(nextWidget),
     });
   },
 
@@ -236,19 +290,19 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   // 显示小部件
   showWidget: async () => {
     try {
-      const { config } = get();
+      const data = await invoke<TodoStoreData>('load_sticky_notes');
+      const latestConfig = data?.config ?? get().config;
+      if (data) {
+        set({
+          tasks: data.tasks || [],
+          config: latestConfig,
+          initialized: true,
+        });
+      }
+
       await invoke('detach_note_window', {
         noteId: 'todo-widget',
-        windowState: {
-          x: config.widget.position.x,
-          y: config.widget.position.y,
-          width: config.widget.width,
-          height: config.widget.height,
-          isDetached: true,
-          isPinned: config.widget.isPinned,
-          isDesktopMode: config.widget.isDesktopMode,
-          opacity: config.widget.opacity,
-        },
+        windowState: toWindowState(latestConfig.widget),
       });
     } catch (err) {
       console.error('显示小部件失败:', err);
@@ -267,7 +321,12 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   // 更新配置
   updateConfig: async (updates) => {
     const { config, saveTasks } = get();
-    const updatedConfig = { ...config, ...updates };
+    const updatedConfig: TodoConfig = {
+      ...config,
+      ...updates,
+      widget: updates.widget ? { ...config.widget, ...updates.widget } : config.widget,
+      hotkeys: updates.hotkeys ? { ...config.hotkeys, ...updates.hotkeys } : config.hotkeys,
+    };
     set({ config: updatedConfig });
     await saveTasks();
   },
@@ -305,23 +364,26 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   },
 }));
 
-// 监听全局快捷键事件
 if (typeof window !== 'undefined') {
-  // 快速添加任务
-  listen('quick-create-note', () => {
-    window.dispatchEvent(new CustomEvent('todo:quick-add'));
+  void listen('sticky-notes-data-updated', () => {
+    const { reloadTasks } = useTodoStore.getState();
+    void reloadTasks();
   });
 
-  // 切换置顶
-  listen('toggle-pin-all-notes-shortcut', () => {
-    const { togglePin } = useTodoStore.getState();
-    togglePin();
-  });
+  void listen<TodoWidgetConfig>('sticky-notes-widget-layout-updated', (event) => {
+    const widget = event.payload;
+    if (!widget) {
+      return;
+    }
 
-  // 显示/隐藏
-  listen('show-hide-all-notes-shortcut', () => {
-    const { showWidget } = useTodoStore.getState();
-    // 简单切换显示/隐藏
-    showWidget();
+    useTodoStore.setState((state) => ({
+      config: {
+        ...state.config,
+        widget: {
+          ...state.config.widget,
+          ...widget,
+        },
+      },
+    }));
   });
 }

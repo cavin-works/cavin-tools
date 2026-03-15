@@ -17,7 +17,7 @@ use windows::{
         Foundation::HWND,
         UI::WindowsAndMessaging::{
             FindWindowW, FindWindowExW, SendMessageTimeoutW, SetParent,
-            HWND_TOPMOST, SMTO_NORMAL, SWP_NOACTIVATE, SWP_NOMOVE,
+            HWND_NOTOPMOST, HWND_TOPMOST, SMTO_NORMAL, SWP_NOACTIVATE, SWP_NOMOVE,
             SWP_NOSIZE, SWP_SHOWWINDOW, WM_USER, SetWindowPos,
         },
     },
@@ -329,14 +329,23 @@ pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
     }
 }
 
-/// Remove window from desktop embedding (restore to normal window)
+/// Remove window from desktop embedding (restore to a normal top-level window)
 #[cfg(target_os = "windows")]
-pub fn unembed_window_from_desktop(_hwnd: isize) -> Result<(), String> {
-    // Note: SetParent(NULL) doesn't work well in all cases
-    // For proper restoration, we might need to recreate the window
-    // For now, we'll just log and let the window be closed/recreated
+pub fn unembed_window_from_desktop(hwnd: isize, pinned: bool) -> Result<(), String> {
+    unsafe {
+        let hwnd = HWND(hwnd as *mut std::ffi::c_void);
+        SetParent(hwnd, HWND(std::ptr::null_mut()))
+            .map_err(|e| format!("SetParent failed: {}", e))?;
 
-    log::info!("Unembedding window from desktop");
+        let _ = SetWindowPos(
+            hwnd,
+            if pinned { HWND_TOPMOST } else { HWND_NOTOPMOST },
+            0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE,
+        );
+    }
+
+    log::info!("Unembedded window from desktop");
     Ok(())
 }
 
@@ -348,7 +357,7 @@ pub fn embed_window_into_desktop(_hwnd: isize) -> Result<(), String> {
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn unembed_window_from_desktop(_hwnd: isize) -> Result<(), String> {
+pub fn unembed_window_from_desktop(_hwnd: isize, _pinned: bool) -> Result<(), String> {
     Ok(())
 }
 
@@ -361,8 +370,8 @@ fn get_default_config() -> TodoConfig {
     TodoConfig {
         widget: TodoWidgetConfig {
             position: WidgetPosition { x: 100, y: 100 },
-            width: 320,
-            height: 400,
+            width: 360,
+            height: 460,
             opacity: 0.9,
             is_desktop_mode: true,
             is_pinned: false,
@@ -375,6 +384,268 @@ fn get_default_config() -> TodoConfig {
             quick_add: "CommandOrControl+Alt+N".to_string(),
         },
     }
+}
+
+fn load_config_from_store(app: &AppHandle) -> Result<TodoConfig, String> {
+    let store = app
+        .store("sticky-notes")
+        .map_err(|e| format!("Failed to open store: {}", e))?;
+
+    Ok(store
+        .get("config")
+        .and_then(|v| serde_json::from_value::<TodoConfig>(v.clone()).ok())
+        .unwrap_or_else(get_default_config))
+}
+
+fn save_config_to_store(app: &AppHandle, config: &TodoConfig) -> Result<(), String> {
+    let store = app
+        .store("sticky-notes")
+        .map_err(|e| format!("Failed to open store: {}", e))?;
+
+    store.set("config", serde_json::to_value(config).unwrap());
+    store
+        .save()
+        .map_err(|e| format!("Failed to save store: {}", e))?;
+
+    Ok(())
+}
+
+fn update_todo_widget_layout_in_store(
+    app: &AppHandle,
+    position: Option<WidgetPosition>,
+    width: Option<u32>,
+    height: Option<u32>,
+) -> Result<TodoConfig, String> {
+    let mut config = load_config_from_store(app)?;
+
+    if let Some(position) = position {
+        config.widget.position = position;
+    }
+    if let Some(width) = width {
+        config.widget.width = width;
+    }
+    if let Some(height) = height {
+        config.widget.height = height;
+    }
+
+    save_config_to_store(app, &config)?;
+    Ok(config)
+}
+
+fn widget_config_to_window_state(widget: &TodoWidgetConfig) -> NoteWindowState {
+    NoteWindowState {
+        x: widget.position.x,
+        y: widget.position.y,
+        width: widget.width,
+        height: widget.height,
+        is_detached: true,
+        is_pinned: widget.is_pinned,
+        is_desktop_mode: widget.is_desktop_mode,
+        opacity: widget.opacity,
+    }
+}
+
+fn should_center_widget_position(state: &NoteWindowState) -> bool {
+    (state.x == 100 && state.y == 100) || state.x < 0 || state.y < 0
+}
+
+fn center_todo_widget_if_needed(app: &AppHandle, note_id: &str, state: &NoteWindowState) -> NoteWindowState {
+    if note_id != "todo-widget" || !should_center_widget_position(state) {
+        return state.clone();
+    }
+
+    let monitor = app
+        .get_webview_window("main")
+        .and_then(|window| window.current_monitor().ok().flatten())
+        .or_else(|| app.get_webview_window("main").and_then(|window| window.primary_monitor().ok().flatten()));
+
+    if let Some(monitor) = monitor {
+        let monitor_size = monitor.size();
+        let monitor_position = monitor.position();
+        let centered_x = monitor_position.x + ((monitor_size.width as i32 - state.width as i32) / 2);
+        let centered_y = monitor_position.y + ((monitor_size.height as i32 - state.height as i32) / 2);
+
+        return NoteWindowState {
+            x: centered_x.max(monitor_position.x),
+            y: centered_y.max(monitor_position.y),
+            ..state.clone()
+        };
+    }
+
+    state.clone()
+}
+
+fn create_or_show_note_window(
+    app: &AppHandle,
+    note_id: &str,
+    window_state: &NoteWindowState,
+    focus_window: bool,
+) -> Result<(), String> {
+    let window_state = center_todo_widget_if_needed(app, note_id, window_state);
+    let label = format!("note-{}", note_id);
+
+    if let Some(window) = app.get_webview_window(&label) {
+        let _ = window.set_always_on_top(window_state.is_pinned);
+        let _ = window.set_skip_taskbar(window_state.is_desktop_mode);
+        let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: window_state.width,
+            height: window_state.height,
+        }));
+        let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+            x: window_state.x,
+            y: window_state.y,
+        }));
+
+        #[cfg(target_os = "windows")]
+        {
+            if let Ok(hwnd) = window.hwnd() {
+                if window_state.is_desktop_mode {
+                    let _ = embed_window_into_desktop(hwnd.0 as isize);
+                } else {
+                    let _ = unembed_window_from_desktop(hwnd.0 as isize, window_state.is_pinned);
+                }
+            }
+        }
+
+        let _ = window.show();
+        if focus_window {
+            let _ = window.set_focus();
+        }
+        return Ok(());
+    }
+
+    let url = if note_id == "todo-widget" {
+        WebviewUrl::App("/todo-widget".into())
+    } else {
+        WebviewUrl::App(format!("/note/{}", note_id).into())
+    };
+
+    let title = if note_id == "todo-widget" {
+        "Todo List"
+    } else {
+        "便签"
+    };
+
+    let builder = WebviewWindowBuilder::new(app, &label, url)
+        .title(title)
+        .inner_size(window_state.width as f64, window_state.height as f64)
+        .position(window_state.x as f64, window_state.y as f64)
+        .decorations(false)
+        .always_on_top(window_state.is_pinned)
+        .skip_taskbar(window_state.is_desktop_mode);
+
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.transparent(true);
+
+    let window = builder
+        .build()
+        .map_err(|e| format!("Failed to create window: {}", e))?;
+
+    #[cfg(not(target_os = "windows"))]
+    let _ = &window;
+
+    if window_state.is_desktop_mode {
+        #[cfg(target_os = "windows")]
+        {
+            if let Ok(hwnd) = window.hwnd() {
+                if let Err(e) = embed_window_into_desktop(hwnd.0 as isize) {
+                    log::error!("Failed to embed window into desktop: {}", e);
+                }
+            }
+        }
+    }
+
+    if focus_window {
+        let _ = window.set_focus();
+    }
+
+    if let Some(manager) = app.try_state::<NoteWindowManager>() {
+        manager.register(note_id.to_string(), label);
+    }
+
+    Ok(())
+}
+
+fn show_todo_widget(app: &AppHandle, focus_window: bool) -> Result<(), String> {
+    let config = load_config_from_store(app)?;
+    let window_state = widget_config_to_window_state(&config.widget);
+    create_or_show_note_window(app, "todo-widget", &window_state, focus_window)
+}
+
+fn emit_todo_widget_focus_input(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("note-todo-widget") {
+        let _ = window.emit("todo-widget-focus-input", ());
+    }
+}
+
+fn open_main_window_for_todo_input(app: &AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+
+    app.emit("sticky-notes-open-main-for-input", ())
+        .map_err(|e| format!("Failed to emit sticky-notes-open-main-for-input: {}", e))?;
+
+    Ok(())
+}
+
+fn toggle_todo_widget_visibility_inner(app: &AppHandle) -> Result<bool, String> {
+    let label = "note-todo-widget";
+
+    if let Some(window) = app.get_webview_window(label) {
+        let visible = window
+            .is_visible()
+            .map_err(|e| format!("Failed to inspect window visibility: {}", e))?;
+
+        if visible {
+            window
+                .hide()
+                .map_err(|e| format!("Failed to hide window: {}", e))?;
+            return Ok(false);
+        }
+
+        window
+            .show()
+            .map_err(|e| format!("Failed to show window: {}", e))?;
+        let _ = window.set_focus();
+        return Ok(true);
+    }
+
+    show_todo_widget(app, true)?;
+    Ok(true)
+}
+
+fn toggle_todo_widget_pin_inner(app: &AppHandle) -> Result<bool, String> {
+    let mut config = load_config_from_store(app)?;
+    config.widget.is_pinned = !config.widget.is_pinned;
+
+    if config.widget.is_pinned {
+        config.widget.is_desktop_mode = false;
+    }
+
+    save_config_to_store(app, &config)?;
+
+    if let Some(window) = app.get_webview_window("note-todo-widget") {
+        if config.widget.is_pinned {
+            #[cfg(target_os = "windows")]
+            {
+                if let Ok(hwnd) = window.hwnd() {
+                    let _ = unembed_window_from_desktop(hwnd.0 as isize, true);
+                }
+            }
+        }
+
+        window
+            .set_always_on_top(config.widget.is_pinned)
+            .map_err(|e| format!("Failed to set always on top: {}", e))?;
+        window
+            .set_skip_taskbar(config.widget.is_desktop_mode)
+            .map_err(|e| format!("Failed to set skip taskbar: {}", e))?;
+    }
+
+    Ok(config.widget.is_pinned)
 }
 
 /// Load sticky notes from store
@@ -425,6 +696,24 @@ pub async fn save_sticky_notes(app: AppHandle, data: TodoStoreData) -> Result<()
         log::warn!("Failed to update sticky notes shortcuts from config: {}", e);
     }
 
+    if let Err(e) = app.emit("sticky-notes-data-updated", ()) {
+        log::warn!("Failed to emit sticky-notes-data-updated: {}", e);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn save_todo_widget_layout(
+    app: AppHandle,
+    position: Option<WidgetPosition>,
+    width: Option<u32>,
+    height: Option<u32>,
+) -> Result<(), String> {
+    let config = update_todo_widget_layout_in_store(&app, position, width, height)?;
+    if let Err(e) = app.emit("sticky-notes-widget-layout-updated", &config.widget) {
+        log::warn!("Failed to emit sticky-notes-widget-layout-updated: {}", e);
+    }
     Ok(())
 }
 
@@ -435,70 +724,13 @@ pub async fn detach_note_window(
     note_id: String,
     window_state: NoteWindowState,
 ) -> Result<(), String> {
-    let label = format!("note-{}", note_id);
-
-    // Check if window already exists
-    if app.get_webview_window(&label).is_some() {
-        // If window exists, just show and focus it
-        if let Some(window) = app.get_webview_window(&label) {
-            let _ = window.show();
-            let _ = window.set_focus();
-        }
-        return Ok(());
+    if note_id == "todo-widget" {
+        let config = load_config_from_store(&app)?;
+        let persisted_state = widget_config_to_window_state(&config.widget);
+        return create_or_show_note_window(&app, &note_id, &persisted_state, true);
     }
 
-    // Determine URL based on note_id
-    let url = if note_id == "todo-widget" {
-        WebviewUrl::App("/todo-widget".into())
-    } else {
-        WebviewUrl::App(format!("/note/{}", note_id).into())
-    };
-
-    let title = if note_id == "todo-widget" {
-        "Todo List"
-    } else {
-        "便签"
-    };
-
-    let builder = WebviewWindowBuilder::new(&app, &label, url)
-        .title(title)
-        .inner_size(window_state.width as f64, window_state.height as f64)
-        .position(window_state.x as f64, window_state.y as f64)
-        .decorations(false)
-        .always_on_top(window_state.is_pinned)
-        .skip_taskbar(window_state.is_desktop_mode);
-
-    #[cfg(not(target_os = "macos"))]
-    let builder = builder.transparent(true);
-
-    let window = builder
-        .build()
-        .map_err(|e| format!("Failed to create window: {}", e))?;
-
-    #[cfg(not(target_os = "windows"))]
-    let _ = &window;
-
-    // Embed window into desktop if desktop mode is enabled
-    if window_state.is_desktop_mode {
-        // Get the native window handle
-        #[cfg(target_os = "windows")]
-        {
-            // Get HWND from the window
-            if let Ok(hwnd) = window.hwnd() {
-                if let Err(e) = embed_window_into_desktop(hwnd.0 as isize) {
-                    log::error!("Failed to embed window into desktop: {}", e);
-                    // Continue anyway - window will still be visible
-                }
-            }
-        }
-    }
-
-    // Register window in manager
-    if let Some(manager) = app.try_state::<NoteWindowManager>() {
-        manager.register(note_id.clone(), label);
-    }
-
-    Ok(())
+    create_or_show_note_window(&app, &note_id, &window_state, true)
 }
 
 /// Attach a note back to main window (close independent window)
@@ -507,6 +739,25 @@ pub async fn attach_note_window(app: AppHandle, note_id: String) -> Result<(), S
     let label = format!("note-{}", note_id);
 
     if let Some(window) = app.get_webview_window(&label) {
+        if note_id == "todo-widget" {
+            let position = window
+                .outer_position()
+                .map(|position| WidgetPosition {
+                    x: position.x,
+                    y: position.y,
+                })
+                .ok();
+            let size = window.inner_size().ok();
+
+            let width = size.map(|size| size.width);
+            let height = size.map(|size| size.height);
+
+            let config = update_todo_widget_layout_in_store(&app, position, width, height)?;
+            if let Err(e) = app.emit("sticky-notes-widget-layout-updated", &config.widget) {
+                log::warn!("Failed to emit sticky-notes-widget-layout-updated: {}", e);
+            }
+        }
+
         window.close().map_err(|e| format!("Failed to close window: {}", e))?;
     }
 
@@ -577,7 +828,8 @@ pub async fn set_desktop_mode(
                         log::error!("Failed to embed window into desktop: {}", e);
                     }
                 } else {
-                    if let Err(e) = unembed_window_from_desktop(hwnd.0 as isize) {
+                    let pinned = window.is_always_on_top().unwrap_or(false);
+                    if let Err(e) = unembed_window_from_desktop(hwnd.0 as isize, pinned) {
                         log::error!("Failed to unembed window from desktop: {}", e);
                     }
                 }
@@ -636,6 +888,23 @@ pub async fn show_hide_all_notes(app: AppHandle, visible: bool) -> Result<(), St
     Ok(())
 }
 
+#[tauri::command]
+pub async fn toggle_todo_widget_visibility(app: AppHandle) -> Result<bool, String> {
+    toggle_todo_widget_visibility_inner(&app)
+}
+
+#[tauri::command]
+pub async fn show_todo_widget_and_focus_input(app: AppHandle) -> Result<(), String> {
+    show_todo_widget(&app, true)?;
+    emit_todo_widget_focus_input(&app);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_todo_widget_pin(app: AppHandle) -> Result<bool, String> {
+    toggle_todo_widget_pin_inner(&app)
+}
+
 /// Register global shortcuts for sticky notes
 pub fn register_global_shortcuts(app: &AppHandle) -> Result<(), String> {
     if app.try_state::<StickyNotesShortcutManager>().is_none() {
@@ -683,23 +952,56 @@ fn apply_global_shortcuts_from_config(app: &AppHandle, hotkeys: &HotkeyConfig) -
 
     let quick_add_shortcut = match parse_shortcut(&hotkeys.quick_add) {
         Ok(shortcut) => shortcut,
-        Err(_) => Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyN),
+        Err(_) => {
+            #[cfg(target_os = "macos")]
+            {
+                Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyN)
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyN)
+            }
+        }
     };
     let toggle_pin_shortcut = match parse_shortcut(&hotkeys.toggle_pin) {
         Ok(shortcut) => shortcut,
-        Err(_) => Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyP),
+        Err(_) => {
+            #[cfg(target_os = "macos")]
+            {
+                Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyP)
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyP)
+            }
+        }
     };
     let toggle_shortcut = match parse_shortcut(&hotkeys.toggle) {
         Ok(shortcut) => shortcut,
-        Err(_) => Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyT),
+        Err(_) => {
+            #[cfg(target_os = "macos")]
+            {
+                Shortcut::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyT)
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyT)
+            }
+        }
     };
 
     let mut registered_shortcuts: Vec<Shortcut> = Vec::new();
 
     match app.global_shortcut().on_shortcut(quick_add_shortcut, |app, _shortcut, _event| {
-        log::info!("Quick create note shortcut triggered");
-        if let Err(e) = app.emit("quick-create-note", ()) {
-            log::error!("Failed to emit quick-create-note event: {}", e);
+        log::info!("Quick create todo shortcut triggered");
+        if app.get_webview_window("note-todo-widget").is_some() {
+            if let Err(e) = show_todo_widget(app, true) {
+                log::error!("Failed to show todo widget for quick add: {}", e);
+                return;
+            }
+            emit_todo_widget_focus_input(app);
+        } else if let Err(e) = open_main_window_for_todo_input(app) {
+            log::error!("Failed to open main todo view for quick add: {}", e);
         }
     }) {
         Ok(_) => registered_shortcuts.push(quick_add_shortcut),
@@ -707,9 +1009,9 @@ fn apply_global_shortcuts_from_config(app: &AppHandle, hotkeys: &HotkeyConfig) -
     }
 
     match app.global_shortcut().on_shortcut(toggle_pin_shortcut, |app, _shortcut, _event| {
-        log::info!("Toggle pin all notes shortcut triggered");
-        if let Err(e) = app.emit("toggle-pin-all-notes-shortcut", ()) {
-            log::error!("Failed to emit toggle-pin-all-notes event: {}", e);
+        log::info!("Toggle todo widget pin shortcut triggered");
+        if let Err(e) = toggle_todo_widget_pin_inner(app) {
+            log::error!("Failed to toggle todo widget pin: {}", e);
         }
     }) {
         Ok(_) => registered_shortcuts.push(toggle_pin_shortcut),
@@ -717,9 +1019,9 @@ fn apply_global_shortcuts_from_config(app: &AppHandle, hotkeys: &HotkeyConfig) -
     }
 
     match app.global_shortcut().on_shortcut(toggle_shortcut, |app, _shortcut, _event| {
-        log::info!("Show/hide all notes shortcut triggered");
-        if let Err(e) = app.emit("show-hide-all-notes-shortcut", ()) {
-            log::error!("Failed to emit show-hide-all-notes event: {}", e);
+        log::info!("Toggle todo widget visibility shortcut triggered");
+        if let Err(e) = toggle_todo_widget_visibility_inner(app) {
+            log::error!("Failed to toggle todo widget visibility: {}", e);
         }
     }) {
         Ok(_) => registered_shortcuts.push(toggle_shortcut),
@@ -741,19 +1043,22 @@ fn apply_global_shortcuts_from_config(app: &AppHandle, hotkeys: &HotkeyConfig) -
 }
 
 fn parse_shortcut(shortcut: &str) -> Result<Shortcut, String> {
-    let mut candidates: Vec<String> = vec![shortcut.to_string()];
-    candidates.push(shortcut.replace("CmdOrCtrl", "CommandOrControl"));
+    let normalized = shortcut.trim();
+    let mut candidates: Vec<String> = vec![normalized.to_string()];
+    candidates.push(normalized.replace("CmdOrCtrl", "CommandOrControl"));
+    candidates.push(normalized.replace("Ctrl", "Control"));
+    candidates.push(normalized.replace("Cmd", "Super"));
 
     #[cfg(target_os = "macos")]
     {
-        candidates.push(shortcut.replace("CommandOrControl", "Super"));
-        candidates.push(shortcut.replace("CmdOrCtrl", "Super"));
+        candidates.push(normalized.replace("CommandOrControl", "Super"));
+        candidates.push(normalized.replace("CmdOrCtrl", "Super"));
     }
 
     #[cfg(not(target_os = "macos"))]
     {
-        candidates.push(shortcut.replace("CommandOrControl", "Control"));
-        candidates.push(shortcut.replace("CmdOrCtrl", "Control"));
+        candidates.push(normalized.replace("CommandOrControl", "Control"));
+        candidates.push(normalized.replace("CmdOrCtrl", "Control"));
     }
 
     candidates.dedup();

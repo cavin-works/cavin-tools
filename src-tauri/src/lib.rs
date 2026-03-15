@@ -1090,6 +1090,7 @@ pub fn run() {
             // ============================================================
             sticky_notes::load_sticky_notes,
             sticky_notes::save_sticky_notes,
+            sticky_notes::save_todo_widget_layout,
             sticky_notes::detach_note_window,
             sticky_notes::attach_note_window,
             sticky_notes::update_note_window_state,
@@ -1097,6 +1098,9 @@ pub fn run() {
             sticky_notes::start_window_dragging,
             sticky_notes::toggle_pin_all_notes,
             sticky_notes::show_hide_all_notes,
+            sticky_notes::toggle_todo_widget_visibility,
+            sticky_notes::show_todo_widget_and_focus_input,
+            sticky_notes::toggle_todo_widget_pin,
             // ============================================================
             // CC Switch Commands (AI Assistant)
             // ============================================================
