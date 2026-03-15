@@ -28,7 +28,7 @@ export function RequestDetailPanel({
   if (isLoading) {
     return (
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-popover">
           <div className="h-[400px] animate-pulse rounded bg-muted" />
         </DialogContent>
       </Dialog>
@@ -38,7 +38,7 @@ export function RequestDetailPanel({
   if (!request) {
     return (
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-popover">
           <DialogHeader>
             <DialogTitle>{t("usage.requestDetail", "请求详情")}</DialogTitle>
           </DialogHeader>
@@ -52,14 +52,14 @@ export function RequestDetailPanel({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-popover">
         <DialogHeader>
           <DialogTitle>{t("usage.requestDetail", "请求详情")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* 基本信息 */}
-          <div className="rounded-lg border p-4">
+          <div className="rounded-lg border bg-card p-4">
             <h3 className="mb-3 font-semibold">
               {t("usage.basicInfo", "基本信息")}
             </h3>
@@ -125,7 +125,7 @@ export function RequestDetailPanel({
           </div>
 
           {/* Token 使用量 */}
-          <div className="rounded-lg border p-4">
+          <div className="rounded-lg border bg-card p-4">
             <h3 className="mb-3 font-semibold">
               {t("usage.tokenUsage", "Token 使用量")}
             </h3>
@@ -176,7 +176,7 @@ export function RequestDetailPanel({
           </div>
 
           {/* 成本明细 */}
-          <div className="rounded-lg border p-4">
+          <div className="rounded-lg border bg-card p-4">
             <h3 className="mb-3 font-semibold">
               {t("usage.costBreakdown", "成本明细")}
             </h3>
@@ -225,7 +225,7 @@ export function RequestDetailPanel({
           </div>
 
           {/* 性能信息 */}
-          <div className="rounded-lg border p-4">
+          <div className="rounded-lg border bg-card p-4">
             <h3 className="mb-3 font-semibold">
               {t("usage.performance", "性能信息")}
             </h3>

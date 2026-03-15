@@ -1,6 +1,6 @@
 [package]
 name = "mnemosyne"
-version = "0.1.11"
+version = "0.1.10"
 description = "Mnemosyne - All-in-One Toolkit with AI Assistant"
 authors = ["you"]
 edition = "2021"
@@ -11,9 +11,8 @@ name = "cavin_tools_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [features]
-default = ["custom-protocol", "background-remover"]
+default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
-background-remover = ["ort"]
 test-hooks = []
 
 [build-dependencies]
@@ -87,7 +86,7 @@ imagequant = "4.4"
 png = "0.17"
 
 # Background removal (cavin-tools)
-ort = { version = "2.0.0-rc.11", optional = true, features = ["download-binaries"] }
+ort = { version = "2.0.0-rc.11", features = ["download-binaries"] }
 ndarray = "0.15"
 
 # Platform-specific: single instance (all desktop platforms)

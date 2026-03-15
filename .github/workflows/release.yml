@@ -23,6 +23,10 @@ jobs:
           # Windows x64
           - platform: "windows-latest"
             args: ""
+          # Intel Mac (x86_64) - 无背景去除功能
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            args: -- --no-default-features --features custom-protocol
 
     runs-on: ${{ matrix.platform }}
     outputs:
@@ -45,7 +49,7 @@ jobs:
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
+          targets: ${{ matrix.target || (matrix.platform == 'macos-latest' && 'aarch64-apple-darwin') || '' }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -110,7 +114,8 @@ jobs:
           releaseBody: ${{ steps.changelog.outputs.NOTES }}
           releaseDraft: false
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.target && format('--target {0}', matrix.target) || '' }} ${{ matrix.args }}
+
 
   # 单独的 job 上传 latest.json，等待所有构建完成后执行
   upload-latest:

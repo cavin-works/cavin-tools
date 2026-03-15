@@ -1,6 +1,6 @@
 {
   "name": "mnemosyne",
-  "version": "0.1.9",
+  "version": "0.1.11",
   "description": "Mnemosyne - All-in-One Toolkit with AI Assistant",
   "private": true,
   "type": "module",
@@ -19,7 +19,8 @@
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,json}\"",
     "changelog:test": "node scripts/test-changelog.cjs",
-    "version:sync": "node scripts/sync-version.cjs"
+    "version:sync": "node scripts/sync-version.cjs",
+    "build:intel-mac": "./scripts/build-intel-mac.sh"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",

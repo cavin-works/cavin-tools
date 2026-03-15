@@ -1,3 +1,36 @@
+## [0.1.11](https://github.com/cavin-works/cavin-tools/compare/v0.1.10...v0.1.11) (2026-03-14)
+
+
+### 🐛 Bug 修复
+
+* add Intel Mac to build matrix in GitHub Actions ([04548db](https://github.com/cavin-works/cavin-tools/commit/04548db6e8ecf7a6bf414dc3e37d159d50d8633a))
+* configure Rust target for Intel Mac builds ([64bb57c](https://github.com/cavin-works/cavin-tools/commit/64bb57cffaa57cdafd2c1a5ed1644e962cc9d06e))
+* correct GitHub Actions expression syntax ([92401ef](https://github.com/cavin-works/cavin-tools/commit/92401ef019715d20fa3ad8b63cf8058f1f836cac))
+* pass Cargo flags via -- for Intel Mac builds ([0775512](https://github.com/cavin-works/cavin-tools/commit/0775512c8db445a1a11ad1f891ead956f56579e8))
+* remove incorrect conditional compilation for batch_remove_watermarks ([524ea28](https://github.com/cavin-works/cavin-tools/commit/524ea2880d088acc300e4999d2fd8ced1669755b))
+* remove incorrect conditional compilation in batch_remove_watermarks ([c01a4c0](https://github.com/cavin-works/cavin-tools/commit/c01a4c09b4668b0ab6d441109ce32896a4723fd2))
+* remove malformed YAML lines from workflow ([87d0d41](https://github.com/cavin-works/cavin-tools/commit/87d0d415ab9f409eebaa1321f732f17554c811c5))
+* remove malformed YAML lines from workflow ([49053ad](https://github.com/cavin-works/cavin-tools/commit/49053ad272c13f67c88feee6350d7a96585dddd1))
+
+
+### ✨ 新功能
+
+* add Intel Mac build script ([63220be](https://github.com/cavin-works/cavin-tools/commit/63220be0a4b8dfc8c83140f7b500b4401b661d3a))
+* add Intel Mac build support with conditional background-remover feature ([41adf94](https://github.com/cavin-works/cavin-tools/commit/41adf9490e72ab91782d85548419e9097326dbd8))
+* add Intel Mac to build matrix ([3aa85fc](https://github.com/cavin-works/cavin-tools/commit/3aa85fc0bb0ec5cd1549ec06ce155bb6029a01c2))
+
+
+
+## [0.1.10](https://github.com/cavin-works/cavin-tools/compare/v0.1.9...v0.1.10) (2026-03-03)
+
+
+### ✨ 新功能
+
+* 优化便签 ([1e10ba4](https://github.com/cavin-works/cavin-tools/commit/1e10ba49598716311817d02ed8a3389ecad66012))
+* 增加便签 ([2c38b6e](https://github.com/cavin-works/cavin-tools/commit/2c38b6e7bf24d49fba4400c8b218736edebef576))
+
+
+
 ## [0.1.9](https://github.com/cavin-works/cavin-tools/compare/v0.1.8...v0.1.9) (2026-02-10)
 
 

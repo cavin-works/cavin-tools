@@ -12,7 +12,6 @@ use tauri::{Manager, RunEvent};
 // ============================================================
 // Mnemosyne modules (video/image processing)
 // ============================================================
-#[cfg(feature = "background-remover")]
 pub mod background_remover;
 pub mod ffmpeg;
 pub mod image_converter;
@@ -348,21 +347,18 @@ async fn batch_remove_watermarks(
                 "total": total,
                 "percentage": (current as f32 / total as f32 * 100.0)
             }),
+#[cfg(feature = "background-remover")]
         );
     })
     .await
 }
 
-#[cfg(feature = "background-remover")]
-#[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn check_bg_model_status() -> Result<background_remover::ModelInfo, String> {
     background_remover::check_model_status()
 }
 #[cfg(feature = "background-remover")]
 
-#[cfg(feature = "background-remover")]
-#[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn download_bg_model(window: tauri::Window) -> Result<String, String> {
     let window_clone = window.clone();
@@ -373,8 +369,6 @@ async fn download_bg_model(window: tauri::Window) -> Result<String, String> {
 }
 #[cfg(feature = "background-remover")]
 
-#[cfg(feature = "background-remover")]
-#[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn remove_image_background(
     input_path: String,
@@ -383,7 +377,6 @@ async fn remove_image_background(
     background_remover::remove_background(input_path, params).await
 }
 
-#[cfg(feature = "background-remover")]
 #[cfg(feature = "background-remover")]
 #[tauri::command]
 async fn batch_remove_image_backgrounds(
@@ -1084,13 +1077,10 @@ pub fn run() {
             convert_image,
             batch_convert_images,
             remove_watermark,
-            #[cfg(feature = "background-remover")]
+            batch_remove_watermarks,
             check_bg_model_status,
-            #[cfg(feature = "background-remover")]
             download_bg_model,
-            #[cfg(feature = "background-remover")]
             remove_image_background,
-            #[cfg(feature = "background-remover")]
             batch_remove_image_backgrounds,
             get_processes,
             search_processes,
@@ -1105,7 +1095,6 @@ pub fn run() {
             // ============================================================
             sticky_notes::load_sticky_notes,
             sticky_notes::save_sticky_notes,
-            sticky_notes::save_todo_widget_layout,
             sticky_notes::detach_note_window,
             sticky_notes::attach_note_window,
             sticky_notes::update_note_window_state,
@@ -1113,9 +1102,6 @@ pub fn run() {
             sticky_notes::start_window_dragging,
             sticky_notes::toggle_pin_all_notes,
             sticky_notes::show_hide_all_notes,
-            sticky_notes::toggle_todo_widget_visibility,
-            sticky_notes::show_todo_widget_and_focus_input,
-            sticky_notes::toggle_todo_widget_pin,
             // ============================================================
             // CC Switch Commands (AI Assistant)
             // ============================================================
