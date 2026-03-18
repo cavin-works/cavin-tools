@@ -16,9 +16,10 @@ use windows::{
     Win32::{
         Foundation::HWND,
         UI::WindowsAndMessaging::{
-            FindWindowW, FindWindowExW, SendMessageTimeoutW, SetParent,
-            HWND_NOTOPMOST, HWND_TOPMOST, SMTO_NORMAL, SWP_NOACTIVATE, SWP_NOMOVE,
-            SWP_NOSIZE, SWP_SHOWWINDOW, WM_USER, SetWindowPos,
+            FindWindowExW, FindWindowW, GetParent, GetWindowLongPtrW, SendMessageTimeoutW,
+            SetParent, SetWindowLongPtrW, SetWindowPos, GWL_STYLE, SMTO_NORMAL, SWP_FRAMECHANGED,
+            SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, WM_USER,
+            WS_CHILD, WS_POPUP,
         },
     },
 };
@@ -226,9 +227,24 @@ impl Default for StickyNotesShortcutManager {
 // ============================================================
 
 /// Embed a window into the Windows desktop wallpaper layer
+// ============================================================
+// Windows Desktop Embedding Utilities
+// ============================================================
+
+/// Update window style by removing old bits and adding new bits
+#[cfg(target_os = "windows")]
+fn update_window_style(hwnd: HWND, remove_style: u32, add_style: u32) {
+    unsafe {
+        let current_style = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
+        let next_style = (current_style & !remove_style) | add_style;
+        let _ = SetWindowLongPtrW(hwnd, GWL_STYLE, next_style as isize);
+    }
+}
+
 /// This makes the window visible when user presses Win+D (Show Desktop)
 #[cfg(target_os = "windows")]
 pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
+
     unsafe {
         let hwnd = HWND(hwnd as *mut std::ffi::c_void);
 
@@ -310,19 +326,35 @@ pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
         }
 
         // Step 4: Set our window as child of the desktop window
-        let result = SetParent(hwnd, workerw)
-            .map_err(|e| format!("SetParent failed: {}", e))?;
-        if result.0.is_null() {
-            return Err(format!("SetParent returned null: {:?}", std::io::Error::last_os_error()));
+        // A parented desktop widget must behave like a child window, otherwise it can
+        // become visible but fail to receive focus/input on Windows.
+        update_window_style(hwnd, WS_POPUP.0, WS_CHILD.0);
+
+        // SetParent returns the previous parent. Top-level windows usually return null here,
+        // which is still a successful embed, so only the API error should fail the call.
+        let current_parent = GetParent(hwnd);
+        if current_parent != workerw {
+            let _previous_parent =
+                SetParent(hwnd, workerw).map_err(|e| format!("SetParent failed: {}", e))?;
         }
 
         // Step 5: Set window position and style
-        let _ = SetWindowPos(
+        // Force Windows to recalculate the frame after the parent/style change.
+        SetWindowPos(
             hwnd,
-            HWND_TOPMOST,
-            0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE,
-        );
+            HWND(std::ptr::null_mut()),
+            0,
+            0,
+            0,
+            0,
+            SWP_FRAMECHANGED
+                | SWP_NOMOVE
+                | SWP_NOSIZE
+                | SWP_SHOWWINDOW
+                | SWP_NOACTIVATE
+                | SWP_NOZORDER,
+        )
+        .map_err(|e| format!("SetWindowPos failed after embed: {}", e))?;
 
         log::info!("Successfully embedded window into desktop");
         Ok(())
@@ -331,33 +363,47 @@ pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
 
 /// Remove window from desktop embedding (restore to a normal top-level window)
 #[cfg(target_os = "windows")]
-pub fn unembed_window_from_desktop(hwnd: isize, pinned: bool) -> Result<(), String> {
+pub fn unembed_window_from_desktop(hwnd: isize) -> Result<(), String> {
+
     unsafe {
         let hwnd = HWND(hwnd as *mut std::ffi::c_void);
-        SetParent(hwnd, HWND(std::ptr::null_mut()))
+
+        if GetParent(hwnd).0.is_null() {
+            log::info!("Window is already detached from desktop");
+            return Ok(());
+        }
+
+        update_window_style(hwnd, WS_CHILD.0, WS_POPUP.0);
+
+        let _previous_parent = SetParent(hwnd, HWND(std::ptr::null_mut()))
             .map_err(|e| format!("SetParent failed: {}", e))?;
 
-        let _ = SetWindowPos(
+        SetWindowPos(
             hwnd,
-            if pinned { HWND_TOPMOST } else { HWND_NOTOPMOST },
-            0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE,
-        );
-    }
+            HWND(std::ptr::null_mut()),
+            0,
+            0,
+            0,
+            0,
+            SWP_FRAMECHANGED
+                | SWP_NOMOVE
+                | SWP_NOSIZE
+                | SWP_SHOWWINDOW
+                | SWP_NOACTIVATE
+                | SWP_NOZORDER,
+        )
+        .map_err(|e| format!("SetWindowPos failed after unembed: {}", e))?;
 
-    log::info!("Unembedded window from desktop");
-    Ok(())
+        log::info!("Successfully restored window from desktop embedding");
+        Ok(())
+    }
+}
 }
 
 /// Non-Windows stub
 #[cfg(not(target_os = "windows"))]
-pub fn embed_window_into_desktop(_hwnd: isize) -> Result<(), String> {
+pub fn unembed_window_from_desktop(_hwnd: isize) -> Result<(), String> {
     log::warn!("Desktop embedding is only supported on Windows");
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn unembed_window_from_desktop(_hwnd: isize, _pinned: bool) -> Result<(), String> {
     Ok(())
 }
 
