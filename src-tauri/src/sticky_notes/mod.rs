@@ -738,10 +738,12 @@ pub async fn save_sticky_notes(app: AppHandle, data: TodoStoreData) -> Result<()
         .save()
         .map_err(|e| format!("Failed to save store: {}", e))?;
 
+    // 应用配置中的快捷键设置
     if let Err(e) = apply_global_shortcuts_from_config(&app, &data.config.hotkeys) {
         log::warn!("Failed to update sticky notes shortcuts from config: {}", e);
     }
 
+    // 通知前端配置已更新
     if let Err(e) = app.emit("sticky-notes-data-updated", ()) {
         log::warn!("Failed to emit sticky-notes-data-updated: {}", e);
     }
