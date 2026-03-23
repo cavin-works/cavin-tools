@@ -45,6 +45,7 @@ interface TodoState {
   deleteTask: (id: string) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   clearCompleted: () => Promise<void>;
+  reorderTasks: (activeId: string, overId: string) => Promise<void>;
 
   // 小部件操作
   updateWidgetPosition: (position: WidgetPosition) => Promise<void>;
@@ -204,6 +205,29 @@ export const useTodoStore = create<TodoState>((set, get) => ({
   clearCompleted: async () => {
     const { tasks, saveTasks } = get();
     const updatedTasks = tasks.filter((task) => task.status !== 'completed');
+    set({ tasks: updatedTasks });
+    await saveTasks();
+  },
+
+  // 重新排序任务（拖拽排序）
+  reorderTasks: async (activeId, overId) => {
+    const { tasks, saveTasks } = get();
+    const oldIndex = tasks.findIndex((task) => task.id === activeId);
+    const newIndex = tasks.findIndex((task) => task.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // 重新排列任务
+    const newTasks = [...tasks];
+    const [removed] = newTasks.splice(oldIndex, 1);
+    newTasks.splice(newIndex, 0, removed);
+
+    // 更新 order 字段
+    const updatedTasks = newTasks.map((task, index) => ({
+      ...task,
+      order: index,
+    }));
+
     set({ tasks: updatedTasks });
     await saveTasks();
   },

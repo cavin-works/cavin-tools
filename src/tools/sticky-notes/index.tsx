@@ -1,10 +1,26 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Circle, Plus, Trash2, Settings, AlertCircle, X, Filter, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, Trash2, Settings, AlertCircle, X, Filter, ExternalLink, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useTodoStore } from './store/stickyNotesStore';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { TodoPriority } from './types';
+import type { TodoPriority, TodoTask } from './types';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from './types';
 import { groupTasksByCreatedDate } from './utils/taskGroups';
 
@@ -22,14 +38,28 @@ export const StickyNotes: React.FC = () => {
     getFilteredTasks,
     getPendingCount,
     getCompletedCount,
+    reorderTasks,
   } = useTodoStore();
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TodoPriority>('medium');
   const [showSettings, setShowSettings] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const taskRefs = useRef(new Map<string, HTMLDivElement>());
+
+  // 拖拽传感器配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const focusInput = () => {
     const attempts = [0, 40, 120, 240];
@@ -99,6 +129,38 @@ export const StickyNotes: React.FC = () => {
       : Math.min(Math.max(currentIndex + direction, 0), visibleTasks.length - 1);
 
     setActiveTaskId(visibleTasks[nextIndex].id);
+  };
+
+  // 双击进入编辑模式
+  const handleTaskDoubleClick = (id: string) => {
+    setEditingTaskId(id);
+  };
+
+  // 完成编辑
+  const handleEditComplete = async (id: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      setEditingTaskId(null);
+      return;
+    }
+
+    await useTodoStore.getState().updateTask(id, { title: newTitle.trim() });
+    setEditingTaskId(null);
+  };
+
+  // 取消编辑
+  const handleEditCancel = () => {
+    setEditingTaskId(null);
+  };
+
+  // 拖拽结束处理
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    await reorderTasks(active.id as string, over.id as string);
   };
 
   const handleNavigationKeyDown = (event: {
@@ -343,32 +405,47 @@ export const StickyNotes: React.FC = () => {
             <p className="text-muted-foreground">暂无任务</p>
           </div>
         ) : (
-          <div className="p-4 space-y-4">
-            {groupedTasks.map((group) => (
-              <section key={group.label} className="space-y-2">
-                <div className="flex items-center gap-2 px-1">
-                  <h3 className="text-xs font-medium text-muted-foreground">{group.label}</h3>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-                {group.tasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    isActive={activeTaskId === task.id}
-                    setTaskRef={(element) => {
-                      if (element) {
-                        taskRefs.current.set(task.id, element);
-                      } else {
-                        taskRefs.current.delete(task.id);
-                      }
-                    }}
-                    onActivate={() => {
-                      setActiveTaskId(task.id);
-                    }}
-                  />
+          <div className="p-4 space-y-3">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={filteredTasks.map((task) => task.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {groupedTasks.map((group) => (
+                  <section key={group.label} className="space-y-2">
+                    <div className="flex items-center gap-2 px-1 mb-3">
+                      <h3 className="text-xs font-medium text-muted-foreground/70">{group.label}</h3>
+                      <div className="h-px flex-1 bg-border/50" />
+                    </div>
+                    {group.tasks.map((task) => (
+                      <SortableTaskItem
+                        key={task.id}
+                        task={task}
+                        isActive={activeTaskId === task.id}
+                        isEditing={editingTaskId === task.id}
+                        setTaskRef={(element) => {
+                          if (element) {
+                            taskRefs.current.set(task.id, element);
+                          } else {
+                            taskRefs.current.delete(task.id);
+                          }
+                        }}
+                        onActivate={() => {
+                          setActiveTaskId(task.id);
+                        }}
+                        onDoubleClick={() => handleTaskDoubleClick(task.id)}
+                        onEditComplete={handleEditComplete}
+                        onEditCancel={handleEditCancel}
+                      />
+                    ))}
+                  </section>
                 ))}
-              </section>
-            ))}
+              </SortableContext>
+            </DndContext>
           </div>
           )}
       </ScrollArea>
@@ -396,58 +473,130 @@ export const StickyNotes: React.FC = () => {
   );
 };
 
-// 任务项组件
-interface TaskItemProps {
-  task: {
-    id: string;
-    title: string;
-    status: 'pending' | 'completed';
-    priority: TodoPriority;
-    createdAt: number;
-  };
+// 可排序的任务项组件
+interface SortableTaskItemProps {
+  task: TodoTask;
   isActive: boolean;
+  isEditing: boolean;
   setTaskRef: (element: HTMLDivElement | null) => void;
   onActivate: () => void;
+  onDoubleClick: () => void;
+  onEditComplete: (id: string, newTitle: string) => void;
+  onEditCancel: () => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, isActive, setTaskRef, onActivate }) => {
+const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
+  task,
+  isActive,
+  isEditing,
+  setTaskRef,
+  onActivate,
+  onDoubleClick,
+  onEditComplete,
+  onEditCancel,
+}) => {
   const { toggleTask, deleteTask } = useTodoStore();
+  const [editTitle, setEditTitle] = useState(task.title);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    setEditTitle(task.title);
+  }, [task.title]);
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onEditComplete(task.id, editTitle.trim() || task.title);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditTitle(task.title);
+      onEditCancel();
+    }
+  };
+
+  const handleEditBlur = () => {
+    onEditComplete(task.id, editTitle.trim() || task.title);
+  };
 
   return (
     <div
-      ref={setTaskRef}
+      ref={(element) => {
+        setNodeRef(element);
+        setTaskRef(element);
+      }}
+      style={{
+        ...style,
+        backgroundColor: 'hsl(var(--card))',
+        borderColor: isActive ? 'hsl(var(--primary))' : 'transparent',
+        boxShadow: isActive 
+          ? '0 0 0 2px hsl(var(--primary) / 0.3), 0 8px 24px -8px hsl(var(--foreground) / 0.15)' 
+          : '0 1px 3px hsl(var(--foreground) / 0.05)',
+      }}
       onMouseEnter={onActivate}
       onMouseDown={onActivate}
-      className={`group flex items-center gap-3 p-3 rounded-lg border transition-all duration-150 ${
-        task.status === 'completed' ? 'opacity-60' : ''
-      }`}
-      style={{
-        backgroundColor: isActive ? 'hsl(var(--primary) / 0.08)' : 'hsl(var(--card))',
-        borderColor: isActive ? 'hsl(var(--primary) / 0.9)' : 'hsl(var(--border))',
-        boxShadow: isActive ? '0 0 0 3px hsl(var(--primary) / 0.22), 0 14px 32px -18px hsl(var(--foreground) / 0.5)' : 'none',
-      }}
+      className={`group flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-200 ease-out hover:shadow-md hover:scale-[1.01] ${
+        task.status === 'completed' ? 'opacity-50' : ''
+      } ${isDragging ? 'shadow-lg scale-[1.02]' : ''}`}
     >
+      {/* 左侧优先级指示条 */}
       <div
-        className="w-1.5 self-stretch rounded-full"
+        className="w-1 self-stretch rounded-full transition-all duration-200"
         style={{
-          backgroundColor: isActive ? 'hsl(var(--primary))' : 'transparent',
+          backgroundColor: isActive 
+            ? 'hsl(var(--primary))' 
+            : PRIORITY_COLORS[task.priority],
+          opacity: isActive ? 1 : 0.6,
         }}
       />
+
+      {/* 拖拽手柄 */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-all duration-150 p-1 -ml-1 rounded hover:bg-muted/50"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </div>
+
       {/* 完成按钮 */}
       <button
         onClick={() => toggleTask(task.id)}
-        className="flex-shrink-0"
+        className="flex-shrink-0 transition-transform duration-150 hover:scale-110 active:scale-95"
       >
         {task.status === 'completed' ? (
           <CheckCircle2
             className="w-5 h-5"
-            style={{ color: isActive ? 'hsl(var(--primary))' : '#22c55e' }}
+            style={{ color: '#22c55e' }}
           />
         ) : (
           <Circle
-            className="w-5 h-5 text-muted-foreground hover:text-primary transition-colors"
+            className="w-5 h-5 transition-colors duration-150"
             style={{
-              color: isActive ? 'hsl(var(--primary))' : task.status === 'pending' ? PRIORITY_COLORS[task.priority] : undefined,
+              borderColor: PRIORITY_COLORS[task.priority],
+              borderWidth: 2,
+              backgroundColor: 'transparent',
             }}
           />
         )}
@@ -455,29 +604,44 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isActive, setTaskRef, onActiv
 
       {/* 任务内容 */}
       <div className="flex-1 min-w-0">
-        <p
-          className={`text-sm ${
-            task.status === 'completed'
-              ? 'line-through text-muted-foreground'
-              : 'text-foreground'
-          }`}
-          style={{
-            fontWeight: isActive ? 700 : 500,
-          }}
-        >
-          {task.title}
-        </p>
-        <div className="flex items-center gap-2 mt-1">
+        {isEditing ? (
+          <input
+            ref={editInputRef}
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={handleEditKeyDown}
+            onBlur={handleEditBlur}
+            className="w-full text-sm px-2 py-1 -mx-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 bg-muted/50 text-foreground"
+            autoFocus
+          />
+        ) : (
+          <p
+            className={`text-sm leading-relaxed cursor-pointer transition-colors duration-150 ${
+              task.status === 'completed'
+                ? 'line-through text-muted-foreground'
+                : 'text-foreground hover:text-primary'
+            }`}
+            style={{
+              fontWeight: isActive ? 600 : 400,
+            }}
+            onDoubleClick={onDoubleClick}
+          >
+            {task.title}
+          </p>
+        )}
+        <div className="flex items-center gap-2 mt-1.5">
           {isActive && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-semibold tracking-wide">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/90 text-primary-foreground font-medium tracking-wide shadow-sm">
               ACTIVE
             </span>
           )}
           <span
-            className="text-xs px-1.5 py-0.5 rounded"
+            className="text-[11px] px-2 py-0.5 rounded-full font-medium transition-all duration-150"
             style={{
-              backgroundColor: PRIORITY_COLORS[task.priority] + '20',
+              backgroundColor: PRIORITY_COLORS[task.priority] + '15',
               color: PRIORITY_COLORS[task.priority],
+              border: `1px solid ${PRIORITY_COLORS[task.priority]}30`,
             }}
           >
             {PRIORITY_LABELS[task.priority]}
@@ -488,7 +652,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isActive, setTaskRef, onActiv
       {/* 操作按钮 */}
       <button
         onClick={() => deleteTask(task.id)}
-        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+        className="opacity-0 group-hover:opacity-100 p-2 -mr-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-150 hover:scale-110 active:scale-95"
       >
         <Trash2 className="w-4 h-4" />
       </button>
