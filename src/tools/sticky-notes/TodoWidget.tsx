@@ -14,9 +14,178 @@ import {
   Monitor,
   MonitorOff,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { TodoTask, TodoPriority, TodoConfig, TodoStatus, ThemeColors } from './types';
 import { PRIORITY_COLORS, PRIORITY_LABELS, WIDGET_THEMES, DEFAULT_CONFIG } from './types';
 import { groupTasksByCreatedDate } from './utils/taskGroups';
+
+// 可排序的任务项组件
+interface SortableTaskItemProps {
+  task: TodoTask;
+  isActive: boolean;
+  isEditing: boolean;
+  themeColors: ThemeColors;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDoubleClick: (id: string) => void;
+  onEditComplete: (id: string, newTitle: string) => void;
+  onEditCancel: () => void;
+  onMouseEnter: () => void;
+}
+
+const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
+  task,
+  isActive,
+  isEditing,
+  themeColors,
+  onToggle,
+  onDelete,
+  onDoubleClick,
+  onEditComplete,
+  onEditCancel,
+  onMouseEnter,
+}) => {
+  const [editTitle, setEditTitle] = useState(task.title);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onEditComplete(task.id, editTitle.trim() || task.title);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditTitle(task.title);
+      onEditCancel();
+    }
+  };
+
+  const handleEditBlur = () => {
+    onEditComplete(task.id, editTitle.trim() || task.title);
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        backgroundColor: isActive ? `${themeColors.accent}36` : 'transparent',
+        outline: isActive ? `1px solid ${themeColors.accent}aa` : 'none',
+        boxShadow: isActive ? `0 0 0 1px ${themeColors.accent}33, inset 3px 0 0 ${themeColors.accent}` : 'none',
+        opacity: task.status === 'completed' ? 0.5 : 1,
+      }}
+      onMouseEnter={onMouseEnter}
+      className="group flex items-center gap-2 px-2 py-2 rounded transition-colors"
+    >
+      {/* 拖拽手柄 */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ color: themeColors.textSecondary }}
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+
+      <button
+        onClick={() => onToggle(task.id)}
+        className="flex-shrink-0"
+      >
+        {task.status === 'completed' ? (
+          <CheckCircle2 className="w-4 h-4" style={{ color: '#22c55e' }} />
+        ) : (
+          <Circle
+            className="w-4 h-4 hover:opacity-80 transition-opacity"
+            style={{ borderColor: PRIORITY_COLORS[task.priority], borderWidth: 2 }}
+          />
+        )}
+      </button>
+
+      {isEditing ? (
+        <input
+          ref={editInputRef}
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onKeyDown={handleEditKeyDown}
+          onBlur={handleEditBlur}
+          className="flex-1 text-sm px-1 py-0.5 rounded focus:outline-none focus:ring-1"
+          style={{
+            backgroundColor: `${themeColors.text}10`,
+            color: themeColors.text,
+          }}
+        />
+      ) : (
+        <span
+          className={`flex-1 text-sm truncate cursor-pointer ${
+            task.status === 'completed' ? 'line-through' : ''
+          }`}
+          style={{
+            color: task.status === 'completed' ? themeColors.textSecondary : themeColors.text,
+          }}
+          onDoubleClick={() => onDoubleClick(task.id)}
+        >
+          {task.title}
+        </span>
+      )}
+
+      <span
+        className="text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{
+          backgroundColor: PRIORITY_COLORS[task.priority] + '30',
+          color: PRIORITY_COLORS[task.priority],
+        }}
+      >
+        {PRIORITY_LABELS[task.priority]}
+      </span>
+
+      <button
+        onClick={() => onDelete(task.id)}
+        className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all"
+        style={{ color: themeColors.textSecondary }}
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
+};
 
 export const TodoWidget: React.FC = () => {
   const [tasks, setTasks] = useState<TodoTask[]>([]);
@@ -27,9 +196,22 @@ export const TodoWidget: React.FC = () => {
   const [isDesktopMode, setIsDesktopMode] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const persistTimerRef = useRef<number | null>(null);
   const taskRefs = useRef(new Map<string, HTMLDivElement>());
+
+  // 拖拽传感器配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 需要移动 8px 才开始拖拽，避免误触
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const focusInput = () => {
     const attempts = [0, 40, 120, 240];
@@ -135,7 +317,14 @@ export const TodoWidget: React.FC = () => {
       try {
         const data = await invoke<{ tasks: TodoTask[]; config: TodoConfig }>('load_sticky_notes');
         if (data) {
-          setTasks(data.tasks || []);
+          // 按 order 字段排序，如果没有 order 则按创建时间排序
+          const sortedTasks = (data.tasks || []).sort((a, b) => {
+            if (a.order !== undefined && b.order !== undefined) {
+              return a.order - b.order;
+            }
+            return b.createdAt - a.createdAt;
+          });
+          setTasks(sortedTasks);
           if (data.config?.widget) {
             setConfig(data.config);
             setIsPinned(data.config.widget.isPinned);
@@ -160,7 +349,13 @@ export const TodoWidget: React.FC = () => {
       try {
         const data = await invoke<{ tasks: TodoTask[]; config: TodoConfig }>('load_sticky_notes');
         if (data) {
-          setTasks(data.tasks || []);
+          const sortedTasks = (data.tasks || []).sort((a, b) => {
+            if (a.order !== undefined && b.order !== undefined) {
+              return a.order - b.order;
+            }
+            return b.createdAt - a.createdAt;
+          });
+          setTasks(sortedTasks);
           if (data.config?.widget) {
             setConfig(data.config);
             setIsPinned(data.config.widget.isPinned);
@@ -240,9 +435,17 @@ export const TodoWidget: React.FC = () => {
       status: 'pending',
       priority: newTaskPriority,
       createdAt: now,
+      order: 0, // 新任务在最前面
     };
 
-    const updatedTasks = [newTask, ...tasks];
+    // 更新所有任务的 order
+    const updatedTasks = [
+      newTask,
+      ...tasks.map((task, index) => ({
+        ...task,
+        order: index + 1,
+      })),
+    ];
     setTasks(updatedTasks);
     await saveData(updatedTasks);
     setNewTaskTitle('');
@@ -267,6 +470,61 @@ export const TodoWidget: React.FC = () => {
   // 删除任务
   const deleteTask = async (id: string) => {
     const updatedTasks = tasks.filter((task) => task.id !== id);
+    setTasks(updatedTasks);
+    await saveData(updatedTasks);
+  };
+
+  // 双击进入编辑模式
+  const handleTaskDoubleClick = (id: string) => {
+    setEditingTaskId(id);
+  };
+
+  // 完成编辑
+  const handleEditComplete = async (id: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      setEditingTaskId(null);
+      return;
+    }
+
+    const updatedTasks = tasks.map((task) =>
+      task.id === id
+        ? {
+            ...task,
+            title: newTitle.trim(),
+          }
+        : task
+    );
+    setTasks(updatedTasks);
+    setEditingTaskId(null);
+    await saveData(updatedTasks);
+  };
+
+  // 取消编辑
+  const handleEditCancel = () => {
+    setEditingTaskId(null);
+  };
+
+  // 拖拽结束处理
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = tasks.findIndex((task) => task.id === active.id);
+    const newIndex = tasks.findIndex((task) => task.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // 使用 arrayMove 重新排序
+    const updatedTasks = arrayMove(tasks, oldIndex, newIndex).map((task, index) => ({
+      ...task,
+      order: index,
+    }));
+
     setTasks(updatedTasks);
     await saveData(updatedTasks);
   };
@@ -749,85 +1007,48 @@ export const TodoWidget: React.FC = () => {
             <p className="text-xs" style={{ color: themeColors.textSecondary }}>暂无任务</p>
           </div>
         ) : (
-          groupedTasks.map((group) => (
-            <section key={group.label} className="space-y-1">
-              <div className="flex items-center gap-2 px-2 py-1">
-                <span
-                  className="text-[11px] font-medium"
-                  style={{ color: themeColors.textSecondary }}
-                >
-                  {group.label}
-                </span>
-                <div
-                  className="h-px flex-1"
-                  style={{ backgroundColor: themeColors.border }}
-                />
-              </div>
-              {group.tasks.map((task) => (
-                <div
-                  key={task.id}
-                  ref={(element) => {
-                    if (element) {
-                      taskRefs.current.set(task.id, element);
-                    } else {
-                      taskRefs.current.delete(task.id);
-                    }
-                  }}
-                  onMouseEnter={() => setActiveTaskId(task.id)}
-                  className="group flex items-center gap-2 px-2 py-2 rounded transition-colors"
-                  style={{
-                    backgroundColor: activeTaskId === task.id ? `${themeColors.accent}36` : 'transparent',
-                    outline: activeTaskId === task.id ? `1px solid ${themeColors.accent}aa` : 'none',
-                    boxShadow: activeTaskId === task.id ? `0 0 0 1px ${themeColors.accent}33, inset 3px 0 0 ${themeColors.accent}` : 'none',
-                    opacity: task.status === 'completed' ? 0.5 : 1,
-                  }}
-                >
-                  <button
-                    onClick={() => toggleTask(task.id)}
-                    className="flex-shrink-0"
-                  >
-                    {task.status === 'completed' ? (
-                      <CheckCircle2 className="w-4 h-4" style={{ color: '#22c55e' }} />
-                    ) : (
-                      <Circle
-                        className="w-4 h-4 hover:opacity-80 transition-opacity"
-                        style={{ borderColor: PRIORITY_COLORS[task.priority], borderWidth: 2 }}
-                      />
-                    )}
-                  </button>
-
-                  <span
-                    className={`flex-1 text-sm truncate ${
-                      task.status === 'completed' ? 'line-through' : ''
-                    }`}
-                    style={{
-                      color: task.status === 'completed' ? themeColors.textSecondary : themeColors.text,
-                    }}
-                  >
-                    {task.title}
-                  </span>
-
-                  <span
-                    className="text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{
-                      backgroundColor: PRIORITY_COLORS[task.priority] + '30',
-                      color: PRIORITY_COLORS[task.priority],
-                    }}
-                  >
-                    {PRIORITY_LABELS[task.priority]}
-                  </span>
-
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all"
-                    style={{ color: themeColors.textSecondary }}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={displayTasks.map((task) => task.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {groupedTasks.map((group) => (
+                <section key={group.label} className="space-y-1">
+                  <div className="flex items-center gap-2 px-2 py-1">
+                    <span
+                      className="text-[11px] font-medium"
+                      style={{ color: themeColors.textSecondary }}
+                    >
+                      {group.label}
+                    </span>
+                    <div
+                      className="h-px flex-1"
+                      style={{ backgroundColor: themeColors.border }}
+                    />
+                  </div>
+                  {group.tasks.map((task) => (
+                    <SortableTaskItem
+                      key={task.id}
+                      task={task}
+                      isActive={activeTaskId === task.id}
+                      isEditing={editingTaskId === task.id}
+                      themeColors={themeColors}
+                      onToggle={toggleTask}
+                      onDelete={deleteTask}
+                      onDoubleClick={handleTaskDoubleClick}
+                      onEditComplete={handleEditComplete}
+                      onEditCancel={handleEditCancel}
+                      onMouseEnter={() => setActiveTaskId(task.id)}
+                    />
+                  ))}
+                </section>
               ))}
-            </section>
-          ))
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </div>

@@ -24,6 +24,8 @@ export interface TodoTask {
   createdAt: number;
   /** 完成时间戳 */
   completedAt?: number;
+  /** 排序顺序（用于拖拽排序） */
+  order?: number;
 }
 
 /**
