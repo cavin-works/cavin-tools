@@ -63,6 +63,10 @@ interface ClaudeFormFieldsProps {
   showOpenRouterCompatToggle: boolean;
   openRouterCompatEnabled: boolean;
   onOpenRouterCompatChange: (enabled: boolean) => void;
+
+  // OpenAI Protocol Transform
+  openaiTransformEnabled: boolean;
+  onOpenAiTransformChange: (enabled: boolean) => void;
 }
 
 export function ClaudeFormFields({
@@ -98,6 +102,8 @@ export function ClaudeFormFields({
   showOpenRouterCompatToggle,
   openRouterCompatEnabled,
   onOpenRouterCompatChange,
+  openaiTransformEnabled,
+  onOpenAiTransformChange,
 }: ClaudeFormFieldsProps) {
   const { t } = useTranslation();
 
@@ -201,6 +207,27 @@ export function ClaudeFormFields({
           />
         </div>
       )}
+
+      {/* OpenAI 协议转换 */}
+      <div className="flex items-center justify-between rounded-lg border border-white/10 bg-background/60 p-4">
+        <div className="space-y-1">
+          <FormLabel>
+            {t("providerForm.openaiTransformMode", {
+              defaultValue: "OpenAI 协议转换",
+            })}
+          </FormLabel>
+          <p className="text-xs text-muted-foreground">
+            {t("providerForm.openaiTransformModeHint", {
+              defaultValue:
+                "上游中转仅支持 OpenAI Chat Completions 格式时开启，将自动转换 Anthropic 与 OpenAI 协议。",
+            })}
+          </p>
+        </div>
+        <Switch
+          checked={openaiTransformEnabled}
+          onCheckedChange={onOpenAiTransformChange}
+        />
+      </div>
 
       {/* 模型选择器 */}
       {shouldShowModelSelector && (

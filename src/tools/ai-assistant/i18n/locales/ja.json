@@ -428,6 +428,8 @@
     "anthropicReasoningModel": "推論モデル（Thinking）",
     "openrouterCompatMode": "OpenRouter 互換モード",
     "openrouterCompatModeHint": "OpenAI Chat Completions インターフェースを使用し、Anthropic SSE に変換します。",
+    "openaiTransformMode": "OpenAI プロトコル変換",
+    "openaiTransformModeHint": "上流の中継が OpenAI Chat Completions 形式のみをサポートする場合に有効化します。Anthropic と OpenAI のプロトコルを自動変換します。",
     "anthropicDefaultHaikuModel": "既定 Haiku モデル",
     "anthropicDefaultSonnetModel": "既定 Sonnet モデル",
     "anthropicDefaultOpusModel": "既定 Opus モデル",

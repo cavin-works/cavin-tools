@@ -7,7 +7,7 @@ use super::provider::parse_and_merge_config;
 use super::utils::{infer_homepage_from_endpoint, validate_url};
 use super::DeepLinkImportRequest;
 use crate::cc_switch::AppType;
-use crate::{store::AppState, Database};
+use crate::cc_switch::{store::AppState, Database};
 use base64::prelude::*;
 use std::sync::Arc;
 

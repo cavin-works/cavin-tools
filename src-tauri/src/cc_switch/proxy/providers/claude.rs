@@ -67,6 +67,23 @@ impl ClaudeAdapter {
         }
     }
 
+    /// 检测是否启用 OpenAI 协议转换（通用开关，适用于任意 Claude 供应商）
+    ///
+    /// 上游中转仅提供 OpenAI `/v1/chat/completions` 接口时开启，
+    /// 强制走 Anthropic → OpenAI 请求转换与 OpenAI → Anthropic 响应转换。
+    fn is_openai_transform_enabled(&self, provider: &Provider) -> bool {
+        let raw = provider.settings_config.get("openai_transform");
+        match raw {
+            Some(serde_json::Value::Bool(enabled)) => *enabled,
+            Some(serde_json::Value::Number(num)) => num.as_i64().unwrap_or(0) != 0,
+            Some(serde_json::Value::String(value)) => {
+                let normalized = value.trim().to_lowercase();
+                normalized == "true" || normalized == "1"
+            }
+            _ => false,
+        }
+    }
+
     /// 检测是否为仅 Bearer 认证模式
     fn is_bearer_only_mode(&self, provider: &Provider) -> bool {
         // 检查 settings_config 中的 auth_mode
@@ -253,13 +270,17 @@ impl ProviderAdapter for ClaudeAdapter {
         }
     }
 
-    fn needs_transform(&self, _provider: &Provider) -> bool {
+    fn needs_transform(&self, provider: &Provider) -> bool {
         // NOTE:
         // OpenRouter 已推出 Claude Code 兼容接口（可直接处理 `/v1/messages`），默认不再启用
         // Anthropic ↔ OpenAI 的格式转换。
         //
-        // 如果未来需要回退到旧的 OpenAI Chat Completions 方案，可恢复下面这行：
-        self.is_openrouter_compat_enabled(_provider)
+        // `openai_transform`: 通用开关，上游仅支持 OpenAI Chat Completions 的中转可强制启用转换；
+        // 否则回落到 OpenRouter 兼容模式判断（保持向后兼容）。
+        if self.is_openai_transform_enabled(provider) {
+            return true;
+        }
+        self.is_openrouter_compat_enabled(provider)
     }
 
     fn transform_request(
@@ -490,6 +511,47 @@ mod tests {
             "openrouter_compat_mode": false
         }));
         assert!(!adapter.needs_transform(&openrouter_disabled));
+    }
+
+    #[test]
+    fn test_needs_transform_openai_transform() {
+        let adapter = ClaudeAdapter::new();
+
+        // 非 OpenRouter 供应商，openai_transform=true → 强制转换
+        let enabled = create_provider(json!({
+            "env": {
+                "ANTHROPIC_BASE_URL": "https://some-relay.com"
+            },
+            "openai_transform": true
+        }));
+        assert!(adapter.needs_transform(&enabled));
+
+        // 非 OpenRouter 供应商，默认（未设置）→ 不转换
+        let default_provider = create_provider(json!({
+            "env": {
+                "ANTHROPIC_BASE_URL": "https://some-relay.com"
+            }
+        }));
+        assert!(!adapter.needs_transform(&default_provider));
+
+        // 字符串 "true" 容错
+        let string_enabled = create_provider(json!({
+            "env": {
+                "ANTHROPIC_BASE_URL": "https://some-relay.com"
+            },
+            "openai_transform": "true"
+        }));
+        assert!(adapter.needs_transform(&string_enabled));
+
+        // 显式 false 不影响 OpenRouter 兼容模式回退
+        let disabled = create_provider(json!({
+            "env": {
+                "ANTHROPIC_BASE_URL": "https://openrouter.ai/api"
+            },
+            "openai_transform": false,
+            "openrouter_compat_mode": true
+        }));
+        assert!(adapter.needs_transform(&disabled));
     }
 }
 

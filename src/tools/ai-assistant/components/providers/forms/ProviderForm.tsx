@@ -288,6 +288,39 @@ export function ProviderForm({
     return false; // OpenRouter now supports Claude Code compatible API, no need for transform
   }, [isOpenRouterProvider, settingsConfigValue]);
 
+  // OpenAI 协议转换：适用于仅支持 OpenAI Chat Completions 的中转（任意 Claude 供应商可开）
+  const openaiTransformEnabled = useMemo(() => {
+    if (appId !== "claude") return false;
+    try {
+      const config = JSON.parse(settingsConfigValue || "{}");
+      const raw = config?.openai_transform;
+      if (typeof raw === "boolean") return raw;
+      if (typeof raw === "number") return raw !== 0;
+      if (typeof raw === "string") {
+        const normalized = raw.trim().toLowerCase();
+        return normalized === "true" || normalized === "1";
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  }, [appId, settingsConfigValue]);
+
+  const handleOpenAiTransformChange = useCallback(
+    (enabled: boolean) => {
+      try {
+        const currentConfig = JSON.parse(
+          form.getValues("settingsConfig") || "{}",
+        );
+        currentConfig.openai_transform = enabled;
+        form.setValue("settingsConfig", JSON.stringify(currentConfig, null, 2));
+      } catch {
+        // ignore
+      }
+    },
+    [form],
+  );
+
   const handleOpenRouterCompatChange = useCallback(
     (enabled: boolean) => {
       try {
@@ -1262,6 +1295,8 @@ export function ProviderForm({
             showOpenRouterCompatToggle={false}
             openRouterCompatEnabled={openRouterCompatEnabled}
             onOpenRouterCompatChange={handleOpenRouterCompatChange}
+            openaiTransformEnabled={openaiTransformEnabled}
+            onOpenAiTransformChange={handleOpenAiTransformChange}
           />
         )}
 

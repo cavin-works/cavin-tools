@@ -428,6 +428,8 @@
     "anthropicReasoningModel": "Reasoning Model (Thinking)",
     "openrouterCompatMode": "OpenRouter Compatibility Mode",
     "openrouterCompatModeHint": "Use OpenAI Chat Completions interface and convert to Anthropic SSE.",
+    "openaiTransformMode": "OpenAI Protocol Transform",
+    "openaiTransformModeHint": "Enable when the upstream relay only supports the OpenAI Chat Completions format; Anthropic and OpenAI protocols will be converted automatically.",
     "anthropicDefaultHaikuModel": "Default Haiku Model",
     "anthropicDefaultSonnetModel": "Default Sonnet Model",
     "anthropicDefaultOpusModel": "Default Opus Model",
