@@ -175,10 +175,11 @@ jobs:
             }
 
             // 根据实际的 Release 文件名匹配签名文件
-            // Windows: Mnemosyne_<VERSION>_x64-setup.exe.sig
+            // Windows: Mnemosyne_<VERSION>_x64-setup.exe.sig（updater 下载的就是 setup.exe 本身）
             const windowsSig = readSignature('signatures/Mnemosyne_' + VERSION + '_x64-setup.exe.sig');
-            // macOS: Mnemosyne_aarch64.app.tar.gz.sig (注意：Tauri 生成的 macOS 文件名不带版本号)
+            // macOS: Mnemosyne_<arch>.app.tar.gz.sig (注意：Tauri 生成的 macOS 文件名不带版本号)
             const macSig = readSignature('signatures/Mnemosyne_aarch64.app.tar.gz.sig');
+            const macX64Sig = readSignature('signatures/Mnemosyne_x64.app.tar.gz.sig');
 
             const latest = {
               version: VERSION,
@@ -190,7 +191,7 @@ jobs:
             // Windows 平台
             if (windowsSig) {
               latest.platforms['windows-x86_64'] = {
-                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_x64-setup.nsis.zip',
+                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_' + VERSION + '_x64-setup.exe',
                 signature: windowsSig
               };
             }
@@ -200,6 +201,12 @@ jobs:
               latest.platforms['darwin-aarch64'] = {
                 url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_aarch64.app.tar.gz',
                 signature: macSig
+              };
+            }
+            if (macX64Sig) {
+              latest.platforms['darwin-x86_64'] = {
+                url: 'https://github.com/' + repoOwner + '/' + repoName + '/releases/download/v' + VERSION + '/Mnemosyne_x64.app.tar.gz',
+                signature: macX64Sig
               };
             }
 
