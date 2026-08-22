@@ -1055,6 +1055,7 @@
         "title": "スキル管理",
         "subtitle": "インストール済みの {{count}} 個のスキルを管理",
         "searchPlaceholder": "スキル名、ソースを検索...",
+        "filterAll": "すべて",
         "refreshList": "リストを更新",
         "noSkills": "スキルなし",
         "noSkillsHint": "「スキルをインストール」タブから新しいスキルを追加してください",

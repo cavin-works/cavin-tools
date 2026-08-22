@@ -681,6 +681,7 @@ export function SkillsWorkspace() {
   const [browseSearchInput, setBrowseSearchInput] = useState<string>("");
   const [browseSearchQuery, setBrowseSearchQuery] = useState<string>("");
   const [manageQuery, setManageQuery] = useState<string>("");
+  const [manageAppFilter, setManageAppFilter] = useState<AppType | "all">("all");
   const [expandedSkillIds, setExpandedSkillIds] = useState<Set<string>>(new Set());
   const [localPathInput, setLocalPathInput] = useState<string>("");
   const [localSkillNameInput, setLocalSkillNameInput] = useState<string>("");
@@ -734,12 +735,16 @@ export function SkillsWorkspace() {
 
   const managedSkills: InstalledSkill[] = useMemo(() => {
     const source: InstalledSkill[] = installedQuery.data ?? [];
+    const filteredByApp: InstalledSkill[] =
+      manageAppFilter === "all"
+        ? source
+        : source.filter((skill: InstalledSkill) => skill.apps[manageAppFilter]);
     const keyword: string = manageQuery.trim().toLowerCase();
     if (keyword.length === 0) {
-      return source;
+      return filteredByApp;
     }
 
-    return source.filter((skill: InstalledSkill) => {
+    return filteredByApp.filter((skill: InstalledSkill) => {
       const sourceText: string = resolveSkillSource(skill, t("skills.workspace.manage.localImport")).toLowerCase();
       return (
         skill.name.toLowerCase().includes(keyword) ||
@@ -748,7 +753,7 @@ export function SkillsWorkspace() {
         sourceText.includes(keyword)
       );
     });
-  }, [installedQuery.data, manageQuery]);
+  }, [installedQuery.data, manageQuery, manageAppFilter]);
 
   const unmanagedSkills = scanUnmanagedQuery.data ?? [];
   const isBrowseSearching: boolean = browseSearchQuery.trim().length > 0;
@@ -1509,6 +1514,41 @@ export function SkillsWorkspace() {
                 placeholder={t("skills.workspace.manage.searchPlaceholder")}
                 className="h-10"
               />
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setManageAppFilter("all")}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all duration-200",
+                    manageAppFilter === "all"
+                      ? "border-border bg-accent text-foreground"
+                      : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t("skills.workspace.manage.filterAll", { defaultValue: "全部" })}
+                </button>
+                {SKILL_APP_TOGGLES.map((item: { label: string; app: AppType }) => (
+                  <button
+                    key={`manage-app-filter-${item.app}`}
+                    type="button"
+                    onClick={() => setManageAppFilter(item.app)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all duration-200",
+                      manageAppFilter === item.app
+                        ? "border-border bg-accent text-foreground"
+                        : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <ProviderIcon
+                      icon={APP_ICON_MAP[item.app] ?? item.app}
+                      name={item.label}
+                      size={14}
+                    />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 {installedQuery.isLoading ? (

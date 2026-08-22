@@ -1055,6 +1055,7 @@
         "title": "Skill Management",
         "subtitle": "Managing {{count}} installed skills",
         "searchPlaceholder": "Search skill name, source...",
+        "filterAll": "All",
         "refreshList": "Refresh List",
         "noSkills": "No Skills",
         "noSkillsHint": "Go to \"Install Skills\" tab to add new skills",

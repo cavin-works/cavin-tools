@@ -1055,6 +1055,7 @@
         "title": "技能管理",
         "subtitle": "管理已安装的 {{count}} 个技能",
         "searchPlaceholder": "搜索技能名称、来源...",
+        "filterAll": "全部",
         "refreshList": "刷新列表",
         "noSkills": "暂无技能",
         "noSkillsHint": "前往「安装技能」页面添加新技能",
