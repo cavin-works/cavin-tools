@@ -57,14 +57,12 @@ export function StorageSection() {
 
     try {
       const { open } = await import('@tauri-apps/plugin-dialog');
-      const selected = await open({
+      // TODO: 自定义存储目录尚未接入,选中结果暂不处理
+      await open({
         directory: true,
         multiple: false,
         title: '选择存储目录',
       });
-      if (selected) {
-        console.log('选择的目录:', selected);
-      }
     } catch (err) {
       console.error('选择目录失败:', err);
     }

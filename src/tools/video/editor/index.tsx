@@ -28,12 +28,9 @@ export function VideoEditor() {
   // 标记应用已加载
   useEffect(() => {
     setAppReady(true);
-    console.log('VideoEditor mounted successfully');
   }, []);
 
   const handleFileSelect = useCallback(async (filePath: string) => {
-    console.log('handleFileSelect called with:', filePath);
-
     if (!isValidVideoFile(filePath)) {
       showError('不支持的视频格式,请选择 MP4/MOV/AVI/WMV 等格式');
       setError('不支持的视频格式');
@@ -72,7 +69,6 @@ export function VideoEditor() {
       }
     } catch (error) {
       // 用户取消了文件选择，不需要显示错误
-      console.log('File selection was cancelled');
     }
   }, [handleFileSelect]);
 
@@ -83,45 +79,34 @@ export function VideoEditor() {
     let dragDropUnlisten: (() => void) | undefined;
 
     async function setupDragListeners() {
-      console.log('Setting up Tauri drag listeners...');
-
       // 监听文件拖入窗口
-      dragEnterUnlisten = await listen('tauri://drag-enter', (event: any) => {
-        console.log('Tauri drag-enter event:', event);
+      dragEnterUnlisten = await listen('tauri://drag-enter', () => {
         setIsDragging(true);
       });
 
       // 监听文件拖离窗口
-      dragLeaveUnlisten = await listen('tauri://drag-leave', (event: any) => {
-        console.log('Tauri drag-leave event:', event);
+      dragLeaveUnlisten = await listen('tauri://drag-leave', () => {
         setIsDragging(false);
       });
 
       // 监听文件拖放
       dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
-        console.log('Tauri drag-drop event:', event);
-
         // Tauri 2.0 的 payload 结构: { paths: string[], position: {x, y} }
         const payload = event.payload as { paths: string[]; position: { x: number; y: number } };
         const paths = payload.paths;
         setIsDragging(false);
 
         if (paths && paths.length > 0) {
-          console.log('Dropped files:', paths);
-          console.log('First file path:', paths[0]);
           handleFileSelect(paths[0]);
         } else {
           console.error('No files found in payload. Payload:', event.payload);
         }
       });
-
-      console.log('Tauri drag listeners setup complete');
     }
 
     setupDragListeners();
 
     return () => {
-      console.log('Cleaning up Tauri drag listeners');
       if (dragEnterUnlisten) dragEnterUnlisten();
       if (dragLeaveUnlisten) dragLeaveUnlisten();
       if (dragDropUnlisten) dragDropUnlisten();

@@ -33,6 +33,16 @@ pub async fn open_external(app: AppHandle, url: String) -> Result<bool, String> 
     Ok(true)
 }
 
+/// 在文件管理器中显示文件所在位置
+#[tauri::command]
+pub async fn reveal_in_folder(app: AppHandle, path: String) -> Result<bool, String> {
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| format!("打开文件位置失败: {e}"))?;
+
+    Ok(true)
+}
+
 /// 检查更新
 #[tauri::command]
 pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {

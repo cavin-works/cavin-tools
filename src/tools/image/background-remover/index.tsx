@@ -54,6 +54,8 @@ export function BackgroundRemover() {
   } = useBackgroundRemoverStore();
 
   const [isDragging, setIsDragging] = useState(false);
+  // 当前构建是否包含背景去除后端(如 Intel Mac 构建未编译该功能)
+  const [notSupported, setNotSupported] = useState(false);
 
   // 检查模型状态
   useEffect(() => {
@@ -65,6 +67,11 @@ export function BackgroundRemover() {
       const info = await invoke<ModelInfo>('check_bg_model_status');
       setModelInfo(info);
     } catch (error) {
+      // 命令不存在说明当前构建不包含背景去除功能
+      if (String(error).toLowerCase().includes('not found')) {
+        setNotSupported(true);
+        return;
+      }
       console.error('检查模型状态失败:', error);
     }
   };
@@ -223,6 +230,25 @@ export function BackgroundRemover() {
 
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
+
+  // 当前平台不支持(后端命令未编译进此构建)
+  if (notSupported) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="pt-6 text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+              <XCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">当前平台不支持背景去除</h2>
+            <p className="text-muted-foreground">
+              背景去除功能未包含在当前版本中(Intel Mac 暂不支持),请使用 Apple Silicon(M 系列)版本。
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // 模型未下载时显示下载界面
   if (!modelInfo?.downloaded) {
@@ -416,7 +442,7 @@ export function BackgroundRemover() {
                     <p>输出大小: {(selectedTask.result.processedSize / 1024).toFixed(1)} KB</p>
                   </div>
                   <Button
-                    onClick={() => invoke('shell_open', { path: selectedTask.result!.outputPath })}
+                    onClick={() => invoke('reveal_in_folder', { path: selectedTask.result!.outputPath })}
                     variant="outline"
                     className="mt-4 w-full"
                   >

@@ -12,7 +12,6 @@ interface ThumbnailStripProps {
 
 export function ThumbnailStrip({
   videoPath,
-  duration,
   width,
   height = 80,
   className = ''
@@ -26,8 +25,6 @@ export function ThumbnailStrip({
   const thumbnailCount = Math.max(10, Math.min(30, Math.ceil(width / 150)));
   const thumbnailWidth = width / thumbnailCount;
 
-  console.log('ThumbnailStrip 渲染:', { videoPath, duration, width, thumbnailCount, loading, loadedCount: thumbnails.length });
-
   useEffect(() => {
     let mounted = true;
 
@@ -37,8 +34,6 @@ export function ThumbnailStrip({
       setThumbnails([]); // 清空之前的缩略图
 
       try {
-        console.log('开始批量并行加载缩略图...', { videoPath, duration, width, thumbnailCount });
-
         // 批量并行生成：每次生成 5 张，减少调用次数
         const batchSize = 5;
         const batches = Math.ceil(thumbnailCount / batchSize);
@@ -48,8 +43,6 @@ export function ThumbnailStrip({
 
           const startIndex = batch * batchSize;
           const count = Math.min(batchSize, thumbnailCount - startIndex);
-
-          console.log(`正在生成第 ${batch + 1}/${batches} 批缩略图 (${startIndex + 1}-${startIndex + count})...`);
 
           try {
             // 批量生成缩略图
@@ -61,7 +54,6 @@ export function ThumbnailStrip({
             });
 
             if (thumbs && thumbs.length > 0) {
-              console.log(`第 ${batch + 1} 批缩略图生成成功，共 ${thumbs.length} 张`);
               // 增量添加到列表
               setThumbnails(prev => [...prev, ...thumbs]);
             }
@@ -71,7 +63,6 @@ export function ThumbnailStrip({
           }
         }
 
-        console.log('所有缩略图加载完成');
         if (mounted) {
           setLoading(false);
         }
@@ -126,7 +117,6 @@ export function ThumbnailStrip({
                 className="w-full h-full object-cover block"
                 style={{ imageRendering: 'auto' }}
                 loading="lazy"
-                onLoad={() => console.log(`缩略图 ${index + 1} 加载成功`)}
                 onError={(e) => console.error(`缩略图 ${index + 1} 加载失败`, e)}
               />
             </div>

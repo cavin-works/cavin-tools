@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import type {
   ProcessInfo,
   PortInfo,
@@ -189,16 +188,3 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
     error: null,
   }),
 }));
-
-// 监听进程被杀死事件
-if (typeof window !== 'undefined') {
-  listen('process-killed', (event) => {
-    console.log('进程被杀死:', event.payload);
-    // 可以在这里添加额外的逻辑,比如显示通知
-  });
-
-  listen('port-released', (event) => {
-    console.log('端口被释放:', event.payload);
-    // 可以在这里添加额外的逻辑,比如显示通知
-  });
-}
