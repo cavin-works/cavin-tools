@@ -17,9 +17,9 @@ use windows::{
         Foundation::HWND,
         UI::WindowsAndMessaging::{
             FindWindowExW, FindWindowW, GetParent, GetWindowLongPtrW, SendMessageTimeoutW,
-            SetParent, SetWindowLongPtrW, SetWindowPos, GWL_STYLE, SMTO_NORMAL, SWP_FRAMECHANGED,
-            SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, WM_USER,
-            WS_CHILD, WS_POPUP,
+            SetParent, SetWindowLongPtrW, SetWindowPos, GWL_STYLE, HWND_NOTOPMOST, HWND_TOPMOST,
+            SMTO_NORMAL, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER,
+            SWP_SHOWWINDOW, WM_USER, WS_CHILD, WS_POPUP,
         },
     },
 };
@@ -332,7 +332,7 @@ pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
 
         // SetParent returns the previous parent. Top-level windows usually return null here,
         // which is still a successful embed, so only the API error should fail the call.
-        let current_parent = GetParent(hwnd);
+        let current_parent = GetParent(hwnd).unwrap_or(HWND(std::ptr::null_mut()));
         if current_parent != workerw {
             let _previous_parent =
                 SetParent(hwnd, workerw).map_err(|e| format!("SetParent failed: {}", e))?;
@@ -363,12 +363,16 @@ pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
 
 /// Remove window from desktop embedding (restore to a normal top-level window)
 #[cfg(target_os = "windows")]
-pub fn unembed_window_from_desktop(hwnd: isize) -> Result<(), String> {
+pub fn unembed_window_from_desktop(hwnd: isize, pinned: bool) -> Result<(), String> {
 
     unsafe {
         let hwnd = HWND(hwnd as *mut std::ffi::c_void);
 
-        if GetParent(hwnd).0.is_null() {
+        if GetParent(hwnd)
+            .unwrap_or(HWND(std::ptr::null_mut()))
+            .0
+            .is_null()
+        {
             log::info!("Window is already detached from desktop");
             return Ok(());
         }
@@ -380,17 +384,12 @@ pub fn unembed_window_from_desktop(hwnd: isize) -> Result<(), String> {
 
         SetWindowPos(
             hwnd,
-            HWND(std::ptr::null_mut()),
+            if pinned { HWND_TOPMOST } else { HWND_NOTOPMOST },
             0,
             0,
             0,
             0,
-            SWP_FRAMECHANGED
-                | SWP_NOMOVE
-                | SWP_NOSIZE
-                | SWP_SHOWWINDOW
-                | SWP_NOACTIVATE
-                | SWP_NOZORDER,
+            SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE,
         )
         .map_err(|e| format!("SetWindowPos failed after unembed: {}", e))?;
 
@@ -398,11 +397,10 @@ pub fn unembed_window_from_desktop(hwnd: isize) -> Result<(), String> {
         Ok(())
     }
 }
-}
 
 /// Non-Windows stub
 #[cfg(not(target_os = "windows"))]
-pub fn unembed_window_from_desktop(_hwnd: isize) -> Result<(), String> {
+pub fn unembed_window_from_desktop(_hwnd: isize, _pinned: bool) -> Result<(), String> {
     log::warn!("Desktop embedding is only supported on Windows");
     Ok(())
 }
