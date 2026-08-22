@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { Activity, Network, ChevronDown, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 import type { ProcessInfo, PortInfo } from '../types';
+import { useProcessManagerStore } from '../store/processManagerStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -13,6 +13,7 @@ interface ProcessListProps {
 export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) => {
   const [expandedPorts, setExpandedPorts] = useState<Record<number, PortInfo[] | undefined>>({});
   const [loadingPorts, setLoadingPorts] = useState<Record<number, boolean>>({});
+  const { queryPortsByPid, killProcess } = useProcessManagerStore();
 
   const handleViewPorts = async (pid: number) => {
     if (expandedPorts[pid]) {
@@ -26,7 +27,7 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
 
     setLoadingPorts(prev => ({ ...prev, [pid]: true }));
     try {
-      const ports = await invoke<PortInfo[]>('get_process_ports', { pid });
+      const ports = await queryPortsByPid(pid);
       setExpandedPorts(prev => ({ ...prev, [pid]: ports }));
     } catch (error) {
       console.error('获取端口失败:', error);
@@ -39,7 +40,7 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
     if (!confirm(`确定要终止进程 "${name}" (PID: ${pid}) 吗？`)) return;
 
     try {
-      await invoke('kill_process', { pid });
+      await killProcess(pid);
     } catch (error) {
       alert(`终止失败: ${error}`);
     }

@@ -1084,6 +1084,7 @@ pub fn run() {
             convert_image,
             batch_convert_images,
             remove_watermark,
+            batch_remove_watermarks,
             #[cfg(feature = "background-remover")]
             check_bg_model_status,
             #[cfg(feature = "background-remover")]
@@ -1134,6 +1135,7 @@ pub fn run() {
             cc_switch::commands::open_config_folder,
             cc_switch::commands::pick_directory,
             cc_switch::commands::open_external,
+            cc_switch::commands::reveal_in_folder,
             cc_switch::commands::get_init_error,
             cc_switch::commands::get_migration_result,
             cc_switch::commands::get_skills_migration_result,

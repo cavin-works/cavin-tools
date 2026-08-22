@@ -15,6 +15,7 @@ interface ProcessManagerState {
   portResults: PortInfo[];
   isLoading: boolean;
   error: string | null;
+  searchTerm: string;
 
   // 操作
   setViewType: (view: ViewType) => void;
@@ -44,6 +45,7 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
   portResults: [],
   isLoading: false,
   error: null,
+  searchTerm: '',
 
   // 设置视图类型
   setViewType: (view) => set({ viewType: view }),
@@ -89,6 +91,7 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
     try {
       const results = await invoke<ProcessInfo[]>('search_processes', { name });
       setSearchResults(results);
+      set({ searchTerm: name });
       setViewType('search');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -111,8 +114,8 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
       if (viewType === 'all') {
         await getProcesses();
       } else if (viewType === 'search') {
-        // 重新搜索以更新结果
-        // 这里需要记录当前搜索词,暂时跳过
+        // 用当前搜索词重新搜索以更新结果
+        await get().searchProcesses(get().searchTerm);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
