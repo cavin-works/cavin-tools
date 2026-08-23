@@ -8,7 +8,7 @@ import {
   Plus,
   Settings,
   ArrowLeft,
-  // Bot, // TODO: Agents 功能开发中，暂时不需要
+  Bot,
   Book,
   Wrench,
   Download,
@@ -850,18 +850,17 @@ function App() {
                   >
                     <Wrench className="flex-shrink-0 w-4 h-4" />
                   </Button>
-                  {/* TODO: Agents 功能开发中，暂时隐藏入口 */}
-                  {/* {isClaudeApp && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCurrentView("agents")}
-                        className="text-muted-foreground hover:text-foreground hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
-                        title="Agents"
-                      >
-                        <Bot className="w-4 h-4" />
-                      </Button>
-                    )} */}
+                  {activeApp === "claude" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentView("agents")}
+                      className="text-muted-foreground hover:text-foreground hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30"
+                      title={t("agents.title")}
+                    >
+                      <Bot className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
