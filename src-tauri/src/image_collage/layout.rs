@@ -186,15 +186,15 @@ mod tests {
 
     #[test]
     fn test_grid_2_five_images_three_rows() {
-        // 平均宽高 (100+300)/2=200，n=5 -> rows=3，末行仅 1 格
+        // 平均宽高 900/5=180，n=5 -> rows=3，末行仅 1 格
         let sizes = vec![(100, 100), (300, 300), (100, 100), (300, 300), (100, 100)];
         let (w, h, rects) = cell_rects("grid-2", &sizes, &params("grid-2", 4, 8)).unwrap();
-        assert_eq!((w, h), (2 * 8 + 2 * 200 + 4, 2 * 8 + 3 * 200 + 2 * 4));
+        assert_eq!((w, h), (2 * 8 + 2 * 180 + 4, 2 * 8 + 3 * 180 + 2 * 4));
         assert_eq!(rects.len(), 5);
         // 第 5 张落在第 3 行第 1 列
-        assert_eq!(rects[4], Rect { x: 8, y: 8 + 2 * 204, width: 200, height: 200 });
+        assert_eq!(rects[4], Rect { x: 8, y: 8 + 2 * 184, width: 180, height: 180 });
         // 第 2 张在第 1 行第 2 列
-        assert_eq!(rects[1], Rect { x: 8 + 204, y: 8, width: 200, height: 200 });
+        assert_eq!(rects[1], Rect { x: 8 + 184, y: 8, width: 180, height: 180 });
     }
 
     #[test]
