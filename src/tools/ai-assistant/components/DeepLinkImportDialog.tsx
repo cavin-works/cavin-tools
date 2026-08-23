@@ -211,6 +211,12 @@ export function DeepLinkImportDialog() {
     setIsOpen(false);
   };
 
+  // 导入进行中禁止关闭（拦截 Esc），避免中断导入流程
+  const handleOpenChange = (open: boolean) => {
+    if (isImporting && !open) return;
+    setIsOpen(open);
+  };
+
   // Mask API key for display (show first 4 chars + ***)
   const maskedApiKey =
     request?.apiKey && request.apiKey.length > 4
@@ -323,7 +329,7 @@ export function DeepLinkImportDialog() {
   };
 
   return (
-    <Dialog open={isOpen && !!request} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen && !!request} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]" zIndex="top">
         {request && (
           <>
@@ -725,6 +731,11 @@ export function DeepLinkImportDialog() {
             </div>
 
             <DialogFooter>
+              {isImporting && (
+                <span className="text-sm text-muted-foreground animate-pulse">
+                  {t("deeplink.importing")}
+                </span>
+              )}
               <Button
                 variant="outline"
                 onClick={handleCancel}

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import type {
   TodoTask,
   TodoConfig,
@@ -389,7 +390,9 @@ export const useTodoStore = create<TodoState>((set, get) => ({
 }));
 
 if (typeof window !== 'undefined') {
-  void listen('sticky-notes-data-updated', () => {
+  void listen<string>('sticky-notes-data-updated', (event) => {
+    // payload 为来源窗口 label：跳过自身保存触发的回声，避免 reload 用旧磁盘数据覆盖本地乐观更新
+    if (event.payload === getCurrentWindow().label) return;
     const { reloadTasks } = useTodoStore.getState();
     void reloadTasks();
   });

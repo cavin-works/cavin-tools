@@ -41,7 +41,7 @@ export function UpdateCompleteDialog({ open, onOpenChange }: UpdateCompleteDialo
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
             >
               <X className="w-4 h-4" />
             </Button>

@@ -5,7 +5,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{
+    AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 use tauri_plugin_store::StoreExt;
 
@@ -718,7 +720,11 @@ pub async fn load_sticky_notes(app: AppHandle) -> Result<Option<TodoStoreData>, 
 
 /// Save sticky notes to store
 #[tauri::command]
-pub async fn save_sticky_notes(app: AppHandle, data: TodoStoreData) -> Result<(), String> {
+pub async fn save_sticky_notes(
+    app: AppHandle,
+    window: WebviewWindow,
+    data: TodoStoreData,
+) -> Result<(), String> {
     let store = app
         .store("sticky-notes")
         .map_err(|e| format!("Failed to open store: {}", e))?;
@@ -736,8 +742,8 @@ pub async fn save_sticky_notes(app: AppHandle, data: TodoStoreData) -> Result<()
         log::warn!("Failed to update sticky notes shortcuts from config: {}", e);
     }
 
-    // 通知前端配置已更新
-    if let Err(e) = app.emit("sticky-notes-data-updated", ()) {
+    // 通知前端配置已更新（payload 为来源窗口 label，前端跳过自身保存的回声）
+    if let Err(e) = app.emit("sticky-notes-data-updated", window.label()) {
         log::warn!("Failed to emit sticky-notes-data-updated: {}", e);
     }
 

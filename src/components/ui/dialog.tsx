@@ -70,6 +70,7 @@ const DialogContent = React.forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn(variantClass, zIndexMap[zIndex], className)}
+          // 点遮罩不关闭为全局既定行为（1a8bd8e 引入，未注明具体动机），如需放开删除此行
           onInteractOutside={(e) => {
             e.preventDefault()
           }}

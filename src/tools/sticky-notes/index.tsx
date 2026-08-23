@@ -68,6 +68,13 @@ export const StickyNotes: React.FC = () => {
     }
   }, [initialized, loadTasks]);
 
+  // 响应主布局派发的输入框聚焦事件（见 AppLayout 的 todo:focus-main-input）
+  useEffect(() => {
+    const handleFocusMainInput = () => inputRef.current?.focus();
+    window.addEventListener('todo:focus-main-input', handleFocusMainInput);
+    return () => window.removeEventListener('todo:focus-main-input', handleFocusMainInput);
+  }, []);
+
   // 添加任务
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
