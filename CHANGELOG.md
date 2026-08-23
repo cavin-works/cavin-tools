@@ -1,3 +1,20 @@
+## [0.1.16](https://github.com/cavin-works/cavin-tools/compare/v0.1.15...v0.1.16) (2026-08-23)
+
+
+### 🐛 Bug 修复
+
+* **proxy:** 修正 Claude 成本口径;流式免总超时;4xx 不再重试 (close [#33](https://github.com/cavin-works/cavin-tools/issues/33), close [#34](https://github.com/cavin-works/cavin-tools/issues/34)) ([f7242a2](https://github.com/cavin-works/cavin-tools/commit/f7242a23c60ed03e63ca08dbe90d079577a4eac5))
+* **security:** deep link 日志脱敏;TOML 注入转义;启动 panic 点 (close [#37](https://github.com/cavin-works/cavin-tools/issues/37)) ([77ac9d6](https://github.com/cavin-works/cavin-tools/commit/77ac9d6f30f0144f41f6de00569d05874c1a7f41))
+* **video:** 输出路径改用系统分隔符,mac 构建不再写到 CWD (close [#35](https://github.com/cavin-works/cavin-tools/issues/35)) ([435c83a](https://github.com/cavin-works/cavin-tools/commit/435c83a2045e3e6a3964af6a01631e3a89c5ec68)), closes [#36](https://github.com/cavin-works/cavin-tools/issues/36) [#37](https://github.com/cavin-works/cavin-tools/issues/37)
+* 便签双键盘处理双触发;快捷键校验精确化;清理死 note 路由 (close [#32](https://github.com/cavin-works/cavin-tools/issues/32)) ([93ccff7](https://github.com/cavin-works/cavin-tools/commit/93ccff7e514b58c5785956b36916bf2fa3e7dd73))
+
+
+### ⚡ 性能优化
+
+* **image:** 信息读取只读文件头,批量选图不再整图解码 (close [#31](https://github.com/cavin-works/cavin-tools/issues/31)) ([4321e58](https://github.com/cavin-works/cavin-tools/commit/4321e58b597e0f94a5e863099d422387c7640c49)), closes [#32](https://github.com/cavin-works/cavin-tools/issues/32)
+
+
+
 ## [0.1.15](https://github.com/cavin-works/cavin-tools/compare/v0.1.14...v0.1.15) (2026-08-23)
 
 
