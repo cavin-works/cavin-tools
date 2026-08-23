@@ -15,6 +15,7 @@ use tauri::{Manager, RunEvent};
 #[cfg(feature = "background-remover")]
 pub mod background_remover;
 pub mod ffmpeg;
+pub mod image_collage;
 pub mod image_converter;
 pub mod image_editor;
 pub mod models;
@@ -325,6 +326,25 @@ async fn batch_convert_images(
         );
     })
     .await
+}
+
+#[tauri::command]
+async fn collage_preview(
+    input_paths: Vec<String>,
+    params: image_collage::CollageParams,
+) -> Result<String, String> {
+    image_collage::collage_preview(input_paths, params).await
+}
+
+#[tauri::command]
+async fn collage_export(
+    input_paths: Vec<String>,
+    params: image_collage::CollageParams,
+    output_path: String,
+    format: String,
+    quality: u8,
+) -> Result<(), String> {
+    image_collage::collage_export(input_paths, params, output_path, format, quality).await
 }
 
 #[tauri::command]
@@ -1107,6 +1127,8 @@ pub fn run() {
             batch_convert_images,
             edit_image_preview,
             edit_image_export,
+            collage_preview,
+            collage_export,
             remove_watermark,
             batch_remove_watermarks,
             #[cfg(feature = "background-remover")]
