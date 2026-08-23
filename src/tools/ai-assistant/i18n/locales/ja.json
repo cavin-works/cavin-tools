@@ -1192,6 +1192,7 @@
     "configDetails": "設定の詳細",
     "configUrl": "設定ファイル URL",
     "configMergeError": "設定ファイルのマージに失敗しました",
+    "configUrlUnsupported": "このリンクにはリモート設定が含まれていますが、リモート設定はまだサポートされていません。リンクに埋め込まれたプロバイダー設定のみインポートされます。",
     "primaryEndpoint": "メイン",
     "mcp": {
       "title": "MCP サーバーを一括インポート",
@@ -1420,7 +1421,8 @@
     "timeout": "タイムアウト（秒）",
     "maxRetries": "最大リトライ回数",
     "degradedThreshold": "劣化しきい値（ミリ秒）",
-    "testPrompt": "テストプロンプト"
+    "testPrompt": "テストプロンプト",
+    "notSupported": "ヘルスチェックはまだサポートされていません"
   },
   "proxyConfig": {
     "proxyEnabled": "プロキシ有効",

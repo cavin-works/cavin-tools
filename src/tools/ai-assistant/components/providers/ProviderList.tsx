@@ -229,7 +229,7 @@ export function ProviderList({
               onConfigureUsage={onConfigureUsage}
               onOpenWebsite={onOpenWebsite}
               onOpenTerminal={onOpenTerminal}
-              onTest={appId !== "opencode" ? handleTest : undefined}
+              onTest={handleTest}
               isTesting={isChecking(provider.id)}
               isProxyRunning={isProxyRunning}
               isProxyTakeover={isProxyTakeover}

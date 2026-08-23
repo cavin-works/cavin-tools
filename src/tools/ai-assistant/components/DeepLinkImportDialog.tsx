@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -55,8 +56,9 @@ export function DeepLinkImportDialog() {
       async (event) => {
         console.log("Deep link import event received:", event.payload);
 
-        // If config is present, merge it to get the complete configuration
-        if (event.payload.config || event.payload.configUrl) {
+        // If inline config is present, merge it to get the complete configuration
+        // (configUrl-only links are not merged: remote config is unsupported on backend)
+        if (event.payload.config) {
           try {
             const mergedRequest = await deeplinkApi.mergeDeeplinkConfig(
               event.payload,
@@ -100,7 +102,10 @@ export function DeepLinkImportDialog() {
     setIsImporting(true);
 
     try {
-      const result = await deeplinkApi.importFromDeeplink(request);
+      // 远程配置(configUrl)后端暂不支持,提交前剔除,仅导入链接内嵌的供应商配置
+      const payload = { ...request };
+      delete payload.configUrl;
+      const result = await deeplinkApi.importFromDeeplink(payload);
       const refreshMcp = async (summary: {
         importedCount: number;
         importedIds: string[];
@@ -346,6 +351,15 @@ export function DeepLinkImportDialog() {
               {/* Legacy Provider View */}
               {(request.resource === "provider" || !request.resource) && (
                 <>
+                  {/* 远程配置暂不支持,导入时将被忽略 */}
+                  {request.configUrl && (
+                    <Alert className="border-yellow-500/50 bg-yellow-50 dark:border-yellow-700/50 dark:bg-yellow-900/20">
+                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                        {t("deeplink.configUrlUnsupported")}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Provider Icon - enlarge and center near the top */}
                   {request.icon && (
                     <div className="flex justify-center pt-2 pb-1">

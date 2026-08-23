@@ -1192,6 +1192,7 @@
     "configDetails": "Config Details",
     "configUrl": "Config File URL",
     "configMergeError": "Failed to merge configuration file",
+    "configUrlUnsupported": "This link contains a remote config, which is not supported yet. Only the provider settings embedded in the link will be imported.",
     "primaryEndpoint": "Primary",
     "mcp": {
       "title": "Batch Import MCP Servers",
@@ -1426,7 +1427,8 @@
     "timeout": "Timeout (seconds)",
     "maxRetries": "Max Retries",
     "degradedThreshold": "Degraded Threshold (ms)",
-    "testPrompt": "Test Prompt"
+    "testPrompt": "Test Prompt",
+    "notSupported": "Health check not supported yet"
   },
   "proxyConfig": {
     "proxyEnabled": "Proxy Enabled",

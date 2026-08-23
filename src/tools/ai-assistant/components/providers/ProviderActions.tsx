@@ -63,6 +63,10 @@ export function ProviderActions({
   // OpenCode 使用累加模式
   const isOpenCodeMode = appId === "opencode";
 
+  // OpenCode/Cursor 后端暂不支持流式健康检查,禁用按钮并提示
+  const isHealthCheckUnsupported =
+    appId === "opencode" || appId === "cursor";
+
   // 故障转移模式下的按钮逻辑（OpenCode 不支持故障转移）
   const isFailoverMode =
     !isOpenCodeMode && isAutoFailoverEnabled && onToggleFailover;
@@ -198,13 +202,17 @@ export function ProviderActions({
           <Copy className="h-4 w-4" />
         </Button>
 
-        {onTest && (
+        {(onTest || isHealthCheckUnsupported) && (
           <Button
             size="icon"
             variant="ghost"
-            onClick={onTest}
-            disabled={isTesting}
-            title={t("modelTest.testProvider", "测试模型")}
+            onClick={isHealthCheckUnsupported ? undefined : onTest}
+            disabled={isHealthCheckUnsupported || isTesting}
+            title={
+              isHealthCheckUnsupported
+                ? t("streamCheck.notSupported")
+                : t("modelTest.testProvider", "测试模型")
+            }
             className={iconButtonClass}
           >
             {isTesting ? (

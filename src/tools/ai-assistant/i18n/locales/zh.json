@@ -1192,6 +1192,7 @@
     "configDetails": "配置详情",
     "configUrl": "配置文件 URL",
     "configMergeError": "合并配置文件失败",
+    "configUrlUnsupported": "该链接包含远程配置，远程配置暂不支持，将仅导入链接内嵌的供应商配置",
     "primaryEndpoint": "主",
     "mcp": {
       "title": "批量导入 MCP Servers",
@@ -1426,7 +1427,8 @@
     "timeout": "超时时间（秒）",
     "maxRetries": "最大重试次数",
     "degradedThreshold": "降级阈值（毫秒）",
-    "testPrompt": "检查提示词"
+    "testPrompt": "检查提示词",
+    "notSupported": "暂不支持健康检查"
   },
   "proxyConfig": {
     "proxyEnabled": "代理总开关",
