@@ -105,6 +105,7 @@ jobs:
             EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
             echo "NOTES<<$EOF" >> "$GITHUB_OUTPUT"
             cat "$RUNNER_TEMP/release_notes.txt" >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
             echo "$EOF" >> "$GITHUB_OUTPUT"
           else
             echo "NOTES=" >> "$GITHUB_OUTPUT"
