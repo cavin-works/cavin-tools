@@ -1,3 +1,13 @@
+## [0.1.18](https://github.com/cavin-works/cavin-tools/compare/v0.1.17...v0.1.18) (2026-08-23)
+
+
+### 🐛 Bug 修复
+
+* **frontend:** 修复 14 处事件监听卸载竞态与拖拽参数固化 (close [#40](https://github.com/cavin-works/cavin-tools/issues/40)) ([a59cbb8](https://github.com/cavin-works/cavin-tools/commit/a59cbb8d101cf68148bab028936624b65fa4f9e8))
+* 快捷键聚焦输入框补全;保存回声不再覆盖并发操作 (close [#41](https://github.com/cavin-works/cavin-tools/issues/41)) ([56130b7](https://github.com/cavin-works/cavin-tools/commit/56130b714f3864b1c022dbaceca82dd999930a2a))
+
+
+
 ## [0.1.17](https://github.com/cavin-works/cavin-tools/compare/v0.1.16...v0.1.17) (2026-08-23)
 
 
