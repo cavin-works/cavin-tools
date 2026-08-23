@@ -119,7 +119,8 @@ fn generate_output_path(input_path: &str) -> PathBuf {
     let stem = input.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
     let ext = input.extension().and_then(|s| s.to_str()).unwrap_or("png");
 
-    parent.join(format!("{}_no_watermark.{}", stem, ext))
+    let path = parent.join(format!("{}_no_watermark.{}", stem, ext));
+    PathBuf::from(crate::unique_output_path(&path.to_string_lossy()))
 }
 
 /// 去除单张图片的水印

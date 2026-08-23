@@ -59,7 +59,8 @@ fn generate_output_path(input_path: &str, target_format: &str) -> PathBuf {
         _ => target_format,
     };
 
-    parent.join(format!("{}_converted.{}", stem, extension))
+    let path = parent.join(format!("{}_converted.{}", stem, extension));
+    PathBuf::from(crate::unique_output_path(&path.to_string_lossy()))
 }
 
 /// PNG 优化压缩

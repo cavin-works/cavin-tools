@@ -15,7 +15,8 @@ fn generate_output_path(input_path: &str, format: &str) -> PathBuf {
     let parent = input.parent().unwrap_or(Path::new("."));
     let stem = input.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
 
-    parent.join(format!("{}_no_bg.{}", stem, format))
+    let path = parent.join(format!("{}_no_bg.{}", stem, format));
+    PathBuf::from(crate::unique_output_path(&path.to_string_lossy()))
 }
 
 /// 预处理图像为模型输入

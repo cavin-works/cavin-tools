@@ -50,8 +50,9 @@ export function SpeedPanel() {
   const handleOpenFolder = async () => {
     if (!outputPath) return;
 
-    // 打开输出文件所在的文件夹
-    const folderPath = outputPath.substring(0, outputPath.lastIndexOf('\\'));
+    // 打开输出文件所在的文件夹（自适应不同平台的路径分隔符）
+    const separator = outputPath.includes('\\') ? '\\' : '/';
+    const folderPath = outputPath.substring(0, outputPath.lastIndexOf(separator));
     await open(folderPath);
   };
 

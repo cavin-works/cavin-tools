@@ -79,8 +79,7 @@ async fn compress_video_command(
     let input_path_obj = std::path::Path::new(&input_path);
     let parent_dir = input_path_obj
         .parent()
-        .and_then(|p| p.to_str())
-        .unwrap_or(".");
+        .unwrap_or(std::path::Path::new("."));
     let filename = input_path_obj
         .file_stem()
         .and_then(|s| s.to_str())
@@ -90,7 +89,11 @@ async fn compress_video_command(
         .and_then(|s| s.to_str())
         .unwrap_or("mp4");
 
-    let output_path = format!("{}\\{}_compressed.{}", parent_dir, filename, extension);
+    let output_path = unique_output_path(
+        &parent_dir
+            .join(format!("{}_compressed.{}", filename, extension))
+            .to_string_lossy(),
+    );
 
     let window_clone = window.clone();
     ffmpeg::compress_video(input_path, output_path.clone(), params, move |progress| {
@@ -109,8 +112,7 @@ async fn change_video_speed(
     let input_path_obj = std::path::Path::new(&input_path);
     let parent_dir = input_path_obj
         .parent()
-        .and_then(|p| p.to_str())
-        .unwrap_or(".");
+        .unwrap_or(std::path::Path::new("."));
     let filename = input_path_obj
         .file_stem()
         .and_then(|s| s.to_str())
@@ -120,9 +122,10 @@ async fn change_video_speed(
         .and_then(|s| s.to_str())
         .unwrap_or("mp4");
 
-    let output_path = format!(
-        "{}\\{}_speed_{}x.{}",
-        parent_dir, filename, params.speed, extension
+    let output_path = unique_output_path(
+        &parent_dir
+            .join(format!("{}_speed_{}x.{}", filename, params.speed, extension))
+            .to_string_lossy(),
     );
 
     ffmpeg::change_video_speed(input_path, output_path.clone(), params).await?;
@@ -143,8 +146,7 @@ async fn trim_video(input_path: String, params: ffmpeg::TrimParams) -> Result<St
     let input_path_obj = std::path::Path::new(&input_path);
     let parent_dir = input_path_obj
         .parent()
-        .and_then(|p| p.to_str())
-        .unwrap_or(".");
+        .unwrap_or(std::path::Path::new("."));
     let filename = input_path_obj
         .file_stem()
         .and_then(|s| s.to_str())
@@ -154,7 +156,11 @@ async fn trim_video(input_path: String, params: ffmpeg::TrimParams) -> Result<St
         .and_then(|s| s.to_str())
         .unwrap_or("mp4");
 
-    let output_path = format!("{}\\{}_trimmed.{}", parent_dir, filename, extension);
+    let output_path = unique_output_path(
+        &parent_dir
+            .join(format!("{}_trimmed.{}", filename, extension))
+            .to_string_lossy(),
+    );
 
     ffmpeg::trim_video(input_path, output_path.clone(), params).await?;
 
@@ -166,14 +172,15 @@ async fn convert_to_gif(input_path: String, params: ffmpeg::GifParams) -> Result
     let input_path_obj = std::path::Path::new(&input_path);
     let parent_dir = input_path_obj
         .parent()
-        .and_then(|p| p.to_str())
-        .unwrap_or(".");
+        .unwrap_or(std::path::Path::new("."));
     let filename = input_path_obj
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("output");
 
-    let output_path = format!("{}\\{}.gif", parent_dir, filename);
+    let output_path = unique_output_path(
+        &parent_dir.join(format!("{}.gif", filename)).to_string_lossy(),
+    );
 
     ffmpeg::convert_to_gif(input_path, output_path.clone(), params).await?;
 
@@ -211,9 +218,8 @@ async fn process_operation_queue(
                 };
                 parent_dir
                     .join(format!("{}_final.{}", filename, extension))
-                    .to_str()
-                    .unwrap()
-                    .to_string()
+                    .to_string_lossy()
+                    .into_owned()
             } else {
                 let extension = match operation.operation_type.as_str() {
                     "to_gif" => "gif",
@@ -228,7 +234,7 @@ async fn process_operation_queue(
                     .map_err(|e| format!("保持临时文件失败: {}", e))?;
                 std::fs::rename(&temp_path_kept, &temp_path_with_ext)
                     .map_err(|e| format!("重命名临时文件失败: {}", e))?;
-                temp_path_with_ext.to_str().unwrap().to_string()
+                temp_path_with_ext.to_string_lossy().into_owned()
             };
 
             temp_files.push(output_path.clone());
@@ -331,7 +337,7 @@ async fn batch_convert_images(
 }
 
 /// 输出路径已存在时追加 _1/_2/… 直到不冲突，返回实际可写路径（避免同名文件被静默覆盖）
-fn unique_output_path(path: &str) -> String {
+pub fn unique_output_path(path: &str) -> String {
     let p = std::path::Path::new(path);
     if !p.exists() {
         return path.to_string();
@@ -499,7 +505,7 @@ async fn update_tray_menu(
 // Helper Functions
 // ============================================================
 
-fn redact_url_for_log(url_str: &str) -> String {
+pub(crate) fn redact_url_for_log(url_str: &str) -> String {
     match url::Url::parse(url_str) {
         Ok(url) => {
             let mut output = format!("{}://", url.scheme());
@@ -542,7 +548,6 @@ fn handle_deeplink_url(
 
     let redacted_url = redact_url_for_log(url_str);
     log::info!("✓ Deep link URL detected from {source}: {redacted_url}");
-    log::debug!("Deep link URL (raw) from {source}: {url_str}");
 
     match cc_switch::deeplink::parse_deeplink_url(url_str) {
         Ok(request) => {

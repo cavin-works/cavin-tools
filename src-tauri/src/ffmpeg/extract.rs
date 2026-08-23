@@ -106,12 +106,17 @@ pub async fn extract_frames(
             return Err("提取帧失败".to_string());
         }
 
-        // 查找生成的文件
+        // 查找生成的文件（只取 frame_ 前缀，避免混入输出目录中的其他文件）
         let files = std::fs::read_dir(&params.output_dir)
             .map_err(|e| format!("读取输出目录失败: {}", e))?
             .filter_map(|entry| entry.ok())
-            .map(|entry| entry.path().to_string_lossy().to_string())
-            .filter(|path| path.ends_with(&params.format))
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.starts_with("frame_") && n.ends_with(&params.format))
+            })
+            .map(|path| path.to_string_lossy().to_string())
             .collect();
 
         Ok::<Vec<String>, String>(files)
