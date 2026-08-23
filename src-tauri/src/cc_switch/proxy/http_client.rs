@@ -12,10 +12,24 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 /// 全局 HTTP 客户端实例
-static GLOBAL_CLIENT: OnceCell<RwLock<Client>> = OnceCell::new();
+static GLOBAL_CLIENT: OnceCell<RwLock<GlobalClients>> = OnceCell::new();
 
 /// 当前代理 URL（用于日志和状态查询）
 static CURRENT_PROXY_URL: OnceCell<RwLock<Option<String>>> = OnceCell::new();
+
+/// 默认总超时（从开始连接到响应体读取完毕）
+const DEFAULT_TOTAL_TIMEOUT: Duration = Duration::from_secs(600);
+
+/// 全局客户端对：共享同一代理配置，仅总超时策略不同
+///
+/// - `default`：非流式请求，600 秒总超时兜底
+/// - `streaming`：流式请求，不设总超时。reqwest 的 client 级 timeout 会覆盖
+///   整个响应体读取阶段，600 秒会硬杀长会话流式响应；流式的保护由代理层的
+///   首字节超时/静默空闲超时负责，连接层仅保留 connect 超时与 TCP keepalive
+struct GlobalClients {
+    default: Client,
+    streaming: Client,
+}
 
 /// 初始化全局 HTTP 客户端
 ///
@@ -26,10 +40,10 @@ static CURRENT_PROXY_URL: OnceCell<RwLock<Option<String>>> = OnceCell::new();
 ///   传入 None 或空字符串表示直连
 pub fn init(proxy_url: Option<&str>) -> Result<(), String> {
     let effective_url = proxy_url.filter(|s| !s.trim().is_empty());
-    let client = build_client(effective_url)?;
+    let clients = build_clients(effective_url)?;
 
     // 尝试初始化全局客户端，如果已存在则记录警告并使用 apply_proxy 更新
-    if GLOBAL_CLIENT.set(RwLock::new(client.clone())).is_err() {
+    if GLOBAL_CLIENT.set(RwLock::new(clients)).is_err() {
         log::warn!(
             "[GlobalProxy] [GP-003] Already initialized, updating instead: {}",
             effective_url
@@ -66,7 +80,7 @@ pub fn init(proxy_url: Option<&str>) -> Result<(), String> {
 pub fn validate_proxy(proxy_url: Option<&str>) -> Result<(), String> {
     let effective_url = proxy_url.filter(|s| !s.trim().is_empty());
     // 只调用 build_client 来验证，但不应用
-    build_client(effective_url)?;
+    build_client(effective_url, Some(DEFAULT_TOTAL_TIMEOUT))?;
     Ok(())
 }
 
@@ -79,7 +93,7 @@ pub fn validate_proxy(proxy_url: Option<&str>) -> Result<(), String> {
 /// * `proxy_url` - 代理 URL，None 或空字符串表示直连
 pub fn apply_proxy(proxy_url: Option<&str>) -> Result<(), String> {
     let effective_url = proxy_url.filter(|s| !s.trim().is_empty());
-    let new_client = build_client(effective_url)?;
+    let new_clients = build_clients(effective_url)?;
 
     // 更新客户端
     if let Some(lock) = GLOBAL_CLIENT.get() {
@@ -87,7 +101,7 @@ pub fn apply_proxy(proxy_url: Option<&str>) -> Result<(), String> {
             log::error!("[GlobalProxy] [GP-001] Failed to acquire write lock: {e}");
             "Failed to update proxy: lock poisoned".to_string()
         })?;
-        *client = new_client;
+        *client = new_clients;
     } else {
         // 如果还没初始化，则初始化
         return init(proxy_url);
@@ -123,7 +137,7 @@ pub fn apply_proxy(proxy_url: Option<&str>) -> Result<(), String> {
 #[allow(dead_code)]
 pub fn update_proxy(proxy_url: Option<&str>) -> Result<(), String> {
     let effective_url = proxy_url.filter(|s| !s.trim().is_empty());
-    let new_client = build_client(effective_url)?;
+    let new_clients = build_clients(effective_url)?;
 
     // 更新客户端
     if let Some(lock) = GLOBAL_CLIENT.get() {
@@ -131,7 +145,7 @@ pub fn update_proxy(proxy_url: Option<&str>) -> Result<(), String> {
             log::error!("[GlobalProxy] [GP-001] Failed to acquire write lock: {e}");
             "Failed to update proxy: lock poisoned".to_string()
         })?;
-        *client = new_client;
+        *client = new_clients;
     } else {
         // 如果还没初始化，则初始化
         return init(proxy_url);
@@ -163,10 +177,25 @@ pub fn get() -> Client {
     GLOBAL_CLIENT
         .get()
         .and_then(|lock| lock.read().ok())
-        .map(|c| c.clone())
+        .map(|c| c.default.clone())
         .unwrap_or_else(|| {
             log::warn!("[GlobalProxy] [GP-004] Client not initialized, using fallback");
-            build_client(None).unwrap_or_default()
+            build_client(None, Some(DEFAULT_TOTAL_TIMEOUT)).unwrap_or_default()
+        })
+}
+
+/// 获取全局流式 HTTP 客户端（无总超时）
+///
+/// 用于流式转发：总超时会掐断长会话的响应体读取，
+/// 流式的保护由代理层的首字节/静默空闲超时负责。
+pub fn get_streaming() -> Client {
+    GLOBAL_CLIENT
+        .get()
+        .and_then(|lock| lock.read().ok())
+        .map(|c| c.streaming.clone())
+        .unwrap_or_else(|| {
+            log::warn!("[GlobalProxy] [GP-004] Client not initialized, using fallback");
+            build_client(None, None).unwrap_or_default()
         })
 }
 
@@ -186,13 +215,26 @@ pub fn is_proxy_enabled() -> bool {
     get_current_proxy_url().is_some()
 }
 
+/// 构建常规 + 流式一对全局客户端（同一代理配置）
+fn build_clients(proxy_url: Option<&str>) -> Result<GlobalClients, String> {
+    Ok(GlobalClients {
+        default: build_client(proxy_url, Some(DEFAULT_TOTAL_TIMEOUT))?,
+        streaming: build_client(proxy_url, None)?,
+    })
+}
+
 /// 构建 HTTP 客户端
-fn build_client(proxy_url: Option<&str>) -> Result<Client, String> {
+///
+/// `total_timeout` 为 None 时不设总超时（流式客户端），connect 超时与 keepalive 保留
+fn build_client(proxy_url: Option<&str>, total_timeout: Option<Duration>) -> Result<Client, String> {
     let mut builder = Client::builder()
-        .timeout(Duration::from_secs(600))
         .connect_timeout(Duration::from_secs(30))
         .pool_max_idle_per_host(10)
         .tcp_keepalive(Duration::from_secs(60));
+
+    if let Some(timeout) = total_timeout {
+        builder = builder.timeout(timeout);
+    }
 
     // 有代理地址则使用代理，否则跟随系统代理
     if let Some(url) = proxy_url {
@@ -321,10 +363,14 @@ fn build_proxy_url_from_config(config: &ProviderProxyConfig) -> Option<String> {
 ///
 /// # Arguments
 /// * `proxy_config` - 供应商的代理配置
+/// * `total_timeout` - 总超时；None 表示不设总超时（流式客户端）
 ///
 /// # Returns
 /// 如果配置有效则返回 Some(Client)，否则返回 None
-pub fn build_client_for_provider(proxy_config: Option<&ProviderProxyConfig>) -> Option<Client> {
+pub fn build_client_for_provider(
+    proxy_config: Option<&ProviderProxyConfig>,
+    total_timeout: Option<Duration>,
+) -> Option<Client> {
     let config = proxy_config.filter(|c| c.enabled)?;
 
     let proxy_url = build_proxy_url_from_config(config)?;
@@ -347,14 +393,16 @@ pub fn build_client_for_provider(proxy_config: Option<&ProviderProxyConfig>) -> 
         }
     };
 
-    match Client::builder()
-        .timeout(Duration::from_secs(600))
+    let mut builder = Client::builder()
         .connect_timeout(Duration::from_secs(30))
         .pool_max_idle_per_host(10)
         .tcp_keepalive(Duration::from_secs(60))
-        .proxy(proxy)
-        .build()
-    {
+        .proxy(proxy);
+    if let Some(timeout) = total_timeout {
+        builder = builder.timeout(timeout);
+    }
+
+    match builder.build() {
         Ok(client) => {
             log::info!(
                 "[ProviderProxy] Client built with proxy: {}",
@@ -380,12 +428,16 @@ pub fn build_client_for_provider(proxy_config: Option<&ProviderProxyConfig>) -> 
 /// 返回适合该供应商的 HTTP 客户端
 pub fn get_for_provider(proxy_config: Option<&ProviderProxyConfig>) -> Client {
     // 优先使用供应商单独代理
-    if let Some(client) = build_client_for_provider(proxy_config) {
-        return client;
-    }
+    build_client_for_provider(proxy_config, Some(DEFAULT_TOTAL_TIMEOUT))
+        .unwrap_or_else(get)
+}
 
-    // 回退到全局客户端
-    get()
+/// 获取供应商专用的流式 HTTP 客户端（无总超时）
+///
+/// 与 `get_for_provider` 同样的选择逻辑（供应商代理优先，回退全局），
+/// 但不设总超时，避免长会话流式响应被硬杀。
+pub fn get_for_provider_streaming(proxy_config: Option<&ProviderProxyConfig>) -> Client {
+    build_client_for_provider(proxy_config, None).unwrap_or_else(get_streaming)
 }
 
 #[cfg(test)]
@@ -422,19 +474,26 @@ mod tests {
 
     #[test]
     fn test_build_client_direct() {
-        let result = build_client(None);
+        let result = build_client(None, Some(DEFAULT_TOTAL_TIMEOUT));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_build_client_streaming_no_total_timeout() {
+        // 流式客户端：不设总超时也应能正常构建
+        let result = build_client(None, None);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_build_client_with_http_proxy() {
-        let result = build_client(Some("http://127.0.0.1:7890"));
+        let result = build_client(Some("http://127.0.0.1:7890"), Some(DEFAULT_TOTAL_TIMEOUT));
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_build_client_with_socks5_proxy() {
-        let result = build_client(Some("socks5://127.0.0.1:1080"));
+        let result = build_client(Some("socks5://127.0.0.1:1080"), Some(DEFAULT_TOTAL_TIMEOUT));
         assert!(result.is_ok());
     }
 
@@ -442,7 +501,7 @@ mod tests {
     fn test_build_client_invalid_url() {
         // reqwest::Proxy::all 对某些无效 URL 不会立即报错
         // 使用明确无效的 scheme 来触发错误
-        let result = build_client(Some("invalid-scheme://127.0.0.1:7890"));
+        let result = build_client(Some("invalid-scheme://127.0.0.1:7890"), Some(DEFAULT_TOTAL_TIMEOUT));
         assert!(result.is_err(), "Should reject invalid proxy scheme");
     }
 

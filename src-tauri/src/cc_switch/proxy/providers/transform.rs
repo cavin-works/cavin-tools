@@ -120,6 +120,10 @@ pub fn anthropic_to_openai(body: Value, provider: &Provider) -> Result<Value, Pr
     }
     if let Some(v) = body.get("stream") {
         result["stream"] = v.clone();
+        // 流式请求要求 OpenAI 兼容上游在最后一个 chunk 返回 usage，否则拿不到用量
+        if v.as_bool().unwrap_or(false) {
+            result["stream_options"] = json!({ "include_usage": true });
+        }
     }
 
     // 转换 tools (过滤 BatchTool)
@@ -617,6 +621,42 @@ mod tests {
         let result = anthropic_to_openai(input, &provider).unwrap();
         // 应该使用推理模型
         assert_eq!(result["model"], "anthropic/claude-sonnet-4.5:extended");
+    }
+
+    #[test]
+    fn test_anthropic_to_openai_stream_options() {
+        let provider = create_openrouter_provider();
+
+        // 流式请求：加 stream_options.include_usage，要求上游返回 usage
+        let input = json!({
+            "model": "claude-3-sonnet",
+            "max_tokens": 1024,
+            "stream": true,
+            "messages": [{"role": "user", "content": "Hello"}]
+        });
+        let result = anthropic_to_openai(input, &provider).unwrap();
+        assert_eq!(result["stream"], true);
+        assert_eq!(result["stream_options"]["include_usage"], true);
+
+        // 非流式请求：不加 stream_options
+        let input = json!({
+            "model": "claude-3-sonnet",
+            "max_tokens": 1024,
+            "stream": false,
+            "messages": [{"role": "user", "content": "Hello"}]
+        });
+        let result = anthropic_to_openai(input, &provider).unwrap();
+        assert_eq!(result["stream"], false);
+        assert!(result.get("stream_options").is_none());
+
+        // 未指定 stream：不加 stream_options
+        let input = json!({
+            "model": "claude-3-sonnet",
+            "max_tokens": 1024,
+            "messages": [{"role": "user", "content": "Hello"}]
+        });
+        let result = anthropic_to_openai(input, &provider).unwrap();
+        assert!(result.get("stream_options").is_none());
     }
 
     #[test]

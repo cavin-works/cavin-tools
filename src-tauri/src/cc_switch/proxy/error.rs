@@ -178,9 +178,15 @@ impl IntoResponse for ProxyError {
 /// 错误分类
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCategory {
-    /// 可重试错误（网络问题、5xx）
-    Retryable, // 网络超时、5xx 错误
-    /// 不可重试错误（4xx、认证失败）
+    /// 可重试错误（网络问题、5xx、429），切换下一个供应商重试
+    ///
+    /// 双计费风险：Timeout/ForwardFailed 重试时，上游可能已接收并处理完整请求
+    /// （tokens 已消耗）。保留重试是可用性优先的权衡——超时也可能是上游
+    /// 真正不可达，此时不重试则请求直接失败
+    Retryable, // 网络超时、5xx/429 错误
+    /// 不可重试错误（除 429 外的 4xx、认证失败），直接把上游错误透传给下游客户端
+    ///
+    /// 4xx 重试不仅大概率在下一个供应商同样失败，还会把同一请求放大成多次计费
     NonRetryable, // 认证失败、参数错误、4xx 错误
     #[allow(dead_code)]
     ClientAbort, // 客户端主动中断

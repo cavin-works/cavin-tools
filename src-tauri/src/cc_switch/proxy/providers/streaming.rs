@@ -106,6 +106,27 @@ pub fn create_anthropic_sse_stream(
                                 if let Ok(chunk) = serde_json::from_str::<OpenAIStreamChunk>(data) {
                                     log::debug!("[Claude/OpenRouter] <<< SSE chunk received");
 
+                                    // stream_options.include_usage 的独立 usage chunk
+                                    // （choices 为空数组）：转成 Anthropic message_delta，
+                                    // 让下游能统计到用量
+                                    if chunk.choices.is_empty() {
+                                        if let Some(u) = &chunk.usage {
+                                            let event = json!({
+                                                "type": "message_delta",
+                                                "delta": {},
+                                                "usage": {
+                                                    "input_tokens": u.prompt_tokens,
+                                                    "output_tokens": u.completion_tokens
+                                                }
+                                            });
+                                            let sse_data = format!("event: message_delta\ndata: {}\n\n",
+                                                serde_json::to_string(&event).unwrap_or_default());
+                                            log::debug!("[Claude/OpenRouter] >>> Anthropic SSE: message_delta (usage)");
+                                            yield Ok(Bytes::from(sse_data));
+                                        }
+                                        continue;
+                                    }
+
                                     if message_id.is_none() {
                                         message_id = Some(chunk.id.clone());
                                     }

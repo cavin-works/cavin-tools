@@ -217,7 +217,7 @@ impl<'a> UsageLogger<'a> {
             log::warn!("[USG-002] 模型定价未找到，成本将记录为 0");
         }
 
-        let cost = CostCalculator::try_calculate(&usage, pricing.as_ref(), cost_multiplier);
+        let cost = CostCalculator::try_calculate(&usage, pricing.as_ref(), cost_multiplier, &app_type);
 
         let log = RequestLog {
             request_id,

@@ -464,7 +464,7 @@ impl RequestForwarder {
                         .await;
 
                     // 分类错误
-                    let category = self.categorize_proxy_error(&e);
+                    let category = categorize_proxy_error(&e);
 
                     match category {
                         ErrorCategory::Retryable => {
@@ -587,14 +587,22 @@ impl RequestForwarder {
         let filtered_body = filter_private_params_with_whitelist(request_body, &[]);
 
         // 获取 HTTP 客户端：优先使用供应商单独代理配置，否则使用全局客户端
+        // 流式请求使用无总超时的客户端（issue #34）：client/request 级总超时会覆盖
+        // 整个响应体读取阶段，会硬杀超过 600s 的长会话流式响应；
+        // 流式保护由响应处理层的首字节超时/静默空闲超时负责
+        let is_stream = is_streaming_request(body, effective_endpoint);
         let proxy_config = provider.meta.as_ref().and_then(|m| m.proxy_config.as_ref());
-        let client = super::http_client::get_for_provider(proxy_config);
+        let client = if is_stream {
+            super::http_client::get_for_provider_streaming(proxy_config)
+        } else {
+            super::http_client::get_for_provider(proxy_config)
+        };
         let mut request = client.post(&url);
 
-        // 只有当 timeout > 0 时才设置请求超时
+        // 只有当 timeout > 0 时才设置请求级总超时（仅非流式）
         // Duration::ZERO 在 reqwest 中表示"立刻超时"而不是"禁用超时"
         // 故障转移关闭时会传入 0，此时应该使用 client 的默认超时（600秒）
-        if !self.non_streaming_timeout.is_zero() {
+        if !is_stream && !self.non_streaming_timeout.is_zero() {
             request = request.timeout(self.non_streaming_timeout);
         }
 
@@ -702,26 +710,120 @@ impl RequestForwarder {
         }
     }
 
-    fn categorize_proxy_error(&self, error: &ProxyError) -> ErrorCategory {
-        match error {
-            // 网络和上游错误：都应该尝试下一个供应商
-            ProxyError::Timeout(_) => ErrorCategory::Retryable,
-            ProxyError::ForwardFailed(_) => ErrorCategory::Retryable,
-            ProxyError::ProviderUnhealthy(_) => ErrorCategory::Retryable,
-            // 上游 HTTP 错误：无论状态码如何，都尝试下一个供应商
-            // 原因：不同供应商有不同的限制和认证，一个供应商的 4xx 错误
-            // 不代表其他供应商也会失败
-            ProxyError::UpstreamError { .. } => ErrorCategory::Retryable,
-            // Provider 级配置/转换问题：换一个 Provider 可能就能成功
-            ProxyError::ConfigError(_) => ErrorCategory::Retryable,
-            ProxyError::TransformError(_) => ErrorCategory::Retryable,
-            ProxyError::AuthError(_) => ErrorCategory::Retryable,
-            ProxyError::StreamIdleTimeout(_) => ErrorCategory::Retryable,
-            // 无可用供应商：所有供应商都试过了，无法重试
-            ProxyError::NoAvailableProvider => ErrorCategory::NonRetryable,
-            // 其他错误（数据库/内部错误等）：不是换供应商能解决的问题
-            _ => ErrorCategory::NonRetryable,
+}
+
+/// 判断请求是否为流式
+///
+/// Claude(/v1/messages)、OpenAI(/v1/chat/completions)、Codex(/v1/responses)
+/// 通过请求体 `stream` 字段判断；Gemini 通过端点后缀 `:streamGenerateContent` 判断
+fn is_streaming_request(body: &Value, endpoint: &str) -> bool {
+    body.get("stream")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+        || endpoint.contains("streamGenerateContent")
+}
+
+/// 错误分类
+///
+/// Timeout/ForwardFailed 保留重试：超时/发送失败时上游可能已不可达，不重试请求
+/// 直接失败；但上游也可能已处理完整请求（tokens 已消耗），重试存在双计费风险
+/// （见 `ErrorCategory::Retryable` 文档）
+fn categorize_proxy_error(error: &ProxyError) -> ErrorCategory {
+    match error {
+        // 网络和上游错误：都应该尝试下一个供应商
+        ProxyError::Timeout(_) => ErrorCategory::Retryable,
+        ProxyError::ForwardFailed(_) => ErrorCategory::Retryable,
+        ProxyError::ProviderUnhealthy(_) => ErrorCategory::Retryable,
+        // 上游 HTTP 错误：429（限流）和 5xx（供应商侧故障）尝试下一个供应商
+        ProxyError::UpstreamError { status, .. }
+            if *status == 429 || *status >= 500 =>
+        {
+            ErrorCategory::Retryable
         }
+        // 其余 4xx（认证失败/参数错误/配额等）是请求本身的问题：
+        // 换供应商大概率同样失败，且重试会把同一请求放大成多次计费，
+        // 直接透传上游错误给下游客户端（issue #34）
+        ProxyError::UpstreamError { .. } => ErrorCategory::NonRetryable,
+        // Provider 级配置/转换问题：换一个 Provider 可能就能成功
+        ProxyError::ConfigError(_) => ErrorCategory::Retryable,
+        ProxyError::TransformError(_) => ErrorCategory::Retryable,
+        ProxyError::AuthError(_) => ErrorCategory::Retryable,
+        ProxyError::StreamIdleTimeout(_) => ErrorCategory::Retryable,
+        // 无可用供应商：所有供应商都试过了，无法重试
+        ProxyError::NoAvailableProvider => ErrorCategory::NonRetryable,
+        // 其他错误（数据库/内部错误等）：不是换供应商能解决的问题
+        _ => ErrorCategory::NonRetryable,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_streaming_request() {
+        // Claude/OpenAI/Codex：body.stream 字段
+        assert!(is_streaming_request(
+            &serde_json::json!({"stream": true}),
+            "/v1/messages"
+        ));
+        assert!(!is_streaming_request(
+            &serde_json::json!({"stream": false}),
+            "/v1/messages"
+        ));
+        assert!(!is_streaming_request(&serde_json::json!({}), "/v1/messages"));
+        // Gemini：流式由端点决定
+        assert!(is_streaming_request(
+            &serde_json::json!({}),
+            "/v1beta/models/gemini-pro:streamGenerateContent?alt=sse"
+        ));
+        assert!(!is_streaming_request(
+            &serde_json::json!({}),
+            "/v1beta/models/gemini-pro:generateContent"
+        ));
+    }
+
+    #[test]
+    fn test_categorize_upstream_error() {
+        // issue #34：4xx（除 429）不可重试，直接透传给下游
+        assert_eq!(
+            categorize_proxy_error(&ProxyError::UpstreamError {
+                status: 400,
+                body: None
+            }),
+            ErrorCategory::NonRetryable
+        );
+        assert_eq!(
+            categorize_proxy_error(&ProxyError::UpstreamError {
+                status: 401,
+                body: None
+            }),
+            ErrorCategory::NonRetryable
+        );
+        // 429（限流）和 5xx 可能是供应商侧问题，切换下一个供应商
+        assert_eq!(
+            categorize_proxy_error(&ProxyError::UpstreamError {
+                status: 429,
+                body: None
+            }),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            categorize_proxy_error(&ProxyError::UpstreamError {
+                status: 502,
+                body: None
+            }),
+            ErrorCategory::Retryable
+        );
+        // 超时/网络失败保留重试（双计费风险见 ErrorCategory::Retryable 文档）
+        assert_eq!(
+            categorize_proxy_error(&ProxyError::Timeout("t".to_string())),
+            ErrorCategory::Retryable
+        );
+        assert_eq!(
+            categorize_proxy_error(&ProxyError::ForwardFailed("f".to_string())),
+            ErrorCategory::Retryable
+        );
     }
 }
 
