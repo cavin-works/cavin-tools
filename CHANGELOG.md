@@ -1,3 +1,15 @@
+## [0.1.15](https://github.com/cavin-works/cavin-tools/compare/v0.1.14...v0.1.15) (2026-08-23)
+
+
+### 🐛 Bug 修复
+
+* **image:** 编辑器/拼贴四处正确性修复 (close [#28](https://github.com/cavin-works/cavin-tools/issues/28)) ([1f90fde](https://github.com/cavin-works/cavin-tools/commit/1f90fdecfdd353061548d6fc58862df930dd1bd5))
+* **sticky-notes:** 任务拖拽排序持久化——后端补 order 字段 (close [#27](https://github.com/cavin-works/cavin-tools/issues/27)) ([d65efbe](https://github.com/cavin-works/cavin-tools/commit/d65efbe5dab012af6e8b6365ee9287c0fc91a646))
+* 工具快捷键全局绑定;清理安慰剂控件与死代码 (close [#29](https://github.com/cavin-works/cavin-tools/issues/29), close [#30](https://github.com/cavin-works/cavin-tools/issues/30)) ([2420578](https://github.com/cavin-works/cavin-tools/commit/2420578637a71b185148de9eec5ccc836ddda639))
+* 更新链路——release notes 写入 output;下载进度解析修复 (close [#26](https://github.com/cavin-works/cavin-tools/issues/26)) ([15c836a](https://github.com/cavin-works/cavin-tools/commit/15c836ac622fbfb3f638aef92c6f4d5dfec9bd6c))
+
+
+
 ## [0.1.14](https://github.com/cavin-works/cavin-tools/compare/v0.1.13...v0.1.14) (2026-08-23)
 
 
