@@ -11,6 +11,7 @@ const SLIDERS = [
   { key: 'brightness', label: '亮度', min: -100, max: 100, step: 1 },
   { key: 'contrast', label: '对比度', min: -100, max: 100, step: 1 },
   { key: 'hue', label: '色相', min: -180, max: 180, step: 1 },
+  { key: 'saturation', label: '饱和度', min: -100, max: 100, step: 1 },
   { key: 'blur', label: '模糊', min: 0, max: 10, step: 0.5 },
   { key: 'sharpen', label: '锐化', min: 0, max: 10, step: 0.5 },
 ] as const;

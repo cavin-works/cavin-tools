@@ -7,9 +7,9 @@ use image::{
 };
 use tokio::task::spawn_blocking;
 
-pub use types::{CropRect, EditParams};
+pub use types::{Annotation, CropRect, EditParams};
 
-/// 裁剪坐标按预览缩放比换算（sigma 由 apply_edits 内部按 scale 缩放）
+/// 预览参数按缩放比换算：裁剪坐标与标注坐标/线宽（sigma 由 apply_edits 内部按 scale 缩放）
 fn scale_crop(params: &EditParams, scale: f64) -> EditParams {
     let mut scaled = params.clone();
     if let Some(crop) = &params.crop {
@@ -19,6 +19,22 @@ fn scale_crop(params: &EditParams, scale: f64) -> EditParams {
             width: ((crop.width as f64 * scale).round() as u32).max(1),
             height: ((crop.height as f64 * scale).round() as u32).max(1),
         });
+    }
+    if !params.annotations.is_empty() {
+        scaled.annotations = params
+            .annotations
+            .iter()
+            .map(|a| Annotation {
+                kind: a.kind.clone(),
+                x: (a.x as f64 * scale).round() as u32,
+                y: (a.y as f64 * scale).round() as u32,
+                width: (a.width as f64 * scale).round() as u32,
+                height: (a.height as f64 * scale).round() as u32,
+                color: a.color.clone(),
+                stroke: ((a.stroke as f64 * scale).round() as u32).max(1),
+                flip: a.flip,
+            })
+            .collect();
     }
     scaled
 }

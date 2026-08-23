@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useImageEditorStore } from '../store/imageEditorStore';
+import { AnnotationLayer } from './AnnotationLayer';
 import { CropOverlay } from './CropOverlay';
 
 /**
  * 预览画布：显示后端完整管线（旋转/翻转/滤镜/裁剪）输出的 base64 预览图。
- * 预览未就绪时回退显示原图；裁剪开启时叠加 CropOverlay。
- * 注意：裁剪模式下预览请求不含 crop，画布显示完整图片供裁剪框定位。
+ * 预览未就绪时回退显示原图；裁剪模式下叠加 CropOverlay（预览不含 crop）；
+ * 标注模式下叠加 AnnotationLayer（预览不含标注，已有标注由图层绘制）。
  */
 export function EditCanvas() {
   const inputPath = useImageEditorStore((s) => s.inputPath);
@@ -17,6 +18,7 @@ export function EditCanvas() {
   const previewUrl = useImageEditorStore((s) => s.previewUrl);
   const previewLoading = useImageEditorStore((s) => s.previewLoading);
   const cropEnabled = useImageEditorStore((s) => s.cropEnabled);
+  const annotationTool = useImageEditorStore((s) => s.annotationTool);
 
   const imgRef = useRef<HTMLImageElement>(null);
   // 当前已完成加载的预览 URL（保证 overlay 在图片布局稳定后才挂载）
@@ -50,6 +52,13 @@ export function EditCanvas() {
             // 旋转/翻转改变坐标系，overlay 需重挂载以重置裁剪框
             <CropOverlay
               key={`${rotation}-${flipH}-${flipV}`}
+              imgRef={imgRef}
+              originalWidth={originalWidth}
+            />
+          )}
+          {annotationTool && loadedUrl === previewUrl && originalWidth != null && (
+            <AnnotationLayer
+              key={`ann-${rotation}-${flipH}-${flipV}`}
               imgRef={imgRef}
               originalWidth={originalWidth}
             />

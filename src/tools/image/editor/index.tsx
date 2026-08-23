@@ -2,7 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Image as ImageIcon, RotateCcw, RotateCw, FlipHorizontal, FlipVertical } from 'lucide-react';
+import {
+  Image as ImageIcon,
+  RotateCcw,
+  RotateCw,
+  FlipHorizontal,
+  FlipVertical,
+  Square,
+  MoveUpRight,
+  Highlighter,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useImageEditorStore } from './store/imageEditorStore';
 import { FileUploadZone } from '@/components/ui/file-upload-zone';
 import { Button } from '@/components/ui/button';
@@ -13,7 +24,8 @@ import { showError, showInfo } from '@/tools/video/editor/utils/errorHandling';
 import { EditCanvas } from './components/EditCanvas';
 import { FilterControls } from './components/FilterControls';
 import { ExportSettings } from './components/ExportSettings';
-import type { CropRatio, EditParams, ImageInfo } from './types';
+import { ANNOTATION_COLORS, ANNOTATION_STROKES } from './types';
+import type { AnnotationKind, CropRatio, EditParams, ImageInfo } from './types';
 
 const RATIO_OPTIONS: { value: CropRatio; label: string }[] = [
   { value: 'free', label: '自由' },
@@ -22,6 +34,20 @@ const RATIO_OPTIONS: { value: CropRatio; label: string }[] = [
   { value: '16:9', label: '16:9' },
 ];
 
+const ANNOTATION_TOOLS: { value: AnnotationKind; label: string; icon: typeof Square }[] = [
+  { value: 'rect', label: '矩形', icon: Square },
+  { value: 'arrow', label: '箭头', icon: MoveUpRight },
+  { value: 'highlight', label: '高亮', icon: Highlighter },
+];
+
+const ANNOTATION_KIND_LABELS: Record<AnnotationKind, string> = {
+  rect: '矩形',
+  arrow: '箭头',
+  highlight: '高亮',
+};
+
+const STROKE_LABELS = ['细', '中', '粗'];
+
 export function ImageEditor() {
   const inputPath = useImageEditorStore((s) => s.inputPath);
   const imageInfo = useImageEditorStore((s) => s.imageInfo);
@@ -29,8 +55,15 @@ export function ImageEditor() {
   const cropEnabled = useImageEditorStore((s) => s.cropEnabled);
   const hasCrop = useImageEditorStore((s) => s.crop !== null);
   const cropRatio = useImageEditorStore((s) => s.cropRatio);
-  const setCropEnabled = useImageEditorStore((s) => s.setCropEnabled);
   const setCropRatio = useImageEditorStore((s) => s.setCropRatio);
+  const annotationTool = useImageEditorStore((s) => s.annotationTool);
+  const annotationColor = useImageEditorStore((s) => s.annotationColor);
+  const annotationStroke = useImageEditorStore((s) => s.annotationStroke);
+  const annotations = useImageEditorStore((s) => s.params.annotations);
+  const setAnnotationColor = useImageEditorStore((s) => s.setAnnotationColor);
+  const setAnnotationStroke = useImageEditorStore((s) => s.setAnnotationStroke);
+  const removeAnnotation = useImageEditorStore((s) => s.removeAnnotation);
+  const clearAnnotations = useImageEditorStore((s) => s.clearAnnotations);
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -61,9 +94,10 @@ export function ImageEditor() {
 
   // 防抖预览：编辑参数变化后 200ms 请求新预览。
   // 以序列化后的"生效参数"为依赖：裁剪模式下预览不含 crop，
-  // 拖动裁剪框不会触发多余请求，也不会引起预览图闪烁。
+  // 标注模式下预览不含标注（由 AnnotationLayer 叠加显示），
+  // 拖动裁剪框/绘制标注不会触发多余请求，也不会引起预览图闪烁。
   const previewParamsKey = JSON.stringify(
-    useImageEditorStore.getState().getEditParams(!cropEnabled)
+    useImageEditorStore.getState().getEditParams(!cropEnabled, !annotationTool)
   );
 
   useEffect(() => {
@@ -75,7 +109,7 @@ export function ImageEditor() {
       try {
         const url = await invoke<string>('edit_image_preview', {
           inputPath,
-          params: store.getEditParams(!store.cropEnabled),
+          params: store.getEditParams(!store.cropEnabled, !store.annotationTool),
         });
         if (!cancelled) {
           useImageEditorStore.getState().setPreview(url);
@@ -93,14 +127,34 @@ export function ImageEditor() {
     };
   }, [inputPath, previewParamsKey]);
 
-  // 旋转/翻转会改变坐标系，已保存的裁剪区域不再适用，需一并清除
+  // 旋转/翻转会改变坐标系，已保存的裁剪区域与标注不再适用，需一并清除
   const applyTransform = (patch: Partial<EditParams>) => {
     const store = useImageEditorStore.getState();
     store.updateParams(patch);
-    if (store.crop) {
-      store.clearCrop();
-      showInfo('裁剪已重置');
+    const hadCrop = store.crop !== null;
+    const hadAnnotations = store.params.annotations.length > 0;
+    if (hadCrop) store.clearCrop();
+    if (hadAnnotations) store.clearAnnotations();
+    if (hadCrop || hadAnnotations) {
+      showInfo('裁剪与标注已重置');
     }
+  };
+
+  // 标注与裁剪模式互斥：开启其一时自动关闭另一模式（各自数据保留）
+  const handleCropToggle = (enabled: boolean) => {
+    const store = useImageEditorStore.getState();
+    if (enabled && store.annotationTool) {
+      showInfo('已切换为裁剪模式，标注绘制已关闭');
+    }
+    store.setCropEnabled(enabled);
+  };
+
+  const handleAnnotationTool = (tool: AnnotationKind | null) => {
+    const store = useImageEditorStore.getState();
+    if (tool && store.cropEnabled) {
+      showInfo('已切换为标注模式，裁剪已关闭');
+    }
+    store.setAnnotationTool(tool);
   };
 
   // 清除已保存的裁剪区域：cropEnabled 关闭后预览参数自动恢复无裁剪状态
@@ -213,7 +267,7 @@ export function ImageEditor() {
                     <Switch
                       id="crop"
                       checked={cropEnabled}
-                      onCheckedChange={setCropEnabled}
+                      onCheckedChange={handleCropToggle}
                     />
                     <Label htmlFor="crop" className="cursor-pointer">启用裁剪</Label>
                     {hasCrop && (
@@ -245,6 +299,99 @@ export function ImageEditor() {
                         在左侧预览图上拖动裁剪框或手柄调整区域，关闭裁剪开关后预览应用裁剪效果
                       </p>
                     </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 标注 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>标注</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    {ANNOTATION_TOOLS.map(({ value, label, icon: Icon }) => (
+                      <Button
+                        key={value}
+                        size="sm"
+                        variant={annotationTool === value ? 'default' : 'outline'}
+                        onClick={() => handleAnnotationTool(annotationTool === value ? null : value)}
+                      >
+                        <Icon className="w-4 h-4 mr-1" />
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                  {annotationTool && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">颜色</span>
+                        {ANNOTATION_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            title={c}
+                            className={`w-5 h-5 rounded-full border border-border transition-transform hover:scale-110 ${
+                              annotationColor === c ? 'ring-2 ring-primary ring-offset-1' : ''
+                            }`}
+                            style={{ backgroundColor: c }}
+                            onClick={() => setAnnotationColor(c)}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">线宽</span>
+                        {ANNOTATION_STROKES.map((s, i) => (
+                          <Button
+                            key={s}
+                            size="sm"
+                            variant={annotationStroke === s ? 'default' : 'outline'}
+                            className="h-7 px-3 text-xs"
+                            onClick={() => setAnnotationStroke(s)}
+                          >
+                            {STROKE_LABELS[i]}
+                          </Button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        在左侧预览图上拖动绘制标注，松开后立即生效
+                      </p>
+                    </>
+                  )}
+                  {annotations.length > 0 && (
+                    <div className="space-y-1">
+                      {annotations.map((ann, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 rounded-md border px-2 py-1 text-xs"
+                        >
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-border"
+                            style={{ backgroundColor: ann.color }}
+                          />
+                          <span>{ANNOTATION_KIND_LABELS[ann.kind]}</span>
+                          <span className="text-muted-foreground">#{i + 1}</span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="ml-auto h-5 w-5"
+                            title="删除该标注"
+                            onClick={() => removeAnnotation(i)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-xs text-destructive hover:text-destructive"
+                        onClick={clearAnnotations}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        清空标注
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>

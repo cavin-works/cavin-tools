@@ -25,9 +25,13 @@ export interface EditParams {
   blur: number;
   /** 锐化强度 0..10 */
   sharpen: number;
+  /** 饱和度 -100..100 */
+  saturation: number;
+  /** 标注列表 */
+  annotations: Annotation[];
 }
 
-// 默认编辑参数（数值 0 / 开关 false 均为"无操作"，后端会跳过）
+// 默认编辑参数（数值 0 / 开关 false / 空列表均为"无操作"，后端会跳过）
 export const DEFAULT_PARAMS: EditParams = {
   rotation: 0,
   flipH: false,
@@ -39,7 +43,34 @@ export const DEFAULT_PARAMS: EditParams = {
   invert: false,
   blur: 0,
   sharpen: 0,
+  saturation: 0,
+  annotations: [],
 };
+
+// 标注类型
+export type AnnotationKind = 'rect' | 'arrow' | 'highlight';
+
+// 标注（与后端 image_editor::Annotation 对应，坐标与裁剪同处旋转/翻转后的原图坐标系）
+export interface Annotation {
+  kind: AnnotationKind;
+  x: number;
+  y: number;
+  /** arrow 为对角点矩形包络 */
+  width: number;
+  height: number;
+  /** "#RRGGBB" */
+  color: string;
+  /** 线宽 2|4|8 */
+  stroke: number;
+  /** arrow 专用：true 时对角线为右上→左下（默认左上→右下） */
+  flip: boolean;
+}
+
+// 标注色板
+export const ANNOTATION_COLORS = ['#FF4D4F', '#FFC53D', '#63E6BE', '#4DABF7', '#B197FC', '#FFFFFF'];
+
+// 标注线宽档位
+export const ANNOTATION_STROKES = [2, 4, 8];
 
 // 图片信息（get_image_info 返回）
 export interface ImageInfo {
