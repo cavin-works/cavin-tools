@@ -1,3 +1,13 @@
+## [0.1.20](https://github.com/cavin-works/cavin-tools/compare/v0.1.19...v0.1.20) (2026-08-23)
+
+
+### ✨ 新功能
+
+* **image:** 编辑器二期:标注(矩形/箭头/高亮)与饱和度滤镜 (close [#45](https://github.com/cavin-works/cavin-tools/issues/45)) ([7dd9314](https://github.com/cavin-works/cavin-tools/commit/7dd93147072431abcf0f0843c93af1978ccee2d7))
+* **text:** 字符工具新增 URL 编解码/时间戳/UUID/SHA 四个 Tab (close [#44](https://github.com/cavin-works/cavin-tools/issues/44)) ([443d1d4](https://github.com/cavin-works/cavin-tools/commit/443d1d4582609f0f5416b95c373c5219efa3f291))
+
+
+
 ## [0.1.19](https://github.com/cavin-works/cavin-tools/compare/v0.1.18...v0.1.19) (2026-08-23)
 
 
