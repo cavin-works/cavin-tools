@@ -98,6 +98,17 @@ jobs:
           else
             echo "⏭️  跳过提交（由第一个平台处理）"
           fi
+
+          # 将 release notes 写入 step output（供 releaseBody 和 latest.json 使用）
+          # 多行文本写入 GITHUB_OUTPUT 的标准方式（heredoc 定界符防内容注入）
+          if [ -f "$RUNNER_TEMP/release_notes.txt" ]; then
+            EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+            echo "NOTES<<$EOF" >> "$GITHUB_OUTPUT"
+            cat "$RUNNER_TEMP/release_notes.txt" >> "$GITHUB_OUTPUT"
+            echo "$EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "NOTES=" >> "$GITHUB_OUTPUT"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

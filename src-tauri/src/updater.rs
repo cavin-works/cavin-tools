@@ -37,10 +37,6 @@ pub enum DownloadEvent {
         percentage: f64,
     },
     Finished,
-    #[serde(rename_all = "camelCase")]
-    Error {
-        error: String,
-    },
 }
 
 #[derive(Serialize)]

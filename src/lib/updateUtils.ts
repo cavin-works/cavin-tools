@@ -14,15 +14,15 @@ export interface DownloadProgress {
 }
 
 export type UpdateStatus = 'idle' | 'checking' | 'downloading' | 'installing' | 'complete' | 'error';
+// 'installing' 预留：后端安装阶段尚未上报，UI 已有对应展示分支
 
 export interface DownloadEvent {
-  event: 'Started' | 'Progress' | 'Finished' | 'Error';
+  event: 'Started' | 'Progress' | 'Finished';
   data?: {
-    content_length?: number;
+    contentLength?: number;
     downloaded?: number;
     total?: number;
     percentage?: number;
-    error?: string;
   };
 }
 

@@ -40,14 +40,15 @@ export function UpdateDialog({ open, onOpenChange }: UpdateDialogProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unlisten = listen<string>('update-download', (event) => {
+    const unlisten = listen<DownloadEvent | string>('update-download', (event) => {
       try {
-        const data: DownloadEvent = JSON.parse(event.payload);
-        
+        // Tauri 2 emit 的对象到 JS 时 payload 已是对象；兼容字符串形式
+        const data: DownloadEvent = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+
         if (data.event === 'Started') {
           setUpdateStatus('downloading');
-          if (data.data?.content_length) {
-            setUpdateProgress({ downloaded: 0, total: data.data.content_length, percentage: 0 });
+          if (data.data?.contentLength) {
+            setUpdateProgress({ downloaded: 0, total: data.data.contentLength, percentage: 0 });
           }
         } else if (data.event === 'Progress') {
           setUpdateStatus('downloading');
@@ -62,9 +63,6 @@ export function UpdateDialog({ open, onOpenChange }: UpdateDialogProps) {
           setUpdateStatus('complete');
           setShowUpdateCompleteDialog(true);
           onOpenChange(false);
-        } else if (data.event === 'Error') {
-          setError(data.data?.error || '下载失败');
-          setUpdateStatus('error');
         }
       } catch (err) {
         console.error('解析更新事件失败:', err);
