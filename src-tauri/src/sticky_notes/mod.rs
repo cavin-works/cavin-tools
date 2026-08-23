@@ -55,6 +55,9 @@ pub struct TodoTask {
     pub priority: TodoPriority,
     pub created_at: u64,
     pub completed_at: Option<u64>,
+    /// Sort order (drag-and-drop), absent for legacy data
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order: Option<u64>,
 }
 
 /// Widget position
