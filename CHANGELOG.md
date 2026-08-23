@@ -1,3 +1,13 @@
+## [0.1.17](https://github.com/cavin-works/cavin-tools/compare/v0.1.16...v0.1.17) (2026-08-23)
+
+
+### 🐛 Bug 修复
+
+* **proxy:** 中断请求补记 usage;口径统一;4xx 不打熔断 (close [#39](https://github.com/cavin-works/cavin-tools/issues/39)) ([dc24b8f](https://github.com/cavin-works/cavin-tools/commit/dc24b8f14256969a0ff67f743c6f43e324f41655))
+* **proxy:** 转换流式冲刷尾部事件并合成收尾,下游不再悬挂 (close [#38](https://github.com/cavin-works/cavin-tools/issues/38)) ([944b192](https://github.com/cavin-works/cavin-tools/commit/944b192736369d3d219acfdb43b3a0835e73adce))
+
+
+
 ## [0.1.16](https://github.com/cavin-works/cavin-tools/compare/v0.1.15...v0.1.16) (2026-08-23)
 
 
