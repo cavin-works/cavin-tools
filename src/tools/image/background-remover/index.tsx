@@ -78,60 +78,47 @@ export function BackgroundRemover() {
 
   // 监听模型下载进度
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    const unlisten = listen<DownloadProgress>('bg-model-download-progress', (event) => {
+      setDownloadProgress(event.payload.percentage);
+      if (event.payload.status === 'completed') {
+        checkModelStatus();
+        setIsDownloading(false);
+      }
+    });
 
-    async function setupListener() {
-      unlisten = await listen<DownloadProgress>('bg-model-download-progress', (event) => {
-        setDownloadProgress(event.payload.percentage);
-        if (event.payload.status === 'completed') {
-          checkModelStatus();
-          setIsDownloading(false);
-        }
-      });
-    }
-
-    setupListener();
-    return () => { if (unlisten) unlisten(); };
+    return () => {
+      unlisten.then((fn) => fn()).catch(console.error);
+    };
   }, []);
 
   // 监听文件拖拽
   useEffect(() => {
-    let dragEnterUnlisten: (() => void) | undefined;
-    let dragLeaveUnlisten: (() => void) | undefined;
-    let dragDropUnlisten: (() => void) | undefined;
+    const dragEnterUnlisten = listen('tauri://drag-enter', () => setIsDragging(true));
+    const dragLeaveUnlisten = listen('tauri://drag-leave', () => setIsDragging(false));
+    const dragDropUnlisten = listen('tauri://drag-drop', (event: any) => {
+      const payload = event.payload as { paths: string[] };
+      setIsDragging(false);
+      if (payload.paths?.length > 0) {
+        handleFilesSelected(payload.paths);
+      }
+    });
 
-    async function setupDragListeners() {
-      dragEnterUnlisten = await listen('tauri://drag-enter', () => setIsDragging(true));
-      dragLeaveUnlisten = await listen('tauri://drag-leave', () => setIsDragging(false));
-      dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
-        const payload = event.payload as { paths: string[] };
-        setIsDragging(false);
-        if (payload.paths?.length > 0) {
-          handleFilesSelected(payload.paths);
-        }
-      });
-    }
-
-    setupDragListeners();
     return () => {
-      if (dragEnterUnlisten) dragEnterUnlisten();
-      if (dragLeaveUnlisten) dragLeaveUnlisten();
-      if (dragDropUnlisten) dragDropUnlisten();
+      dragEnterUnlisten.then((fn) => fn()).catch(console.error);
+      dragLeaveUnlisten.then((fn) => fn()).catch(console.error);
+      dragDropUnlisten.then((fn) => fn()).catch(console.error);
     };
   }, []);
 
   // 监听批量处理进度
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    const unlisten = listen<BatchProgressEvent>('bg-remove-batch-progress', (event) => {
+      setBatchProgress(event.payload.percentage);
+    });
 
-    async function setupProgressListener() {
-      unlisten = await listen<BatchProgressEvent>('bg-remove-batch-progress', (event) => {
-        setBatchProgress(event.payload.percentage);
-      });
-    }
-
-    setupProgressListener();
-    return () => { if (unlisten) unlisten(); };
+    return () => {
+      unlisten.then((fn) => fn()).catch(console.error);
+    };
   }, [setBatchProgress]);
 
   // 下载模型

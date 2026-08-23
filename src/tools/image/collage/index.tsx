@@ -32,34 +32,26 @@ export function ImageCollage() {
 
   // 监听文件拖拽（接收全部拖入路径）
   useEffect(() => {
-    let dragEnterUnlisten: (() => void) | undefined;
-    let dragLeaveUnlisten: (() => void) | undefined;
-    let dragDropUnlisten: (() => void) | undefined;
+    const dragEnterUnlisten = listen('tauri://drag-enter', () => {
+      setIsDragging(true);
+    });
 
-    async function setupDragListeners() {
-      dragEnterUnlisten = await listen('tauri://drag-enter', () => {
-        setIsDragging(true);
-      });
+    const dragLeaveUnlisten = listen('tauri://drag-leave', () => {
+      setIsDragging(false);
+    });
 
-      dragLeaveUnlisten = await listen('tauri://drag-leave', () => {
-        setIsDragging(false);
-      });
-
-      dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
-        const payload = event.payload as { paths: string[] };
-        setIsDragging(false);
-        if (payload.paths && payload.paths.length > 0) {
-          handleFilesSelected(payload.paths);
-        }
-      });
-    }
-
-    setupDragListeners();
+    const dragDropUnlisten = listen('tauri://drag-drop', (event: any) => {
+      const payload = event.payload as { paths: string[] };
+      setIsDragging(false);
+      if (payload.paths && payload.paths.length > 0) {
+        handleFilesSelected(payload.paths);
+      }
+    });
 
     return () => {
-      if (dragEnterUnlisten) dragEnterUnlisten();
-      if (dragLeaveUnlisten) dragLeaveUnlisten();
-      if (dragDropUnlisten) dragDropUnlisten();
+      dragEnterUnlisten.then((fn) => fn()).catch(console.error);
+      dragLeaveUnlisten.then((fn) => fn()).catch(console.error);
+      dragDropUnlisten.then((fn) => fn()).catch(console.error);
     };
   }, []);
 

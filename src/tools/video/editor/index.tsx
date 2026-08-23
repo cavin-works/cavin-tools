@@ -74,42 +74,34 @@ export function VideoEditor() {
 
   // 监听Tauri的文件拖拽事件
   useEffect(() => {
-    let dragEnterUnlisten: (() => void) | undefined;
-    let dragLeaveUnlisten: (() => void) | undefined;
-    let dragDropUnlisten: (() => void) | undefined;
+    // 监听文件拖入窗口
+    const dragEnterUnlisten = listen('tauri://drag-enter', () => {
+      setIsDragging(true);
+    });
 
-    async function setupDragListeners() {
-      // 监听文件拖入窗口
-      dragEnterUnlisten = await listen('tauri://drag-enter', () => {
-        setIsDragging(true);
-      });
+    // 监听文件拖离窗口
+    const dragLeaveUnlisten = listen('tauri://drag-leave', () => {
+      setIsDragging(false);
+    });
 
-      // 监听文件拖离窗口
-      dragLeaveUnlisten = await listen('tauri://drag-leave', () => {
-        setIsDragging(false);
-      });
+    // 监听文件拖放
+    const dragDropUnlisten = listen('tauri://drag-drop', (event: any) => {
+      // Tauri 2.0 的 payload 结构: { paths: string[], position: {x, y} }
+      const payload = event.payload as { paths: string[]; position: { x: number; y: number } };
+      const paths = payload.paths;
+      setIsDragging(false);
 
-      // 监听文件拖放
-      dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
-        // Tauri 2.0 的 payload 结构: { paths: string[], position: {x, y} }
-        const payload = event.payload as { paths: string[]; position: { x: number; y: number } };
-        const paths = payload.paths;
-        setIsDragging(false);
-
-        if (paths && paths.length > 0) {
-          handleFileSelect(paths[0]);
-        } else {
-          console.error('No files found in payload. Payload:', event.payload);
-        }
-      });
-    }
-
-    setupDragListeners();
+      if (paths && paths.length > 0) {
+        handleFileSelect(paths[0]);
+      } else {
+        console.error('No files found in payload. Payload:', event.payload);
+      }
+    });
 
     return () => {
-      if (dragEnterUnlisten) dragEnterUnlisten();
-      if (dragLeaveUnlisten) dragLeaveUnlisten();
-      if (dragDropUnlisten) dragDropUnlisten();
+      dragEnterUnlisten.then((fn) => fn()).catch(console.error);
+      dragLeaveUnlisten.then((fn) => fn()).catch(console.error);
+      dragDropUnlisten.then((fn) => fn()).catch(console.error);
     };
   }, [handleFileSelect]);
 

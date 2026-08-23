@@ -153,36 +153,29 @@ function App() {
 
   // 监听来自托盘菜单的切换事件
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    const setupListener = async () => {
-      try {
-        unsubscribe = await providersApi.onSwitched(
-          async (event: ProviderSwitchEvent) => {
-            if (event.appType === activeApp) {
-              await refetch();
-            }
-          },
-        );
-      } catch (error) {
+    // 保存 promise 本身：卸载发生在 IPC resolve 之前时，cleanup 仍能拿到 unlisten 函数
+    const unsubscribe = providersApi
+      .onSwitched(async (event: ProviderSwitchEvent) => {
+        if (event.appType === activeApp) {
+          await refetch();
+        }
+      })
+      .catch((error) => {
         console.error("[App] Failed to subscribe provider switch event", error);
-      }
-    };
+        return () => undefined;
+      });
 
-    setupListener();
     return () => {
-      unsubscribe?.();
+      unsubscribe.then((fn) => fn()).catch(console.error);
     };
   }, [activeApp, refetch]);
 
   // 监听统一供应商同步事件，刷新所有应用的供应商列表
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    const setupListener = async () => {
-      try {
-        const { listen } = await import("@tauri-apps/api/event");
-        unsubscribe = await listen("universal-provider-synced", async () => {
+    // 保存 promise 本身：卸载发生在 IPC resolve 之前时，cleanup 仍能拿到 unlisten 函数
+    const unsubscribe = import("@tauri-apps/api/event")
+      .then(({ listen }) =>
+        listen("universal-provider-synced", async () => {
           // 统一供应商同步后刷新所有应用的供应商列表
           // 使用 invalidateQueries 使所有 providers 查询失效
           await queryClient.invalidateQueries({ queryKey: ["providers"] });
@@ -192,18 +185,18 @@ function App() {
           } catch (error) {
             console.error("[App] Failed to update tray menu", error);
           }
-        });
-      } catch (error) {
+        }),
+      )
+      .catch((error) => {
         console.error(
           "[App] Failed to subscribe universal-provider-synced event",
           error,
         );
-      }
-    };
+        return () => undefined;
+      });
 
-    setupListener();
     return () => {
-      unsubscribe?.();
+      unsubscribe.then((fn) => fn()).catch(console.error);
     };
   }, [queryClient]);
 

@@ -40,51 +40,37 @@ export function WatermarkRemover() {
 
   // 监听文件拖拽
   useEffect(() => {
-    let dragEnterUnlisten: (() => void) | undefined;
-    let dragLeaveUnlisten: (() => void) | undefined;
-    let dragDropUnlisten: (() => void) | undefined;
+    const dragEnterUnlisten = listen('tauri://drag-enter', () => {
+      setIsDragging(true);
+    });
 
-    async function setupDragListeners() {
-      dragEnterUnlisten = await listen('tauri://drag-enter', () => {
-        setIsDragging(true);
-      });
+    const dragLeaveUnlisten = listen('tauri://drag-leave', () => {
+      setIsDragging(false);
+    });
 
-      dragLeaveUnlisten = await listen('tauri://drag-leave', () => {
-        setIsDragging(false);
-      });
-
-      dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
-        const payload = event.payload as { paths: string[] };
-        setIsDragging(false);
-        if (payload.paths && payload.paths.length > 0) {
-          handleFilesSelected(payload.paths);
-        }
-      });
-    }
-
-    setupDragListeners();
+    const dragDropUnlisten = listen('tauri://drag-drop', (event: any) => {
+      const payload = event.payload as { paths: string[] };
+      setIsDragging(false);
+      if (payload.paths && payload.paths.length > 0) {
+        handleFilesSelected(payload.paths);
+      }
+    });
 
     return () => {
-      if (dragEnterUnlisten) dragEnterUnlisten();
-      if (dragLeaveUnlisten) dragLeaveUnlisten();
-      if (dragDropUnlisten) dragDropUnlisten();
+      dragEnterUnlisten.then((fn) => fn()).catch(console.error);
+      dragLeaveUnlisten.then((fn) => fn()).catch(console.error);
+      dragDropUnlisten.then((fn) => fn()).catch(console.error);
     };
   }, []);
 
   // 监听批量处理进度
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    async function setupProgressListener() {
-      unlisten = await listen<BatchProgressEvent>('watermark-batch-progress', (event) => {
-        setBatchProgress(event.payload.percentage);
-      });
-    }
-
-    setupProgressListener();
+    const unlisten = listen<BatchProgressEvent>('watermark-batch-progress', (event) => {
+      setBatchProgress(event.payload.percentage);
+    });
 
     return () => {
-      if (unlisten) unlisten();
+      unlisten.then((fn) => fn()).catch(console.error);
     };
   }, [setBatchProgress]);
 

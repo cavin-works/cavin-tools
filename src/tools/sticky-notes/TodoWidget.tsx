@@ -199,6 +199,7 @@ export const TodoWidget: React.FC = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const persistTimerRef = useRef<number | null>(null);
+  const focusTimerIdsRef = useRef<number[]>([]);
   const taskRefs = useRef(new Map<string, HTMLDivElement>());
 
   // 拖拽传感器配置
@@ -214,8 +215,8 @@ export const TodoWidget: React.FC = () => {
   );
 
   const focusInput = () => {
-    const attempts = [0, 40, 120, 240];
-    attempts.forEach((delay) => {
+    focusTimerIdsRef.current.forEach((id) => window.clearTimeout(id));
+    focusTimerIdsRef.current = [0, 40, 120, 240].map((delay) =>
       window.setTimeout(() => {
         const input = inputRef.current;
         if (!input) {
@@ -224,8 +225,8 @@ export const TodoWidget: React.FC = () => {
 
         input.focus();
         input.select();
-      }, delay);
-    });
+      }, delay),
+    );
   };
 
   const cycleFilter = (direction: 1 | -1) => {
@@ -340,11 +341,6 @@ export const TodoWidget: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let unlistenFocus: (() => void) | undefined;
-    let unlistenData: (() => void) | undefined;
-    let unlistenMoved: (() => void) | undefined;
-    let unlistenResized: (() => void) | undefined;
-
     const loadData = async () => {
       try {
         const data = await invoke<{ tasks: TodoTask[]; config: TodoConfig }>('load_sticky_notes');
@@ -367,45 +363,45 @@ export const TodoWidget: React.FC = () => {
       }
     };
 
-    const registerListeners = async () => {
-      const window = getCurrentWindow();
+    const todoWindow = getCurrentWindow();
 
-      unlistenFocus = await listen('todo-widget-focus-input', () => {
-        setFilter('pending');
-        focusInput();
+    // 直接保存 promise：卸载发生在 IPC resolve 之前时，cleanup 仍能拿到 unlisten 函数
+    const unlistenFocus = listen('todo-widget-focus-input', () => {
+      setFilter('pending');
+      focusInput();
+    });
+
+    const unlistenData = listen<string>('sticky-notes-data-updated', (event) => {
+      // payload 为来源窗口 label：跳过自身保存触发的回声，避免磁盘旧数据覆盖本地乐观更新
+      if (event.payload === todoWindow.label) return;
+      void loadData();
+    });
+
+    const unlistenMoved = todoWindow.onMoved(({ payload }) => {
+      scheduleSaveWidgetLayout({
+        position: {
+          x: payload.x,
+          y: payload.y,
+        },
       });
+    });
 
-      unlistenData = await listen('sticky-notes-data-updated', () => {
-        void loadData();
+    const unlistenResized = todoWindow.onResized(({ payload }) => {
+      scheduleSaveWidgetLayout({
+        width: payload.width,
+        height: payload.height,
       });
-
-      unlistenMoved = await window.onMoved(({ payload }) => {
-        scheduleSaveWidgetLayout({
-          position: {
-            x: payload.x,
-            y: payload.y,
-          },
-        });
-      });
-
-      unlistenResized = await window.onResized(({ payload }) => {
-        scheduleSaveWidgetLayout({
-          width: payload.width,
-          height: payload.height,
-        });
-      });
-    };
-
-    void registerListeners();
+    });
 
     return () => {
-      unlistenFocus?.();
-      unlistenData?.();
-      unlistenMoved?.();
-      unlistenResized?.();
+      unlistenFocus.then((fn) => fn()).catch(console.error);
+      unlistenData.then((fn) => fn()).catch(console.error);
+      unlistenMoved.then((fn) => fn()).catch(console.error);
+      unlistenResized.then((fn) => fn()).catch(console.error);
       if (persistTimerRef.current !== null) {
         window.clearTimeout(persistTimerRef.current);
       }
+      focusTimerIdsRef.current.forEach((id) => window.clearTimeout(id));
     };
   }, []);
 

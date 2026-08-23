@@ -325,7 +325,7 @@ async fn batch_convert_images(
     let window_clone = window.clone();
     image_converter::batch_convert_images(input_paths, params, move |current, total| {
         let _ = window_clone.emit(
-            "batch-progress",
+            "image-batch-progress",
             serde_json::json!({
                 "current": current,
                 "total": total,

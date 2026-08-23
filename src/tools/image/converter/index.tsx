@@ -22,62 +22,49 @@ export function ImageConverter() {
     isBatchProcessing,
     setBatchProcessing,
     setBatchProgress,
-    targetFormat,
   } = useImageConverterStore();
 
   const [isDragging, setIsDragging] = useState(false);
 
   // 监听文件拖拽
   useEffect(() => {
-    let dragEnterUnlisten: (() => void) | undefined;
-    let dragLeaveUnlisten: (() => void) | undefined;
-    let dragDropUnlisten: (() => void) | undefined;
+    const dragEnterUnlisten = listen('tauri://drag-enter', () => {
+      setIsDragging(true);
+    });
 
-    async function setupDragListeners() {
-      dragEnterUnlisten = await listen('tauri://drag-enter', () => {
-        setIsDragging(true);
-      });
+    const dragLeaveUnlisten = listen('tauri://drag-leave', () => {
+      setIsDragging(false);
+    });
 
-      dragLeaveUnlisten = await listen('tauri://drag-leave', () => {
-        setIsDragging(false);
-      });
-
-      dragDropUnlisten = await listen('tauri://drag-drop', (event: any) => {
-        const payload = event.payload as { paths: string[] };
-        setIsDragging(false);
-        if (payload.paths && payload.paths.length > 0) {
-          handleFilesSelected(payload.paths);
-        }
-      });
-    }
-
-    setupDragListeners();
+    const dragDropUnlisten = listen('tauri://drag-drop', (event: any) => {
+      const payload = event.payload as { paths: string[] };
+      setIsDragging(false);
+      if (payload.paths && payload.paths.length > 0) {
+        handleFilesSelected(payload.paths);
+      }
+    });
 
     return () => {
-      if (dragEnterUnlisten) dragEnterUnlisten();
-      if (dragLeaveUnlisten) dragLeaveUnlisten();
-      if (dragDropUnlisten) dragDropUnlisten();
+      dragEnterUnlisten.then((fn) => fn()).catch(console.error);
+      dragLeaveUnlisten.then((fn) => fn()).catch(console.error);
+      dragDropUnlisten.then((fn) => fn()).catch(console.error);
     };
   }, []);
 
   // 监听批量转换进度
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
-
-    async function setupProgressListener() {
-      unlisten = await listen<BatchProgressEvent>('batch-progress', (event) => {
-        setBatchProgress(event.payload.percentage);
-      });
-    }
-
-    setupProgressListener();
+    const unlisten = listen<BatchProgressEvent>('image-batch-progress', (event) => {
+      setBatchProgress(event.payload.percentage);
+    });
 
     return () => {
-      if (unlisten) unlisten();
+      unlisten.then((fn) => fn()).catch(console.error);
     };
   }, [setBatchProgress]);
 
   const handleFilesSelected = useCallback(async (paths: string[]) => {
+    // 拖拽监听在挂载时捕获本回调，格式必须实时读取，避免拖入文件固化旧 targetFormat
+    const { targetFormat: currentFormat } = useImageConverterStore.getState();
     for (const path of paths) {
       try {
         const info = await invoke<ImageInfo>('get_image_info', { path });
@@ -87,7 +74,7 @@ export function ImageConverter() {
           inputPath: path,
           filename: info.filename,
           originalFormat: info.format.toLowerCase(),
-          targetFormat,
+          targetFormat: currentFormat,
           status: 'pending',
           progress: 0,
         };
@@ -97,7 +84,7 @@ export function ImageConverter() {
         showError(`无法加载图片: ${path}`, error);
       }
     }
-  }, [addTask, targetFormat]);
+  }, [addTask]);
 
   const handleConvert = useCallback(async () => {
     const pendingTasks = tasks.filter((t) => t.status === 'pending');
