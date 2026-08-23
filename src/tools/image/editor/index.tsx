@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { showError } from '@/tools/video/editor/utils/errorHandling';
+import { showError, showInfo } from '@/tools/video/editor/utils/errorHandling';
 import { EditCanvas } from './components/EditCanvas';
 import { FilterControls } from './components/FilterControls';
 import { ExportSettings } from './components/ExportSettings';
-import type { CropRatio, ImageInfo } from './types';
+import type { CropRatio, EditParams, ImageInfo } from './types';
 
 const RATIO_OPTIONS: { value: CropRatio; label: string }[] = [
   { value: 'free', label: '自由' },
@@ -26,8 +26,8 @@ export function ImageEditor() {
   const inputPath = useImageEditorStore((s) => s.inputPath);
   const imageInfo = useImageEditorStore((s) => s.imageInfo);
   const params = useImageEditorStore((s) => s.params);
-  const updateParams = useImageEditorStore((s) => s.updateParams);
   const cropEnabled = useImageEditorStore((s) => s.cropEnabled);
+  const hasCrop = useImageEditorStore((s) => s.crop !== null);
   const cropRatio = useImageEditorStore((s) => s.cropRatio);
   const setCropEnabled = useImageEditorStore((s) => s.setCropEnabled);
   const setCropRatio = useImageEditorStore((s) => s.setCropRatio);
@@ -101,6 +101,23 @@ export function ImageEditor() {
     };
   }, [inputPath, previewParamsKey]);
 
+  // 旋转/翻转会改变坐标系，已保存的裁剪区域不再适用，需一并清除
+  const applyTransform = (patch: Partial<EditParams>) => {
+    const store = useImageEditorStore.getState();
+    store.updateParams(patch);
+    if (store.crop) {
+      store.clearCrop();
+      showInfo('裁剪已重置');
+    }
+  };
+
+  // 清除已保存的裁剪区域：cropEnabled 关闭后预览参数自动恢复无裁剪状态
+  const handleClearCrop = () => {
+    const store = useImageEditorStore.getState();
+    store.clearCrop();
+    store.setCropEnabled(false);
+  };
+
   const handleFilesSelected = useCallback(async (paths: string[]) => {
     const path = paths[0];
     if (!path) return;
@@ -122,7 +139,8 @@ export function ImageEditor() {
         handleFilesSelected([selected]);
       }
     } catch (error) {
-      console.log('文件选择被取消');
+      // 取消选择时 open 返回 null（上方已处理），走到这里的是真实错误
+      showError('打开文件选择框失败', error);
     }
   };
 
@@ -162,7 +180,7 @@ export function ImageEditor() {
                     variant="outline"
                     size="icon"
                     title="向左旋转 90°"
-                    onClick={() => updateParams({ rotation: (params.rotation + 270) % 360 })}
+                    onClick={() => applyTransform({ rotation: (params.rotation + 270) % 360 })}
                   >
                     <RotateCcw className="w-4 h-4" />
                   </Button>
@@ -170,7 +188,7 @@ export function ImageEditor() {
                     variant="outline"
                     size="icon"
                     title="向右旋转 90°"
-                    onClick={() => updateParams({ rotation: (params.rotation + 90) % 360 })}
+                    onClick={() => applyTransform({ rotation: (params.rotation + 90) % 360 })}
                   >
                     <RotateCw className="w-4 h-4" />
                   </Button>
@@ -178,7 +196,7 @@ export function ImageEditor() {
                     variant={params.flipH ? 'default' : 'outline'}
                     size="icon"
                     title="水平翻转"
-                    onClick={() => updateParams({ flipH: !params.flipH })}
+                    onClick={() => applyTransform({ flipH: !params.flipH })}
                   >
                     <FlipHorizontal className="w-4 h-4" />
                   </Button>
@@ -186,7 +204,7 @@ export function ImageEditor() {
                     variant={params.flipV ? 'default' : 'outline'}
                     size="icon"
                     title="垂直翻转"
-                    onClick={() => updateParams({ flipV: !params.flipV })}
+                    onClick={() => applyTransform({ flipV: !params.flipV })}
                   >
                     <FlipVertical className="w-4 h-4" />
                   </Button>
@@ -206,6 +224,16 @@ export function ImageEditor() {
                       onCheckedChange={setCropEnabled}
                     />
                     <Label htmlFor="crop" className="cursor-pointer">启用裁剪</Label>
+                    {hasCrop && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto h-7 px-2 text-xs"
+                        onClick={handleClearCrop}
+                      >
+                        清除裁剪
+                      </Button>
+                    )}
                   </div>
                   {cropEnabled && (
                     <>

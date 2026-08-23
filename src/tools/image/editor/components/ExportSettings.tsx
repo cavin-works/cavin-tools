@@ -36,15 +36,16 @@ export function ExportSettings() {
     setExporting(true);
     try {
       const output = buildOutputPath(store.inputPath, store.exportFormat, '_edited');
-      await invoke('edit_image_export', {
+      // 同名文件已存在时后端自动改为 {stem}_1、_2…，返回实际写入路径
+      const actualPath = await invoke<string>('edit_image_export', {
         inputPath: store.inputPath,
         params: store.getEditParams(true),
         outputPath: output,
         format: store.exportFormat,
         quality: store.exportQuality,
       });
-      setOutputPath(output);
-      showSuccess('导出成功');
+      setOutputPath(actualPath);
+      showSuccess(`导出成功: ${actualPath}`);
     } catch (error) {
       showError('导出失败', error);
     } finally {

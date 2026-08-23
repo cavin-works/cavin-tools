@@ -35,15 +35,16 @@ export function ExportSettings() {
     store.setExporting(true);
     try {
       const output = buildOutputPath(store.images[0].path, store.exportFormat, '_collage');
-      await invoke('collage_export', {
+      // 同名文件已存在时后端自动改为 {stem}_1、_2…，返回实际写入路径
+      const actualPath = await invoke<string>('collage_export', {
         inputPaths: store.images.map((img) => img.path),
         params: store.params,
         outputPath: output,
         format: store.exportFormat,
         quality: store.exportQuality,
       });
-      setOutputPath(output);
-      showSuccess('导出成功');
+      setOutputPath(actualPath);
+      showSuccess(`导出成功: ${actualPath}`);
     } catch (error) {
       showError('导出失败', error);
     } finally {

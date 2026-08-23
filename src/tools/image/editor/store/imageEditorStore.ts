@@ -19,6 +19,7 @@ interface ImageEditorStore {
   cropRatio: CropRatio;
   setCropEnabled: (enabled: boolean) => void;
   setCrop: (crop: CropRect) => void;
+  clearCrop: () => void;
   setCropRatio: (ratio: CropRatio) => void;
 
   // 预览
@@ -80,6 +81,7 @@ export const useImageEditorStore = create<ImageEditorStore>((set, get) => ({
   cropRatio: 'free',
   setCropEnabled: (enabled) => set({ cropEnabled: enabled }),
   setCrop: (crop) => set({ crop }),
+  clearCrop: () => set({ crop: null }),
   setCropRatio: (ratio) => set({ cropRatio: ratio }),
 
   previewUrl: null,

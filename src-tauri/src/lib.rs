@@ -328,6 +328,25 @@ async fn batch_convert_images(
     .await
 }
 
+/// 输出路径已存在时追加 _1/_2/… 直到不冲突，返回实际可写路径（避免同名文件被静默覆盖）
+fn unique_output_path(path: &str) -> String {
+    let p = std::path::Path::new(path);
+    if !p.exists() {
+        return path.to_string();
+    }
+    let parent = p.parent().map(std::path::Path::to_path_buf).unwrap_or_default();
+    let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
+    let ext = p.extension().and_then(|s| s.to_str());
+    (1..)
+        .map(|i| match ext {
+            Some(ext) => parent.join(format!("{stem}_{i}.{ext}")),
+            None => parent.join(format!("{stem}_{i}")),
+        })
+        .find(|p| !p.exists())
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string())
+}
+
 #[tauri::command]
 async fn collage_preview(
     input_paths: Vec<String>,
@@ -343,7 +362,8 @@ async fn collage_export(
     output_path: String,
     format: String,
     quality: u8,
-) -> Result<(), String> {
+) -> Result<String, String> {
+    let output_path = unique_output_path(&output_path);
     image_collage::collage_export(input_paths, params, output_path, format, quality).await
 }
 
@@ -362,7 +382,8 @@ async fn edit_image_export(
     output_path: String,
     format: String,
     quality: u8,
-) -> Result<(), String> {
+) -> Result<String, String> {
+    let output_path = unique_output_path(&output_path);
     image_editor::edit_image_export(input_path, params, output_path, format, quality).await
 }
 

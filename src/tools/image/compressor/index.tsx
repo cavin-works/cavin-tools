@@ -219,7 +219,8 @@ export function ImageCompressor() {
         handleFilesSelected(paths);
       }
     } catch (error) {
-      console.log('文件选择被取消');
+      // 取消选择时 open 返回 null（上方已处理），走到这里的是真实错误
+      showError('打开文件选择框失败', error);
     }
   };
 

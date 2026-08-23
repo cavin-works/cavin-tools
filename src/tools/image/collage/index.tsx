@@ -141,7 +141,8 @@ export function ImageCollage() {
         handleFilesSelected(Array.isArray(selected) ? selected : [selected]);
       }
     } catch (error) {
-      console.log('文件选择被取消');
+      // 取消选择时 open 返回 null（上方已处理），走到这里的是真实错误
+      showError('打开文件选择框失败', error);
     }
   };
 
@@ -184,6 +185,9 @@ export function ImageCollage() {
                 </CardHeader>
                 <CardContent>
                   <TemplatePicker />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    横向拼接高度 / 纵向拼接宽度上限 1200px
+                  </p>
                 </CardContent>
               </Card>
 

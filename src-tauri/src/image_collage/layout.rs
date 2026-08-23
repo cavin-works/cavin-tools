@@ -13,6 +13,8 @@ pub struct Rect {
 
 /// 行/列模板统一目标边长上限，防止超大原图撑爆画布
 const MAX_STRIP_SIDE: u32 = 1200;
+/// 网格模板单元格上限，防止多张巨图拼出超大画布（9 张 12000² 会 OOM）
+const MAX_GRID_CELL: u32 = 2000;
 
 /// 在"原图尺寸"域上计算布局：返回 (画布宽, 画布高, 每图单元格)。
 /// 布局与缩放解耦——预览时调用方将画布与所有 Rect 整体乘 scale，
@@ -77,7 +79,10 @@ pub fn cell_rects(
             // 单元格 = 所有图平均宽高（取整），所有格子统一尺寸
             let cell_w = (cell_sizes.iter().map(|s| s.0 as u64).sum::<u64>() / n as u64) as u32;
             let cell_h = (cell_sizes.iter().map(|s| s.1 as u64).sum::<u64>() / n as u64) as u32;
-            let (cell_w, cell_h) = (cell_w.max(1), cell_h.max(1));
+            let (cell_w, cell_h) = (
+                cell_w.max(1).min(MAX_GRID_CELL),
+                cell_h.max(1).min(MAX_GRID_CELL),
+            );
             let canvas_w = 2 * margin + cols * cell_w + (cols - 1) * gap;
             let canvas_h = 2 * margin + rows * cell_h + (rows - 1) * gap;
             let rects = (0..n)
@@ -204,6 +209,19 @@ mod tests {
         assert_eq!((w, h), (3 * 10, 2 * 10)); // rows = ceil(4/3) = 2
         assert_eq!(rects[2], Rect { x: 20, y: 0, width: 10, height: 10 });
         assert_eq!(rects[3], Rect { x: 0, y: 10, width: 10, height: 10 });
+    }
+
+    #[test]
+    fn test_grid_cell_cap() {
+        // 巨图单元格封顶 2000：3 张 5000×5000 在 grid-3 下为 1 行 3 列，画布 6000×2000
+        let sizes = vec![(5000, 5000); 3];
+        let (w, h, rects) = cell_rects("grid-3", &sizes, &params("grid-3", 0, 0)).unwrap();
+        assert!(rects.iter().all(|r| r.width <= 2000 && r.height <= 2000));
+        assert_eq!((w, h), (3 * 2000, 2000));
+
+        // grid-2 下 3 张为 2 行，画布也不超过 2×2000 见方
+        let (w2, h2, _) = cell_rects("grid-2", &sizes, &params("grid-2", 0, 0)).unwrap();
+        assert!(w2 <= 2 * 2000 && h2 <= 2 * 2000);
     }
 
     #[test]

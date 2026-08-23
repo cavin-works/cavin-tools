@@ -2,7 +2,7 @@ pub mod layout;
 pub mod types;
 
 use base64::Engine;
-use image::{codecs::jpeg::JpegEncoder, imageops, DynamicImage, GenericImageView, ImageFormat, RgbaImage};
+use image::{codecs::jpeg::JpegEncoder, imageops, DynamicImage, GenericImageView, ImageFormat, Rgba, RgbaImage};
 use tokio::task::spawn_blocking;
 
 pub use types::CollageParams;
@@ -71,14 +71,14 @@ pub async fn collage_preview(
     .map_err(|e| format!("异步任务执行失败: {}", e))?
 }
 
-/// 导出拼贴结果：scale=1 全分辨率，按指定格式写入输出路径
+/// 导出拼贴结果：scale=1 全分辨率，按指定格式写入输出路径，返回实际输出路径
 pub async fn collage_export(
     input_paths: Vec<String>,
     params: CollageParams,
     output_path: String,
     format: String,
     quality: u8,
-) -> Result<(), String> {
+) -> Result<String, String> {
     spawn_blocking(move || {
         if input_paths.is_empty() {
             return Err("拼贴至少需要一张图片".to_string());
@@ -89,33 +89,42 @@ pub async fn collage_export(
             .map(|p| image::open(p).map_err(|e| format!("无法打开图片 {}: {}", p, e)))
             .collect::<Result<_, _>>()?;
 
-        let canvas = render_collage(&imgs, &params, 1.0)?;
-        let processed = DynamicImage::ImageRgba8(canvas);
+        let mut canvas = render_collage(&imgs, &params, 1.0)?;
 
         match format.to_lowercase().as_str() {
             "jpg" | "jpeg" => {
-                // JPEG 不支持透明通道，先拍平到 RGB
+                // JPEG 不支持透明通道，拍平到 RGB；透明背景需先合成到白底，
+                // 否则 to_rgb8 丢弃 alpha 后透明区域落黑
+                if params.background == "transparent" {
+                    let mut white = RgbaImage::from_pixel(
+                        canvas.width(),
+                        canvas.height(),
+                        Rgba([255, 255, 255, 255]),
+                    );
+                    imageops::overlay(&mut white, &canvas, 0, 0);
+                    canvas = white;
+                }
                 let mut output_file = std::fs::File::create(&output_path)
                     .map_err(|e| format!("创建输出文件失败: {}", e))?;
                 let encoder = JpegEncoder::new_with_quality(&mut output_file, quality);
-                processed
+                DynamicImage::ImageRgba8(canvas)
                     .to_rgb8()
                     .write_with_encoder(encoder)
                     .map_err(|e| format!("保存JPEG失败: {}", e))?;
             }
             "webp" => {
-                processed
+                DynamicImage::ImageRgba8(canvas)
                     .save_with_format(&output_path, ImageFormat::WebP)
                     .map_err(|e| format!("保存WebP失败: {}", e))?;
             }
             _ => {
-                processed
+                DynamicImage::ImageRgba8(canvas)
                     .save_with_format(&output_path, ImageFormat::Png)
                     .map_err(|e| format!("保存PNG失败: {}", e))?;
             }
         }
 
-        Ok(())
+        Ok(output_path)
     })
     .await
     .map_err(|e| format!("异步任务执行失败: {}", e))?

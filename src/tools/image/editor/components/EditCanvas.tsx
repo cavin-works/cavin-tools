@@ -12,6 +12,8 @@ export function EditCanvas() {
   const inputPath = useImageEditorStore((s) => s.inputPath);
   const imageInfo = useImageEditorStore((s) => s.imageInfo);
   const rotation = useImageEditorStore((s) => s.params.rotation);
+  const flipH = useImageEditorStore((s) => s.params.flipH);
+  const flipV = useImageEditorStore((s) => s.params.flipV);
   const previewUrl = useImageEditorStore((s) => s.previewUrl);
   const previewLoading = useImageEditorStore((s) => s.previewLoading);
   const cropEnabled = useImageEditorStore((s) => s.cropEnabled);
@@ -45,7 +47,12 @@ export function EditCanvas() {
             onLoad={() => setLoadedUrl(previewUrl)}
           />
           {cropEnabled && loadedUrl === previewUrl && originalWidth != null && (
-            <CropOverlay imgRef={imgRef} originalWidth={originalWidth} />
+            // 旋转/翻转改变坐标系，overlay 需重挂载以重置裁剪框
+            <CropOverlay
+              key={`${rotation}-${flipH}-${flipV}`}
+              imgRef={imgRef}
+              originalWidth={originalWidth}
+            />
           )}
         </div>
       ) : (

@@ -2,7 +2,9 @@ pub mod edit;
 pub mod types;
 
 use base64::Engine;
-use image::{codecs::jpeg::JpegEncoder, DynamicImage, GenericImageView, ImageFormat};
+use image::{
+    codecs::jpeg::JpegEncoder, imageops, DynamicImage, GenericImageView, ImageFormat, Rgba, RgbaImage,
+};
 use tokio::task::spawn_blocking;
 
 pub use types::{CropRect, EditParams};
@@ -50,14 +52,14 @@ pub async fn edit_image_preview(
     .map_err(|e| format!("异步任务执行失败: {}", e))?
 }
 
-/// 导出编辑结果：原图经完整管线（scale=1）后按指定格式写入输出路径
+/// 导出编辑结果：原图经完整管线（scale=1）后按指定格式写入输出路径，返回实际输出路径
 pub async fn edit_image_export(
     input_path: String,
     params: EditParams,
     output_path: String,
     format: String,
     quality: u8,
-) -> Result<(), String> {
+) -> Result<String, String> {
     spawn_blocking(move || {
         let img = image::open(&input_path)
             .map_err(|e| format!("无法打开图片: {}", e))?;
@@ -66,7 +68,8 @@ pub async fn edit_image_export(
 
         match format.to_lowercase().as_str() {
             "jpg" | "jpeg" => {
-                // JPEG 不支持透明通道，先拍平到 RGB
+                // JPEG 不支持透明通道，拍平到 RGB；
+                // to_rgb8 直接丢弃 alpha 会把透明区域落黑，需先合成到白底
                 let has_alpha = matches!(
                     processed.color(),
                     image::ColorType::Rgba8
@@ -75,7 +78,14 @@ pub async fn edit_image_export(
                         | image::ColorType::La16
                 );
                 if has_alpha {
-                    processed = DynamicImage::ImageRgb8(processed.to_rgb8());
+                    let rgba = processed.to_rgba8();
+                    let mut white = RgbaImage::from_pixel(
+                        rgba.width(),
+                        rgba.height(),
+                        Rgba([255, 255, 255, 255]),
+                    );
+                    imageops::overlay(&mut white, &rgba, 0, 0);
+                    processed = DynamicImage::ImageRgb8(DynamicImage::ImageRgba8(white).to_rgb8());
                 }
                 let mut output_file = std::fs::File::create(&output_path)
                     .map_err(|e| format!("创建输出文件失败: {}", e))?;
@@ -96,7 +106,7 @@ pub async fn edit_image_export(
             }
         }
 
-        Ok(())
+        Ok(output_path)
     })
     .await
     .map_err(|e| format!("异步任务执行失败: {}", e))?
