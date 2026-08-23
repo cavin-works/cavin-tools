@@ -199,8 +199,8 @@ mod tests {
         AgentService::save_agent_in(dir.path(), "no-name.md", "---\ndescription: x\n---\nbody").unwrap();
         // YAML 非法
         AgentService::save_agent_in(dir.path(), "bad-yaml.md", "---\nname: [unclosed\n---\nbody").unwrap();
-        // 非 md 文件应被忽略
-        AgentService::save_agent_in(dir.path(), "notes.txt", "x").unwrap();
+        // 非 md 文件应被 list 忽略(直接 fs 写入——save 会拒绝非 .md 文件名)
+        fs::write(dir.path().join("notes.txt"), "x").unwrap();
 
         let agents = AgentService::list_agents_in(dir.path()).unwrap();
         assert_eq!(agents.len(), 3);
