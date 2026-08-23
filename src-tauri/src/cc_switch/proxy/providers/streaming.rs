@@ -72,8 +72,16 @@ pub fn create_anthropic_sse_stream(
         let mut current_model = None;
         let mut content_index = 0;
         let mut has_sent_message_start = false;
+        let mut has_sent_message_stop = false;
         let mut current_block_type: Option<String> = None;
         let mut tool_call_id = None;
+
+        // 上游结束后补一个空行终结符：上游最后一个事件没有尾部空行时，
+        // 残留 buffer 也能进入下方解析循环，而不是被静默丢弃
+        let stream = stream.chain(futures::stream::iter(std::iter::once(Ok::<
+            Bytes,
+            reqwest::Error,
+        >(Bytes::from("\n\n")))));
 
         tokio::pin!(stream);
 
@@ -100,6 +108,7 @@ pub fn create_anthropic_sse_stream(
                                         serde_json::to_string(&event).unwrap_or_default());
                                     log::debug!("[Claude/OpenRouter] >>> Anthropic SSE: message_stop");
                                     yield Ok(Bytes::from(sse_data));
+                                    has_sent_message_stop = true;
                                     continue;
                                 }
 
@@ -290,6 +299,8 @@ pub fn create_anthropic_sse_stream(
                                                 let sse_data = format!("event: content_block_stop\ndata: {}\n\n",
                                                     serde_json::to_string(&event).unwrap_or_default());
                                                 yield Ok(Bytes::from(sse_data));
+                                                // 标记 block 已闭合，避免收尾合成时重复发送
+                                                current_block_type = None;
                                             }
 
                                             let stop_reason = map_stop_reason(Some(finish_reason));
@@ -328,9 +339,31 @@ pub fn create_anthropic_sse_stream(
                     let sse_data = format!("event: error\ndata: {}\n\n",
                         serde_json::to_string(&error_event).unwrap_or_default());
                     yield Ok(Bytes::from(sse_data));
+                    // 错误后补发 message_stop，让下游能正常收尾
+                    if !has_sent_message_stop {
+                        let event = json!({"type": "message_stop"});
+                        let sse_data = format!("event: message_stop\ndata: {}\n\n",
+                            serde_json::to_string(&event).unwrap_or_default());
+                        yield Ok(Bytes::from(sse_data));
+                        has_sent_message_stop = true;
+                    }
                     break;
                 }
             }
+        }
+
+        // 流自然结束但未见 [DONE]：补发收尾事件，避免下游悬挂
+        if has_sent_message_start && !has_sent_message_stop {
+            if current_block_type.is_some() {
+                let event = json!({"type": "content_block_stop", "index": content_index});
+                let sse_data = format!("event: content_block_stop\ndata: {}\n\n",
+                    serde_json::to_string(&event).unwrap_or_default());
+                yield Ok(Bytes::from(sse_data));
+            }
+            let event = json!({"type": "message_stop"});
+            let sse_data = format!("event: message_stop\ndata: {}\n\n",
+                serde_json::to_string(&event).unwrap_or_default());
+            yield Ok(Bytes::from(sse_data));
         }
     }
 }
@@ -346,4 +379,68 @@ fn map_stop_reason(finish_reason: Option<&str>) -> Option<String> {
         }
         .to_string()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chunk_json(content: &str, finish_reason: Option<&str>) -> String {
+        let fr = finish_reason
+            .map(|f| format!(r#","finish_reason":"{f}""#))
+            .unwrap_or_default();
+        format!(
+            r#"{{"id":"chatcmpl-1","model":"test-model","choices":[{{"delta":{{"content":"{content}"}}{fr}}}]}}"#
+        )
+    }
+
+    async fn collect_sse(chunks: Vec<Result<Bytes, reqwest::Error>>) -> String {
+        create_anthropic_sse_stream(futures::stream::iter(chunks))
+            .map(|r| r.unwrap())
+            .collect::<Vec<_>>()
+            .await
+            .iter()
+            .map(|b| String::from_utf8_lossy(b).to_string())
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn trailing_event_without_blank_line_is_flushed() {
+        // 最后一个事件没有尾部空行，仍应被解析转发
+        let input = format!(
+            "data: {}\n\ndata: {}",
+            chunk_json("hello", None),
+            chunk_json(" world", None),
+        );
+        let sse = collect_sse(vec![Ok(Bytes::from(input))]).await;
+        assert!(sse.contains("message_start"));
+        assert!(sse.contains("hello"));
+        assert!(sse.contains(" world"));
+        assert!(sse.contains("message_stop"));
+    }
+
+    #[tokio::test]
+    async fn stream_end_without_done_synthesizes_message_stop() {
+        let input = format!("data: {}\n\n", chunk_json("hi", Some("stop")));
+        let sse = collect_sse(vec![Ok(Bytes::from(input))]).await;
+        let stop_pos = sse
+            .find("event: message_stop")
+            .expect("未见 [DONE] 时应合成 message_stop");
+        // message_stop 之前 block 应已闭合，且 finish_reason 已闭合的不重复发
+        assert!(sse[..stop_pos].contains("content_block_stop"));
+        assert_eq!(sse.matches("event: content_block_stop").count(), 1);
+    }
+
+    #[tokio::test]
+    async fn error_path_emits_message_stop() {
+        // 端口 1 必然连接失败，用来构造真实的 reqwest::Error
+        let err = reqwest::get("http://127.0.0.1:1").await.unwrap_err();
+        let sse = collect_sse(vec![
+            Ok(Bytes::from(format!("data: {}\n\n", chunk_json("hi", None)))),
+            Err(err),
+        ])
+        .await;
+        let err_pos = sse.find("event: error").expect("应有 error 事件");
+        assert!(sse[err_pos..].contains("event: message_stop"));
+    }
 }
