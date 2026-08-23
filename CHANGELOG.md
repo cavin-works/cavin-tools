@@ -3,6 +3,7 @@
 
 ### 🐛 Bug 修复
 
+* **ci:** release notes 写入 output 前补尾换行,定界符独立成行 ([5e481e7](https://github.com/cavin-works/cavin-tools/commit/5e481e74e2fc226a362a7897175d0ac8910ef9f1))
 * **image:** 编辑器/拼贴四处正确性修复 (close [#28](https://github.com/cavin-works/cavin-tools/issues/28)) ([1f90fde](https://github.com/cavin-works/cavin-tools/commit/1f90fdecfdd353061548d6fc58862df930dd1bd5))
 * **sticky-notes:** 任务拖拽排序持久化——后端补 order 字段 (close [#27](https://github.com/cavin-works/cavin-tools/issues/27)) ([d65efbe](https://github.com/cavin-works/cavin-tools/commit/d65efbe5dab012af6e8b6365ee9287c0fc91a646))
 * 工具快捷键全局绑定;清理安慰剂控件与死代码 (close [#29](https://github.com/cavin-works/cavin-tools/issues/29), close [#30](https://github.com/cavin-works/cavin-tools/issues/30)) ([2420578](https://github.com/cavin-works/cavin-tools/commit/2420578637a71b185148de9eec5ccc836ddda639))
