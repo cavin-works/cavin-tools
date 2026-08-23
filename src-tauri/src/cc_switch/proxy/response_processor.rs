@@ -144,7 +144,7 @@ pub async fn handle_non_streaming(
                 false,
             );
             log::debug!(
-                "[{}] 未能解析 usage 信息，跳过记录",
+                "[{}] 未能解析 usage 信息，已记录 0 用量行",
                 parser_config.app_type_str
             );
         }
@@ -264,6 +264,32 @@ impl SseUsageCollector {
     }
 }
 
+impl Drop for SseUsageCollector {
+    /// 兜底：客户端提前断开（Esc）时 hyper 直接 drop body 流，
+    /// `create_logged_passthrough_stream` 末尾的 finish() 不会执行，
+    /// 上游已计费但本地零记录（issue #39）。
+    /// 在最后一个引用 drop 时补一次 finish；`finished` 原子标记保证与正常路径不双计。
+    fn drop(&mut self) {
+        if self.inner.finished.load(Ordering::SeqCst) {
+            return;
+        }
+        // Drop 内无法 await：把 finish 投递回当前 tokio runtime。
+        // body 流的 drop 发生在 runtime 线程上，几乎总能拿到 Handle；
+        // 拿不到（脱离 runtime 被 drop）时只能放弃并留日志
+        match tokio::runtime::Handle::try_current() {
+            Ok(handle) => {
+                let collector = self.clone();
+                handle.spawn(async move {
+                    collector.finish().await;
+                });
+            }
+            Err(_) => {
+                log::warn!("[usage] 流式响应被提前断开且不在 tokio 运行时内，usage 补记失败");
+            }
+        }
+    }
+}
+
 // ============================================================================
 // 内部辅助函数
 // ============================================================================
@@ -331,7 +357,7 @@ fn create_usage_collector(
                 )
                 .await;
             });
-            log::debug!("[{tag}] 流式响应缺少 usage 统计，跳过消费记录");
+            log::debug!("[{tag}] 流式响应缺少 usage 统计，已记录 0 用量行");
         }
     })
 }
@@ -555,4 +581,61 @@ fn format_headers(headers: &HeaderMap) -> String {
         })
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// issue #39：客户端 Esc 中断 → 流被 drop、finish() 未执行时，
+    /// Drop 兜底应补记一次，且已收集的事件不丢失
+    #[tokio::test]
+    async fn test_sse_usage_collector_drop_fallback() {
+        let called = Arc::new(AtomicBool::new(false));
+        let events_seen = Arc::new(std::sync::Mutex::new(Vec::<Value>::new()));
+        let c_called = called.clone();
+        let c_events = events_seen.clone();
+
+        {
+            let collector = SseUsageCollector::new(
+                std::time::Instant::now(),
+                move |events, _| {
+                    *c_events.lock().unwrap() = events;
+                    c_called.store(true, Ordering::SeqCst);
+                },
+            );
+            collector.push(serde_json::json!({"type": "test"})).await;
+            // 不调用 finish()，直接 drop —— 模拟客户端提前断开
+        }
+
+        // Drop 兜底通过 Handle::spawn 补记，让出执行权等它跑完
+        for _ in 0..20 {
+            if called.load(Ordering::SeqCst) {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert!(called.load(Ordering::SeqCst), "Drop 兜底未触发回调");
+        assert_eq!(
+            events_seen.lock().unwrap().len(),
+            1,
+            "已收集的 SSE 事件应随兜底一并落库"
+        );
+    }
+
+    /// finish() 正常执行后 drop 不应重复触发回调（防双计）
+    #[tokio::test]
+    async fn test_sse_usage_collector_finish_then_drop_no_double_count() {
+        let count = Arc::new(std::sync::Mutex::new(0usize));
+        let c_count = count.clone();
+
+        let collector = SseUsageCollector::new(std::time::Instant::now(), move |_, _| {
+            *c_count.lock().unwrap() += 1;
+        });
+        collector.finish().await;
+        drop(collector);
+
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        assert_eq!(*count.lock().unwrap(), 1, "回调应只触发一次");
+    }
 }

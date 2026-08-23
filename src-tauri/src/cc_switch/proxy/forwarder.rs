@@ -151,6 +151,15 @@ impl RequestForwarder {
             });
         }
 
+        // 统计口径：按客户端请求维度计数（issue #39）。
+        // 每次客户端请求只计一次 total；成功/失败在各自的返回路径计一次，
+        // 保证 total = success + failed 且成功率不被故障转移重试稀释
+        {
+            let mut status = self.status.write().await;
+            status.total_requests += 1;
+            status.last_request_at = Some(chrono::Utc::now().to_rfc3339());
+        }
+
         let mut last_error = None;
         let mut last_provider = None;
         let mut attempted_providers = 0usize;
@@ -181,13 +190,11 @@ impl RequestForwarder {
 
             attempted_providers += 1;
 
-            // 更新状态中的当前Provider信息
+            // 更新状态中的当前Provider信息（total_requests 已在入口按请求维度计数）
             {
                 let mut status = self.status.write().await;
                 status.current_provider = Some(provider.name.clone());
                 status.current_provider_id = Some(provider.id.clone());
-                status.total_requests += 1;
-                status.last_request_at = Some(chrono::Utc::now().to_rfc3339());
             }
 
             // 转发请求（每个 Provider 只尝试一次，重试由客户端控制）
@@ -451,20 +458,33 @@ impl RequestForwarder {
                         }
                     }
 
-                    // 失败：记录失败并更新熔断器
-                    let _ = self
-                        .router
-                        .record_result(
-                            &provider.id,
-                            app_type_str,
-                            used_half_open_permit,
-                            false,
-                            Some(e.to_string()),
-                        )
-                        .await;
-
-                    // 分类错误
+                    // 先分类错误，再决定是否计入熔断器（issue #39）：
+                    // 4xx（非 429）是请求本身的问题，不代表 Provider 不健康，
+                    // 不计熔断失败（对齐整流器路径），仅释放 HalfOpen permit
                     let category = categorize_proxy_error(&e);
+
+                    if counts_toward_circuit_breaker(&e) {
+                        // 失败：记录失败并更新熔断器
+                        let _ = self
+                            .router
+                            .record_result(
+                                &provider.id,
+                                app_type_str,
+                                used_half_open_permit,
+                                false,
+                                Some(e.to_string()),
+                            )
+                            .await;
+                    } else {
+                        // 客户端错误：仅释放 permit，不计熔断器/健康统计
+                        self.router
+                            .release_permit_neutral(
+                                &provider.id,
+                                app_type_str,
+                                used_half_open_permit,
+                            )
+                            .await;
+                    }
 
                     match category {
                         ErrorCategory::Retryable => {
@@ -728,6 +748,17 @@ fn is_streaming_request(body: &Value, endpoint: &str) -> bool {
 /// Timeout/ForwardFailed 保留重试：超时/发送失败时上游可能已不可达，不重试请求
 /// 直接失败；但上游也可能已处理完整请求（tokens 已消耗），重试存在双计费风险
 /// （见 `ErrorCategory::Retryable` 文档）
+/// 错误是否计入熔断器失败/健康统计
+///
+/// 4xx（非 429）属客户端错误（认证失败/参数错误等），不是 Provider 不健康，
+/// 不计入熔断；429/5xx/Timeout/网络错误照旧计入
+fn counts_toward_circuit_breaker(error: &ProxyError) -> bool {
+    !matches!(
+        error,
+        ProxyError::UpstreamError { status, .. } if *status != 429 && *status < 500
+    )
+}
+
 fn categorize_proxy_error(error: &ProxyError) -> ErrorCategory {
     match error {
         // 网络和上游错误：都应该尝试下一个供应商
@@ -824,6 +855,37 @@ mod tests {
             categorize_proxy_error(&ProxyError::ForwardFailed("f".to_string())),
             ErrorCategory::Retryable
         );
+    }
+
+    #[test]
+    fn test_counts_toward_circuit_breaker() {
+        // issue #39：4xx（非 429）是客户端错误，不打熔断
+        assert!(!counts_toward_circuit_breaker(&ProxyError::UpstreamError {
+            status: 400,
+            body: None
+        }));
+        assert!(!counts_toward_circuit_breaker(&ProxyError::UpstreamError {
+            status: 401,
+            body: None
+        }));
+        assert!(!counts_toward_circuit_breaker(&ProxyError::UpstreamError {
+            status: 404,
+            body: None
+        }));
+        // 429/5xx 照旧计入
+        assert!(counts_toward_circuit_breaker(&ProxyError::UpstreamError {
+            status: 429,
+            body: None
+        }));
+        assert!(counts_toward_circuit_breaker(&ProxyError::UpstreamError {
+            status: 502,
+            body: None
+        }));
+        // 超时/网络错误照旧计入
+        assert!(counts_toward_circuit_breaker(&ProxyError::Timeout("t".to_string())));
+        assert!(counts_toward_circuit_breaker(&ProxyError::ForwardFailed(
+            "f".to_string()
+        )));
     }
 }
 
