@@ -561,17 +561,9 @@ fn create_or_show_note_window(
         return Ok(());
     }
 
-    let url = if note_id == "todo-widget" {
-        WebviewUrl::App("/todo-widget".into())
-    } else {
-        WebviewUrl::App(format!("/note/{}", note_id).into())
-    };
-
-    let title = if note_id == "todo-widget" {
-        "Todo List"
-    } else {
-        "便签"
-    };
+    // 前端仅有 /todo-widget 路由（AppLayout），旧版 /note/{id} 便签路由已移除
+    let url = WebviewUrl::App("/todo-widget".into());
+    let title = "Todo List";
 
     let builder = WebviewWindowBuilder::new(app, &label, url)
         .title(title)
@@ -898,21 +890,6 @@ pub async fn start_window_dragging(app: AppHandle, note_id: String) -> Result<()
         window
             .start_dragging()
             .map_err(|e| format!("Failed to start dragging: {}", e))?;
-    }
-
-    Ok(())
-}
-
-/// Toggle pin all detached notes
-#[tauri::command]
-pub async fn toggle_pin_all_notes(app: AppHandle, pinned: bool) -> Result<(), String> {
-    if let Some(manager) = app.try_state::<NoteWindowManager>() {
-        let labels = manager.get_all_window_labels();
-        for label in labels {
-            if let Some(window) = app.get_webview_window(&label) {
-                let _ = window.set_always_on_top(pinned);
-            }
-        }
     }
 
     Ok(())

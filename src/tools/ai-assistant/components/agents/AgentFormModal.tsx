@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,9 +39,24 @@ const AgentFormModal: React.FC<AgentFormModalProps> = ({
   const [model, setModel] = useState("");
   const [content, setContent] = useState(initialContent ?? "");
   const [saving, setSaving] = useState(false);
-  const [isDarkMode] = useState(() =>
+  const [isDarkMode, setIsDarkMode] = useState(() =>
     document.documentElement.classList.contains("dark"),
   );
+
+  useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains("dark"));
+
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.classList.contains("dark"));
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const canSave = isEdit || (name.trim() !== "" && description.trim() !== "");
 

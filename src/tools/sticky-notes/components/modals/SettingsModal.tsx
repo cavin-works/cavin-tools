@@ -23,6 +23,9 @@ const MODIFIER_TOKENS = new Set([
   'shift',
 ]);
 
+// 后端 parse_shortcut（global-hotkey parse_key）接受的命名主键；录制时空格已映射为 "Space"
+const NAMED_MAIN_KEYS = new Set(['space', 'enter', 'tab', 'escape', 'esc']);
+
 const HOTKEY_LABELS = {
   toggle: '切换显示',
   togglePin: '置顶/取消置顶',
@@ -155,8 +158,12 @@ const validateShortcut = (shortcut: string): string | null => {
   }
 
   const mainKey = keys[0];
-  if (!/^[a-z0-9]+$/i.test(mainKey) && !/^f([1-9]|1[0-2])$/i.test(mainKey)) {
-    return '主按键仅支持字母、数字或 F1-F12';
+  const isValidMainKey =
+    /^[a-z0-9]$/i.test(mainKey)
+    || /^f([1-9]|1[0-2])$/i.test(mainKey)
+    || NAMED_MAIN_KEYS.has(mainKey.toLowerCase());
+  if (!isValidMainKey) {
+    return '主按键仅支持单字符、Space/Enter/Tab/Escape 或 F1-F12';
   }
 
   return null;

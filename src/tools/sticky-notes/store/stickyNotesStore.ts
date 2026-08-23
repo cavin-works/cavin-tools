@@ -156,7 +156,7 @@ export const useTodoStore = create<TodoState>((set, get) => ({
     const { tasks, saveTasks } = get();
     const now = Date.now();
     const newTask: TodoTask = {
-      id: `task-${now}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `task-${now}-${Math.random().toString(36).slice(2, 11)}`,
       title,
       status: 'pending',
       priority,

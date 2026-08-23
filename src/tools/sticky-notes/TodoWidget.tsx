@@ -430,7 +430,7 @@ export const TodoWidget: React.FC = () => {
 
     const now = Date.now();
     const newTask: TodoTask = {
-      id: `task-${now}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `task-${now}-${Math.random().toString(36).slice(2, 11)}`,
       title: newTaskTitle.trim(),
       status: 'pending',
       priority: newTaskPriority,
@@ -713,45 +713,6 @@ export const TodoWidget: React.FC = () => {
     }
   };
 
-  // 处理键盘事件
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      cycleFilter(e.shiftKey ? -1 : 1);
-      return;
-    }
-
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      if (newTaskTitle.trim()) {
-        return;
-      }
-      e.preventDefault();
-      cycleFilter(e.key === 'ArrowRight' ? 1 : -1);
-      return;
-    }
-
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      if (newTaskTitle.trim()) {
-        return;
-      }
-      e.preventDefault();
-      moveActiveTask(e.key === 'ArrowDown' ? 1 : -1, displayTasks);
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (newTaskTitle.trim()) {
-        void handleAddTask();
-        return;
-      }
-
-      if (activeTaskId) {
-        void toggleTask(activeTaskId);
-      }
-    }
-  };
-
   const pendingTasks = tasks.filter((t) => t.status === 'pending');
   const completedTasks = tasks.filter((t) => t.status === 'completed');
   const displayTasks =
@@ -827,6 +788,8 @@ export const TodoWidget: React.FC = () => {
       if (isTextInput) {
         if (target === inputRef.current) {
           if (newTaskTitle.trim()) {
+            event.preventDefault();
+            void handleAddTask();
             return;
           }
         } else {
@@ -846,7 +809,7 @@ export const TodoWidget: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleWindowKeyDown);
     };
-  }, [activeTaskId, displayTasks, newTaskTitle, toggleTask]);
+  }, [activeTaskId, displayTasks, newTaskTitle, toggleTask, handleAddTask]);
 
   return (
     <div
@@ -928,7 +891,6 @@ export const TodoWidget: React.FC = () => {
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
             placeholder="添加新任务..."
             className="flex-1 px-2 py-1.5 rounded text-sm focus:outline-none focus:ring-1"
             style={{
