@@ -1,3 +1,14 @@
+## [0.1.14](https://github.com/cavin-works/cavin-tools/compare/v0.1.13...v0.1.14) (2026-08-23)
+
+
+### ✨ 新功能
+
+* **agents:** 实现智能体管理面板 (close [#22](https://github.com/cavin-works/cavin-tools/issues/22)) ([72040b4](https://github.com/cavin-works/cavin-tools/commit/72040b452d99d521b60a152437c68f1b6b4abfd2))
+* **image:** 图片拼贴:多图拼接与 4 种模板 (close [#24](https://github.com/cavin-works/cavin-tools/issues/24)) ([dadcd1d](https://github.com/cavin-works/cavin-tools/commit/dadcd1d6be95f1ba7b6a3f0828f707b78a48791a))
+* **image:** 图片编辑器一期:裁剪、旋转翻转、滤镜与导出 (close [#23](https://github.com/cavin-works/cavin-tools/issues/23)) ([234c8f6](https://github.com/cavin-works/cavin-tools/commit/234c8f604f9cee9f8756b68c0e9511c5fd8f0105))
+
+
+
 ## [0.1.13](https://github.com/cavin-works/cavin-tools/compare/v0.1.12...v0.1.13) (2026-08-23)
 
 
