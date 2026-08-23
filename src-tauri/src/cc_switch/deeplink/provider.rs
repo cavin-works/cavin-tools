@@ -281,6 +281,26 @@ fn build_claude_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
     json!({ "env": env })
 }
 
+/// Escape a string for safe interpolation into a TOML basic (double-quoted) string
+fn escape_toml_string(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for c in value.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            // TOML 基本字符串不允许裸控制字符
+            c if (c as u32) < 0x20 || c as u32 == 0x7f => {
+                out.push_str(&format!("\\u{:04X}", c as u32))
+            }
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 /// Build Codex settings configuration
 fn build_codex_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
     // Generate a safe provider name identifier
@@ -330,18 +350,21 @@ fn build_codex_settings(request: &DeepLinkImportRequest) -> serde_json::Value {
         .to_string();
 
     // Build config.toml content
+    // endpoint/model 来自外部 deep link，必须转义后再内插，防止 TOML 注入
     let config_toml = format!(
         r#"model_provider = "{clean_provider_name}"
-model = "{model_name}"
+model = "{}"
 model_reasoning_effort = "high"
 disable_response_storage = true
 
 [model_providers.{clean_provider_name}]
 name = "{clean_provider_name}"
-base_url = "{endpoint}"
+base_url = "{}"
 wire_api = "responses"
 requires_openai_auth = true
-"#
+"#,
+        escape_toml_string(&model_name),
+        escape_toml_string(&endpoint)
     );
 
     json!({

@@ -459,3 +459,38 @@ fn test_infer_homepage_from_endpoint_without_homepage() {
     );
 }
 
+// =============================================================================
+// Codex config.toml Injection Tests
+// =============================================================================
+
+#[test]
+fn test_codex_settings_neutralizes_toml_injection() {
+    use super::provider::build_provider_from_request;
+
+    // endpoint 解码后为: https://api.example.com/"␊bogus_key = "injected"␊#
+    // model 解码后为:    m"␊hijacked = true␊#（model 参数完全不经过 URL 校验）
+    // validate_url 拦不住 endpoint：url crate 解析前会先剥掉换行符，校验通过，
+    // 但 query_pairs 解码出的原始值仍带换行/引号进入 TOML 拼接。
+    let url = "ccswitch://v1/import?resource=provider&app=codex&name=Evil&endpoint=https%3A%2F%2Fapi.example.com%2F%22%0Abogus_key%20%3D%20%22injected%22%0A%23&model=m%22%0Ahijacked%20%3D%20true%0A%23&apiKey=k";
+
+    let request = parse_deeplink_url(url).unwrap();
+    let provider = build_provider_from_request(&AppType::Codex, &request).unwrap();
+    let config_toml = provider.settings_config["config"].as_str().unwrap();
+
+    // 生成的必须是合法 TOML，且恶意键未注入（model 注入落在根表，endpoint 注入落在 [model_providers.*] 表内）
+    let parsed: toml::Value = toml::from_str(config_toml).expect("config.toml must be valid TOML");
+    assert!(parsed.get("hijacked").is_none(), "model TOML 注入未拦截");
+    assert!(parsed.get("bogus_key").is_none(), "endpoint TOML 注入未拦截");
+    assert!(
+        parsed["model_providers"]["evil"].get("bogus_key").is_none(),
+        "endpoint TOML 注入未拦截"
+    );
+
+    // 转义必须无损：原始值语义不变
+    assert_eq!(
+        parsed["model_providers"]["evil"]["base_url"].as_str().unwrap(),
+        "https://api.example.com/\"\nbogus_key = \"injected\"\n#"
+    );
+    assert_eq!(parsed["model"].as_str().unwrap(), "m\"\nhijacked = true\n#");
+}
+

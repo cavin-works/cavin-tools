@@ -74,7 +74,7 @@ pub fn get_app_config_dir() -> PathBuf {
         return custom;
     }
 
-    let home = dirs::home_dir().expect("无法获取用户主目录");
+    let home = get_home_dir();
     let new_dir = home.join(".config").join("mnemosyne");
 
     // 如果新目录已存在，直接使用

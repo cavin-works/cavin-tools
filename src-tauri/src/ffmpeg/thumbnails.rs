@@ -93,8 +93,9 @@ pub async fn generate_thumbnails(
             if !output.status.success() {
                 let error = String::from_utf8_lossy(&output.stderr);
                 println!("FFmpeg 错误: {}", error);
-                // 跳过无法提取的帧（可能超出视频时长）
-                if error.contains("Output file is empty") || error.contains("Output file is empty") {
+                // 跳过无法提取的帧（可能超出视频时长）；
+                // "Output file is empty" 同时覆盖完整消息 "Output file is empty, nothing was encoded"（contains 前缀匹配）
+                if error.contains("Output file is empty") {
                     continue;
                 }
                 return Err(format!("提取缩略图失败: {}", error));

@@ -8,6 +8,8 @@ export function isValidImageFile(filename: string): boolean {
 }
 
 export function getImageFormat(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const dotIndex = filename.lastIndexOf('.');
+  if (dotIndex === -1) return '';
+  const ext = filename.slice(dotIndex + 1).toLowerCase();
   return ext === 'jpg' ? 'jpeg' : ext;
 }
