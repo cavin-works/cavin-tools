@@ -24,47 +24,76 @@ impl Database {
 
         let provider_iter = stmt
             .query_map(params![app_type], |row| {
-                let id: String = row.get(0)?;
-                let name: String = row.get(1)?;
-                let settings_config_str: String = row.get(2)?;
-                let website_url: Option<String> = row.get(3)?;
-                let category: Option<String> = row.get(4)?;
-                let created_at: Option<i64> = row.get(5)?;
-                let sort_index: Option<usize> = row.get(6)?;
-                let notes: Option<String> = row.get(7)?;
-                let icon: Option<String> = row.get(8)?;
-                let icon_color: Option<String> = row.get(9)?;
-                let meta_str: String = row.get(10)?;
-                let in_failover_queue: bool = row.get(11)?;
-
-                let settings_config =
-                    serde_json::from_str(&settings_config_str).unwrap_or(serde_json::Value::Null);
-                let meta: ProviderMeta = serde_json::from_str(&meta_str).unwrap_or_default();
-
                 Ok((
-                    id,
-                    Provider {
-                        id: "".to_string(), // Placeholder, set below
-                        name,
-                        settings_config,
-                        website_url,
-                        category,
-                        created_at,
-                        sort_index,
-                        notes,
-                        meta: Some(meta),
-                        icon,
-                        icon_color,
-                        in_failover_queue,
-                    },
+                    row.get::<_, String>(0)?,          // id
+                    row.get::<_, String>(1)?,          // name
+                    row.get::<_, String>(2)?,          // settings_config (raw)
+                    row.get::<_, Option<String>>(3)?,  // website_url
+                    row.get::<_, Option<String>>(4)?,  // category
+                    row.get::<_, Option<i64>>(5)?,     // created_at
+                    row.get::<_, Option<usize>>(6)?,   // sort_index
+                    row.get::<_, Option<String>>(7)?,  // notes
+                    row.get::<_, Option<String>>(8)?,  // icon
+                    row.get::<_, Option<String>>(9)?,  // icon_color
+                    row.get::<_, String>(10)?,         // meta (raw)
+                    row.get::<_, bool>(11)?,           // in_failover_queue
                 ))
             })
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         let mut providers = IndexMap::new();
-        for provider_res in provider_iter {
-            let (id, mut provider) = provider_res.map_err(|e| AppError::Database(e.to_string()))?;
-            provider.id = id.clone();
+        for row_res in provider_iter {
+            let (
+                id,
+                name,
+                settings_config_str,
+                website_url,
+                category,
+                created_at,
+                sort_index,
+                notes,
+                icon,
+                icon_color,
+                meta_str,
+                in_failover_queue,
+            ) = row_res.map_err(|e| AppError::Database(e.to_string()))?;
+
+            // JSON 解析失败时跳过该行并记录错误，绝不把 Null/默认值交给上层，
+            // 否则读-改-写流程会把损坏行覆盖成空数据（用户数据丢失）。
+            // 跳过的行仍保留在数据库中，不会被任何保存路径触碰。
+            let settings_config = match serde_json::from_str(&settings_config_str) {
+                Ok(v) => v,
+                Err(e) => {
+                    log::error!(
+                        "[DAO] 供应商 {id} (app_type={app_type}) 的 settings_config JSON 解析失败，已跳过该行: {e}"
+                    );
+                    continue;
+                }
+            };
+            let meta: ProviderMeta = match serde_json::from_str(&meta_str) {
+                Ok(v) => v,
+                Err(e) => {
+                    log::error!(
+                        "[DAO] 供应商 {id} (app_type={app_type}) 的 meta JSON 解析失败，已跳过该行: {e}"
+                    );
+                    continue;
+                }
+            };
+
+            let mut provider = Provider {
+                id: id.clone(),
+                name,
+                settings_config,
+                website_url,
+                category,
+                created_at,
+                sort_index,
+                notes,
+                meta: Some(meta),
+                icon,
+                icon_color,
+                in_failover_queue,
+            };
 
             // 加载 endpoints
             let mut stmt_endpoints = conn.prepare(
@@ -135,22 +164,50 @@ impl Database {
              FROM providers WHERE id = ?1 AND app_type = ?2",
             params![id, app_type],
             |row| {
-                let name: String = row.get(0)?;
-                let settings_config_str: String = row.get(1)?;
-                let website_url: Option<String> = row.get(2)?;
-                let category: Option<String> = row.get(3)?;
-                let created_at: Option<i64> = row.get(4)?;
-                let sort_index: Option<usize> = row.get(5)?;
-                let notes: Option<String> = row.get(6)?;
-                let icon: Option<String> = row.get(7)?;
-                let icon_color: Option<String> = row.get(8)?;
-                let meta_str: String = row.get(9)?;
-                let in_failover_queue: bool = row.get(10)?;
+                Ok((
+                    row.get::<_, String>(0)?,          // name
+                    row.get::<_, String>(1)?,          // settings_config (raw)
+                    row.get::<_, Option<String>>(2)?,  // website_url
+                    row.get::<_, Option<String>>(3)?,  // category
+                    row.get::<_, Option<i64>>(4)?,     // created_at
+                    row.get::<_, Option<usize>>(5)?,   // sort_index
+                    row.get::<_, Option<String>>(6)?,  // notes
+                    row.get::<_, Option<String>>(7)?,  // icon
+                    row.get::<_, Option<String>>(8)?,  // icon_color
+                    row.get::<_, String>(9)?,          // meta (raw)
+                    row.get::<_, bool>(10)?,           // in_failover_queue
+                ))
+            },
+        );
 
-                let settings_config = serde_json::from_str(&settings_config_str).unwrap_or(serde_json::Value::Null);
-                let meta: ProviderMeta = serde_json::from_str(&meta_str).unwrap_or_default();
+        match result {
+            Ok((
+                name,
+                settings_config_str,
+                website_url,
+                category,
+                created_at,
+                sort_index,
+                notes,
+                icon,
+                icon_color,
+                meta_str,
+                in_failover_queue,
+            )) => {
+                // 单条查询是读-改-写流程（代理切换、故障转移、端点更新等）的数据源，
+                // 解析失败必须返回 Err，绝不能回退成 Null/默认值后被保存覆盖真实数据。
+                let settings_config = serde_json::from_str(&settings_config_str).map_err(|e| {
+                    AppError::Database(format!(
+                        "供应商 {id} (app_type={app_type}) 的 settings_config JSON 解析失败: {e}"
+                    ))
+                })?;
+                let meta: ProviderMeta = serde_json::from_str(&meta_str).map_err(|e| {
+                    AppError::Database(format!(
+                        "供应商 {id} (app_type={app_type}) 的 meta JSON 解析失败: {e}"
+                    ))
+                })?;
 
-                Ok(Provider {
+                Ok(Some(Provider {
                     id: id.to_string(),
                     name,
                     settings_config,
@@ -163,12 +220,8 @@ impl Database {
                     icon,
                     icon_color,
                     in_failover_queue,
-                })
-            },
-        );
-
-        match result {
-            Ok(provider) => Ok(Some(provider)),
+                }))
+            }
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(AppError::Database(e.to_string())),
         }

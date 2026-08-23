@@ -31,9 +31,9 @@ const MIGRATION_MARKER: &str = ".migrated_from_cc_switch";
 /// 1. 如果用户设置了 `app_config_dir_override`，跳过迁移
 /// 2. 如果新路径已有数据库文件，跳过（已迁移）
 /// 3. 如果旧路径不存在，跳过（全新安装）
-/// 4. 复制文件到新路径，旧目录保留
+/// 4. 复制文件到新路径，旧目录保留；数据库等关键文件复制失败则整体失败并清理现场
 /// 5. 迁移模型文件
-/// 6. 写入迁移标记
+/// 6. 写入迁移标记（仅全部关键文件复制成功后才写入）
 pub fn run_path_migration() -> Result<(), String> {
     // 1. 如果用户设置了自定义路径，跳过迁移
     if crate::cc_switch::app_store::get_app_config_dir_override().is_some() {
@@ -64,52 +64,110 @@ pub fn run_path_migration() -> Result<(), String> {
         new_dir.display()
     );
 
+    // 记录新目录是否为本次迁移新建，失败时据此决定清理方式
+    let new_dir_existed = new_dir.exists();
+
     // 确保新目录存在
     fs::create_dir_all(&new_dir).map_err(|e| format!("创建新配置目录失败: {e}"))?;
 
     // 4. 复制配置文件
-    migrate_config_files(&legacy_dir, &new_dir)?;
+    let migration_result = migrate_config_files(&legacy_dir, &new_dir)
+        // 5. 复制子目录
+        .and_then(|_| migrate_subdirectories(&legacy_dir, &new_dir))
+        // 6. 迁移模型文件
+        .and_then(|_| migrate_model_files(&new_dir));
 
-    // 5. 复制子目录
-    migrate_subdirectories(&legacy_dir, &new_dir)?;
+    match migration_result {
+        Ok(()) => {
+            // 7. 写入迁移标记（仅全部关键文件复制成功后；失败时绝不写入，
+            //    否则应用会在新路径创建空库，旧数据被静默搁置且永不重试）
+            let marker_path = new_dir.join(MIGRATION_MARKER);
+            let marker_content = format!(
+                "Migrated from {} at {}",
+                legacy_dir.display(),
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+            );
+            let _ = fs::write(&marker_path, marker_content);
 
-    // 6. 迁移模型文件
-    migrate_model_files(&new_dir)?;
-
-    // 7. 写入迁移标记
-    let marker_path = new_dir.join(MIGRATION_MARKER);
-    let marker_content = format!(
-        "Migrated from {} at {}",
-        legacy_dir.display(),
-        chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
-    );
-    let _ = fs::write(&marker_path, marker_content);
-
-    eprintln!("[PathMigration] 迁移完成");
-    Ok(())
+            eprintln!("[PathMigration] 迁移完成");
+            Ok(())
+        }
+        Err(e) => {
+            // 关键文件复制失败：清理已复制内容，本次启动回退旧路径，下次启动自动重试
+            cleanup_failed_migration(&new_dir, new_dir_existed);
+            Err(format!("路径迁移失败（已清理现场，下次启动将重试）: {e}"))
+        }
+    }
 }
 
 /// 迁移单个配置文件（数据库文件需要重命名）
 fn migrate_config_files(legacy_dir: &PathBuf, new_dir: &PathBuf) -> Result<(), String> {
     // 数据库文件：cc-switch.db -> mnemosyne.db（含 -shm、-wal）
+    // 数据库是用户数据的最终载体，复制失败必须让整体迁移失败，
+    // 否则应用会在新路径创建空库，旧数据被静默搁置。
     for suffix in ["", "-shm", "-wal"] {
         let old_name = format!("cc-switch.db{suffix}");
         let new_name = format!("mnemosyne.db{suffix}");
-        copy_if_exists(&legacy_dir.join(&old_name), &new_dir.join(&new_name));
+        copy_critical_file(&legacy_dir.join(&old_name), &new_dir.join(&new_name))?;
     }
 
-    // 同名复制的文件
-    let direct_files = [
-        "config.json",
-        "settings.json",
-        "crash.log",
-        "config.json.bak",
-    ];
-    for name in direct_files {
-        copy_if_exists(&legacy_dir.join(name), &new_dir.join(name));
+    // 旧版 JSON 配置（含备份）：在没有数据库的极旧版本中是唯一数据来源，同样视为关键文件
+    for name in ["config.json", "config.json.bak"] {
+        copy_critical_file(&legacy_dir.join(name), &new_dir.join(name))?;
     }
+
+    // 非关键文件：复制失败仅记录日志，不阻塞迁移
+    copy_if_exists(&legacy_dir.join("settings.json"), &new_dir.join("settings.json"));
+    copy_if_exists(&legacy_dir.join("crash.log"), &new_dir.join("crash.log"));
 
     Ok(())
+}
+
+/// 复制关键数据文件：源不存在视为正常（如尚未启用 SQLite 的旧版本/全新安装），
+/// 源存在但复制失败则报错，由调用方决定整体迁移失败
+fn copy_critical_file(src: &PathBuf, dst: &PathBuf) -> Result<(), String> {
+    if !src.exists() {
+        return Ok(());
+    }
+
+    fs::copy(src, dst).map(|_| ()).map_err(|e| {
+        format!(
+            "复制关键文件失败 {} -> {}: {e}",
+            src.display(),
+            dst.display()
+        )
+    })
+}
+
+/// 迁移失败后的清理：移除本次已复制的关键文件，确保不留下半成品数据库。
+///
+/// - 新目录是本次迁移新建的：整体删除，让应用回退到旧路径启动（旧数据完好），下次启动自动重试
+/// - 新目录原本就存在（或整体删除失败）：逐个移除关键文件
+fn cleanup_failed_migration(new_dir: &PathBuf, new_dir_existed: bool) {
+    if !new_dir_existed {
+        match fs::remove_dir_all(new_dir) {
+            Ok(()) => {
+                eprintln!("[PathMigration] 已清理本次新建的目录，下次启动将重试迁移");
+                return;
+            }
+            Err(e) => eprintln!("[PathMigration] 清理新建目录失败: {e}"),
+        }
+    }
+
+    for name in [
+        "mnemosyne.db",
+        "mnemosyne.db-shm",
+        "mnemosyne.db-wal",
+        "config.json",
+        "config.json.bak",
+    ] {
+        let path = new_dir.join(name);
+        if path.exists() {
+            if let Err(e) = fs::remove_file(&path) {
+                eprintln!("[PathMigration] 清理文件失败 {}: {e}", path.display());
+            }
+        }
+    }
 }
 
 /// 迁移子目录（递归复制）

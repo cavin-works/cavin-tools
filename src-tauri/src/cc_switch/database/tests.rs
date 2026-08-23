@@ -565,3 +565,156 @@ fn model_pricing_is_seeded_on_init() {
     );
 }
 
+// --- 坏 JSON 行防护（issue #42：解析失败不得被读成 Null/默认值后被保存覆盖） ---
+
+/// 向 providers 表插入一行原始数据
+fn insert_provider_row(
+    conn: &Connection,
+    id: &str,
+    app_type: &str,
+    settings_config: &str,
+    meta: &str,
+) {
+    conn.execute(
+        "INSERT INTO providers (id, app_type, name, settings_config, meta)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![id, app_type, format!("Provider {id}"), settings_config, meta],
+    )
+    .expect("insert provider row");
+}
+
+#[test]
+fn get_all_providers_skips_rows_with_bad_json() {
+    let db = Database::memory().expect("create memory db");
+    {
+        let conn = db.conn.lock().expect("lock conn");
+        insert_provider_row(&conn, "good", "claude", r#"{"env":{"K":"v"}}"#, "{}");
+        // settings_config 损坏
+        insert_provider_row(&conn, "bad-config", "claude", "{not valid json", "{}");
+        // meta 损坏
+        insert_provider_row(&conn, "bad-meta", "claude", r#"{"env":{}}"#, "{not valid json");
+    }
+
+    let providers = db.get_all_providers("claude").expect("get_all 应当成功");
+
+    // 坏行被跳过，而不是以 Null/默认值混入结果
+    assert!(!providers.contains_key("bad-config"), "settings_config 坏行应被跳过");
+    assert!(!providers.contains_key("bad-meta"), "meta 坏行应被跳过");
+    let good = providers.get("good").expect("好行应正常返回");
+    assert!(
+        good.settings_config.is_object(),
+        "好行解析结果不应是 Null: {}",
+        good.settings_config
+    );
+}
+
+#[test]
+fn get_provider_by_id_returns_err_on_bad_json() {
+    let db = Database::memory().expect("create memory db");
+    {
+        let conn = db.conn.lock().expect("lock conn");
+        insert_provider_row(&conn, "good", "claude", r#"{"env":{"K":"v"}}"#, "{}");
+        insert_provider_row(&conn, "bad-config", "claude", "{not valid json", "{}");
+        insert_provider_row(&conn, "bad-meta", "claude", r#"{"env":{}}"#, "{not valid json");
+    }
+
+    // 单查路径必须 Err，绝不可返回 Null/默认值构造的对象（会被读-改-写流程保存覆盖）
+    let err = db
+        .get_provider_by_id("bad-config", "claude")
+        .expect_err("settings_config 坏行使单查返回 Err");
+    assert!(
+        err.to_string().contains("bad-config"),
+        "错误信息应包含行 id: {err}"
+    );
+
+    let err = db
+        .get_provider_by_id("bad-meta", "claude")
+        .expect_err("meta 坏行使单查返回 Err");
+    assert!(
+        err.to_string().contains("bad-meta"),
+        "错误信息应包含行 id: {err}"
+    );
+
+    // 好行不受影响，且解析结果不是 Null
+    let good = db
+        .get_provider_by_id("good", "claude")
+        .expect("好行查询成功")
+        .expect("好行存在");
+    assert!(good.settings_config.is_object());
+    // 不存在的行仍返回 None
+    assert!(db.get_provider_by_id("missing", "claude").expect("查询不存在行").is_none());
+}
+
+#[test]
+fn saving_good_provider_does_not_overwrite_bad_json_row() {
+    let db = Database::memory().expect("create memory db");
+    {
+        let conn = db.conn.lock().expect("lock conn");
+        insert_provider_row(&conn, "good", "claude", r#"{"env":{"K":"v"}}"#, "{}");
+        insert_provider_row(&conn, "bad", "claude", "{not valid json", "{}");
+    }
+
+    // 模拟典型的读-改-写流程：get_all -> 修改 -> save_provider
+    let mut providers = db.get_all_providers("claude").expect("get_all");
+    if let Some(provider) = providers.get_mut("good") {
+        provider.notes = Some("updated".to_string());
+        db.save_provider("claude", provider).expect("save good provider");
+    }
+
+    // 坏行的原始内容必须原样保留，不可被 Null 覆盖
+    let raw: String = {
+        let conn = db.conn.lock().expect("lock conn");
+        conn.query_row(
+            "SELECT settings_config FROM providers WHERE id = 'bad'",
+            [],
+            |r| r.get(0),
+        )
+        .expect("read raw bad row")
+    };
+    assert_eq!(raw, "{not valid json", "坏行不应被读取流程覆盖");
+}
+
+#[test]
+fn get_all_mcp_servers_skips_rows_with_bad_json() {
+    let db = Database::memory().expect("create memory db");
+    {
+        let conn = db.conn.lock().expect("lock conn");
+        conn.execute(
+            "INSERT INTO mcp_servers (id, name, server_config, tags) VALUES (?1, ?2, ?3, ?4)",
+            params!["good", "Good", r#"{"command":"npx"}"#, r#"["a"]"#],
+        )
+        .expect("insert good mcp");
+        conn.execute(
+            "INSERT INTO mcp_servers (id, name, server_config, tags) VALUES (?1, ?2, ?3, ?4)",
+            params!["bad-config", "Bad", "{not valid json", "[]"],
+        )
+        .expect("insert bad-config mcp");
+        conn.execute(
+            "INSERT INTO mcp_servers (id, name, server_config, tags) VALUES (?1, ?2, ?3, ?4)",
+            params!["bad-tags", "BadTags", r#"{"command":"npx"}"#, "{not valid json"],
+        )
+        .expect("insert bad-tags mcp");
+    }
+
+    let servers = db.get_all_mcp_servers().expect("get_all 应当成功");
+    assert!(!servers.contains_key("bad-config"), "server_config 坏行应被跳过");
+    assert!(!servers.contains_key("bad-tags"), "tags 坏行应被跳过");
+    let good = servers.get("good").expect("好行应正常返回");
+    assert!(
+        !good.server.is_null(),
+        "好行的 server 配置不应退化为 Null"
+    );
+
+    // 坏行原样保留，不被默认值覆盖
+    let raw: String = {
+        let conn = db.conn.lock().expect("lock conn");
+        conn.query_row(
+            "SELECT server_config FROM mcp_servers WHERE id = 'bad-config'",
+            [],
+            |r| r.get(0),
+        )
+        .expect("read raw bad mcp row")
+    };
+    assert_eq!(raw, "{not valid json", "坏行不应被读取流程覆盖");
+}
+

@@ -93,6 +93,10 @@ impl Database {
         conn.execute("PRAGMA foreign_keys = ON;", [])
             .map_err(|e| AppError::Database(e.to_string()))?;
 
+        // 并发访问时短暂等待锁，避免立即报 SQLITE_BUSY
+        conn.execute("PRAGMA busy_timeout = 5000;", [])
+            .map_err(|e| AppError::Database(e.to_string()))?;
+
         let db = Self {
             conn: Mutex::new(conn),
         };

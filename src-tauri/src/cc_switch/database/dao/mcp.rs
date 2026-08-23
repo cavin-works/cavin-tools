@@ -20,48 +20,79 @@ impl Database {
 
         let server_iter = stmt
             .query_map([], |row| {
-                let id: String = row.get(0)?;
-                let name: String = row.get(1)?;
-                let server_config_str: String = row.get(2)?;
-                let description: Option<String> = row.get(3)?;
-                let homepage: Option<String> = row.get(4)?;
-                let docs: Option<String> = row.get(5)?;
-                let tags_str: String = row.get(6)?;
-                let enabled_claude: bool = row.get(7)?;
-                let enabled_codex: bool = row.get(8)?;
-                let enabled_gemini: bool = row.get(9)?;
-                let enabled_opencode: bool = row.get(10)?;
-                let enabled_cursor: bool = row.get(11)?;
-
-                let server = serde_json::from_str(&server_config_str).unwrap_or_default();
-                let tags = serde_json::from_str(&tags_str).unwrap_or_default();
-
                 Ok((
-                    id.clone(),
-                    McpServer {
-                        id,
-                        name,
-                        server,
-                        apps: McpApps {
-                            claude: enabled_claude,
-                            codex: enabled_codex,
-                            gemini: enabled_gemini,
-                            opencode: enabled_opencode,
-                            cursor: enabled_cursor,
-                        },
-                        description,
-                        homepage,
-                        docs,
-                        tags,
-                    },
+                    row.get::<_, String>(0)?,          // id
+                    row.get::<_, String>(1)?,          // name
+                    row.get::<_, String>(2)?,          // server_config (raw)
+                    row.get::<_, Option<String>>(3)?,  // description
+                    row.get::<_, Option<String>>(4)?,  // homepage
+                    row.get::<_, Option<String>>(5)?,  // docs
+                    row.get::<_, String>(6)?,          // tags (raw)
+                    row.get::<_, bool>(7)?,            // enabled_claude
+                    row.get::<_, bool>(8)?,            // enabled_codex
+                    row.get::<_, bool>(9)?,            // enabled_gemini
+                    row.get::<_, bool>(10)?,           // enabled_opencode
+                    row.get::<_, bool>(11)?,           // enabled_cursor
                 ))
             })
             .map_err(|e| AppError::Database(e.to_string()))?;
 
         let mut servers = IndexMap::new();
-        for server_res in server_iter {
-            let (id, server) = server_res.map_err(|e| AppError::Database(e.to_string()))?;
-            servers.insert(id, server);
+        for row_res in server_iter {
+            let (
+                id,
+                name,
+                server_config_str,
+                description,
+                homepage,
+                docs,
+                tags_str,
+                enabled_claude,
+                enabled_codex,
+                enabled_gemini,
+                enabled_opencode,
+                enabled_cursor,
+            ) = row_res.map_err(|e| AppError::Database(e.to_string()))?;
+
+            // JSON 解析失败时跳过该行并记录错误，绝不把默认值交给上层，
+            // 否则读-改-写流程会把损坏行覆盖成空配置（用户数据丢失）。
+            // 跳过的行仍保留在数据库中，不会被任何保存路径触碰。
+            let server = match serde_json::from_str(&server_config_str) {
+                Ok(v) => v,
+                Err(e) => {
+                    log::error!(
+                        "[DAO] MCP 服务器 {id} 的 server_config JSON 解析失败，已跳过该行: {e}"
+                    );
+                    continue;
+                }
+            };
+            let tags = match serde_json::from_str(&tags_str) {
+                Ok(v) => v,
+                Err(e) => {
+                    log::error!("[DAO] MCP 服务器 {id} 的 tags JSON 解析失败，已跳过该行: {e}");
+                    continue;
+                }
+            };
+
+            servers.insert(
+                id.clone(),
+                McpServer {
+                    id,
+                    name,
+                    server,
+                    apps: McpApps {
+                        claude: enabled_claude,
+                        codex: enabled_codex,
+                        gemini: enabled_gemini,
+                        opencode: enabled_opencode,
+                        cursor: enabled_cursor,
+                    },
+                    description,
+                    homepage,
+                    docs,
+                    tags,
+                },
+            );
         }
         Ok(servers)
     }

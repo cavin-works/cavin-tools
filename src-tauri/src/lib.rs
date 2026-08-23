@@ -694,6 +694,165 @@ fn show_database_init_error_dialog(
         .blocking_show()
 }
 
+/// JSON → SQLite 迁移的退出方式
+enum JsonMigrationOutcome {
+    /// 迁移成功
+    Success,
+    /// 用户选择退出，保留旧配置，下次启动重试
+    ExitRetryNextLaunch,
+    /// 用户选择彻底放弃迁移，归档旧配置
+    ExitAbandon,
+}
+
+/// 执行 JSON → SQLite 迁移，失败时弹出「重试/退出」对话框循环
+///
+/// 复用配置加载阶段（show_migration_error_dialog）的对话框模式：
+/// 迁移失败绝不静默继续——否则新库已落盘，下次启动会跳过迁移，旧数据永远无法导入。
+fn run_json_migration_with_dialogs(
+    app: &tauri::AppHandle,
+    db: &cc_switch::database::Database,
+    config: &cc_switch::app_config::MultiAppConfig,
+) -> JsonMigrationOutcome {
+    loop {
+        match db.migrate_from_json(config) {
+            Ok(()) => return JsonMigrationOutcome::Success,
+            Err(e) => {
+                log::error!("配置迁移失败: {e}");
+                if show_migration_error_dialog(app, &e.to_string()) {
+                    log::info!("用户选择重试数据迁移");
+                    continue;
+                }
+                log::info!("用户选择退出程序");
+                return if ask_abandon_json_migration(app) {
+                    JsonMigrationOutcome::ExitAbandon
+                } else {
+                    JsonMigrationOutcome::ExitRetryNextLaunch
+                };
+            }
+        }
+    }
+}
+
+/// 询问用户是否彻底放弃迁移（放弃 = 归档旧配置，下次启动使用全新空库）
+fn ask_abandon_json_migration(app: &tauri::AppHandle) -> bool {
+    let title = if is_chinese_locale() {
+        "是否放弃数据迁移"
+    } else {
+        "Abandon Migration?"
+    };
+
+    let message = if is_chinese_locale() {
+        "数据迁移失败。您可以选择：\n\n\
+         「放弃迁移」：将旧配置文件归档为 config.json.bak，\
+         下次启动使用全新空配置（旧数据仍保留在 .bak 文件中）\n\n\
+         「保留数据」：退出程序，下次启动时重新尝试迁移\n\n\
+         两种选择都不会删除您的旧数据。"
+            .to_string()
+    } else {
+        "Data migration failed. You can either:\n\n\
+         'Abandon': archive the old config as config.json.bak and start \
+         fresh on next launch (old data is kept in the .bak file)\n\n\
+         'Keep': exit now and retry migration on next launch\n\n\
+         Neither choice deletes your old data."
+            .to_string()
+    };
+
+    let abandon_text = if is_chinese_locale() {
+        "放弃迁移"
+    } else {
+        "Abandon"
+    };
+    let keep_text = if is_chinese_locale() {
+        "保留数据"
+    } else {
+        "Keep"
+    };
+
+    app.dialog()
+        .message(&message)
+        .title(title)
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            abandon_text.to_string(),
+            keep_text.to_string(),
+        ))
+        .blocking_show()
+}
+
+/// 删除本次启动新建的空数据库文件（含 WAL/SHM/journal 伴生文件）
+///
+/// 仅在「本次启动前 db 不存在」的分支调用，连接须已 drop（Windows 上无法删除被打开的文件）。
+fn remove_fresh_database_files(db_path: &std::path::Path) {
+    let Some(file_name) = db_path.file_name().map(|n| n.to_string_lossy().to_string()) else {
+        return;
+    };
+    for suffix in ["", "-wal", "-shm", "-journal"] {
+        let path = db_path.with_file_name(format!("{file_name}{suffix}"));
+        if path.exists() {
+            if let Err(e) = std::fs::remove_file(&path) {
+                log::warn!("清理新建数据库文件失败 {}: {e}", path.display());
+            }
+        }
+    }
+}
+
+/// 彻底放弃迁移时归档旧配置：config.json → config.json.bak
+///
+/// 返回旧数据实际所在路径（归档失败时仍为原路径），用于告知用户。
+fn archive_abandoned_config(json_path: &std::path::Path) -> std::path::PathBuf {
+    let bak_path = json_path.with_extension("json.bak");
+
+    // Windows 上 rename 不会覆盖已存在的目标，先移除旧 .bak
+    if bak_path.exists() {
+        if let Err(e) = std::fs::remove_file(&bak_path) {
+            log::warn!("移除旧备份文件失败 {}: {e}", bak_path.display());
+        }
+    }
+
+    match std::fs::rename(json_path, &bak_path) {
+        Ok(()) => {
+            log::info!("✓ 旧配置已归档为 {}", bak_path.display());
+            bak_path
+        }
+        Err(e) => {
+            log::error!("归档旧配置失败，原文件保留在 {}: {e}", json_path.display());
+            json_path.to_path_buf()
+        }
+    }
+}
+
+/// 告知用户被归档的旧数据位置及恢复方法
+fn show_json_migration_abandoned_dialog(
+    app: &tauri::AppHandle,
+    old_data_path: &std::path::Path,
+) {
+    let title = if is_chinese_locale() {
+        "旧数据已归档"
+    } else {
+        "Old Data Archived"
+    };
+
+    let message = if is_chinese_locale() {
+        format!(
+            "旧配置数据已归档至：\n\n{}\n\n\
+             如需恢复旧数据，请将其重命名回 config.json 后重启应用。",
+            old_data_path.display()
+        )
+    } else {
+        format!(
+            "Your old configuration has been archived to:\n\n{}\n\n\
+             To restore it, rename the file back to config.json and restart the app.",
+            old_data_path.display()
+        )
+    };
+
+    app.dialog()
+        .message(&message)
+        .title(title)
+        .kind(MessageDialogKind::Info)
+        .blocking_show();
+}
+
 async fn cleanup_before_exit(app_handle: &tauri::AppHandle) {
     if let Some(state) = app_handle.try_state::<cc_switch::store::AppState>() {
         let proxy_service = &state.proxy_service;
@@ -940,8 +1099,8 @@ pub fn run() {
             if let Some(config) = migration_config {
                 log::info!("开始执行数据迁移...");
 
-                match db.migrate_from_json(&config) {
-                    Ok(_) => {
+                match run_json_migration_with_dialogs(app.handle(), &db, &config) {
+                    JsonMigrationOutcome::Success => {
                         log::info!("✓ 配置迁移成功");
                         cc_switch::init_status::set_migration_success();
                         let archive_path = json_path.with_extension("json.migrated");
@@ -951,8 +1110,22 @@ pub fn run() {
                             log::info!("✓ 旧配置已归档为 config.json.migrated");
                         }
                     }
-                    Err(e) => {
-                        log::error!("配置迁移失败: {e}");
+                    JsonMigrationOutcome::ExitRetryNextLaunch => {
+                        // 用户选择退出且保留旧数据：删除本次启动新建的空数据库文件，
+                        // 否则下次启动会因 db 已存在而跳过迁移，旧数据永远无法导入。
+                        log::info!("用户选择退出并保留旧配置，清理新建的空数据库后退出");
+                        drop(db);
+                        remove_fresh_database_files(&db_path);
+                        std::process::exit(1);
+                    }
+                    JsonMigrationOutcome::ExitAbandon => {
+                        // 用户选择彻底放弃迁移：归档旧配置并告知位置，下次启动使用全新空库
+                        log::info!("用户选择彻底放弃迁移，归档旧配置后退出");
+                        drop(db);
+                        remove_fresh_database_files(&db_path);
+                        let old_data_path = archive_abandoned_config(&json_path);
+                        show_json_migration_abandoned_dialog(app.handle(), &old_data_path);
+                        std::process::exit(1);
                     }
                 }
             }
@@ -1036,37 +1209,44 @@ pub fn run() {
             });
             log::info!("✓ Deep-link URL handler registered");
 
-            // Create tray menu
-            let menu = cc_switch::tray::create_tray_menu(app.handle(), &app_state)?;
+            // Create tray; on failure degrade to no-tray mode so the main window still works
+            match cc_switch::tray::create_tray_menu(app.handle(), &app_state) {
+                Ok(menu) => {
+                    let mut tray_builder = TrayIconBuilder::with_id("main")
+                        .on_tray_icon_event(|_tray, event| match event {
+                            TrayIconEvent::Click { .. } => {}
+                            _ => log::debug!("unhandled tray event {event:?}"),
+                        })
+                        .menu(&menu)
+                        .on_menu_event(|app, event| {
+                            cc_switch::tray::handle_tray_menu_event(app, &event.id.0);
+                        })
+                        .show_menu_on_left_click(true);
 
-            let mut tray_builder = TrayIconBuilder::with_id("main")
-                .on_tray_icon_event(|_tray, event| match event {
-                    TrayIconEvent::Click { .. } => {}
-                    _ => log::debug!("unhandled tray event {event:?}"),
-                })
-                .menu(&menu)
-                .on_menu_event(|app, event| {
-                    cc_switch::tray::handle_tray_menu_event(app, &event.id.0);
-                })
-                .show_menu_on_left_click(true);
+                    #[cfg(target_os = "macos")]
+                    {
+                        if let Some(icon) = macos_tray_icon() {
+                            tray_builder = tray_builder.icon(icon).icon_as_template(true);
+                        } else if let Some(icon) = app.default_window_icon() {
+                            tray_builder = tray_builder.icon(icon.clone());
+                        }
+                    }
 
-            #[cfg(target_os = "macos")]
-            {
-                if let Some(icon) = macos_tray_icon() {
-                    tray_builder = tray_builder.icon(icon).icon_as_template(true);
-                } else if let Some(icon) = app.default_window_icon() {
-                    tray_builder = tray_builder.icon(icon.clone());
+                    #[cfg(not(target_os = "macos"))]
+                    {
+                        if let Some(icon) = app.default_window_icon() {
+                            tray_builder = tray_builder.icon(icon.clone());
+                        }
+                    }
+
+                    if let Err(e) = tray_builder.build(app) {
+                        log::error!("托盘图标构建失败，以无托盘模式继续运行: {e}");
+                    }
+                }
+                Err(e) => {
+                    log::error!("托盘菜单构建失败，以无托盘模式继续运行: {e}");
                 }
             }
-
-            #[cfg(not(target_os = "macos"))]
-            {
-                if let Some(icon) = app.default_window_icon() {
-                    tray_builder = tray_builder.icon(icon.clone());
-                }
-            }
-
-            let _tray = tray_builder.build(app)?;
             app.manage(app_state);
 
             // Load log config
@@ -1099,10 +1279,7 @@ pub fn run() {
                 if let Err(e) = cc_switch::proxy::http_client::init(proxy_url.as_deref()) {
                     log::error!("[GlobalProxy] Failed to initialize: {e}");
 
-                    if proxy_url.is_some() {
-                        let _ = db.set_global_proxy_url(None);
-                    }
-
+                    // 保留数据库中的代理配置不清空，仅回退到无代理客户端
                     let _ = cc_switch::proxy::http_client::init(None);
                 }
             }
@@ -1363,9 +1540,10 @@ pub fn run() {
             cc_switch::commands::scan_local_proxies,
         ]);
 
-    let app = builder
-        .build(tauri::generate_context!())
-        .expect("error while running tauri application");
+    let Ok(app) = builder.build(tauri::generate_context!()) else {
+        log::error!("Tauri 应用构建失败，退出");
+        return;
+    };
 
     app.run(|app_handle, event| {
         if let RunEvent::ExitRequested { api, .. } = &event {

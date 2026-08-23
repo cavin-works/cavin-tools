@@ -242,42 +242,58 @@ impl Database {
         .map_err(|e| AppError::Database(e.to_string()))?;
 
         // 尝试添加 live_takeover_active 列到 proxy_config 表
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN live_takeover_active INTEGER NOT NULL DEFAULT 0",
             [],
-        );
+        ) {
+            log::warn!("添加列 live_takeover_active 失败（可能已存在）: {e}");
+        }
 
         // 尝试添加基础配置列到 proxy_config 表（兼容 v3.9.0-2 升级）
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN proxy_enabled INTEGER NOT NULL DEFAULT 0",
             [],
-        );
-        let _ = conn.execute(
+        ) {
+            log::warn!("添加列 proxy_enabled 失败（可能已存在）: {e}");
+        }
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN listen_address TEXT NOT NULL DEFAULT '127.0.0.1'",
             [],
-        );
-        let _ = conn.execute(
+        ) {
+            log::warn!("添加列 listen_address 失败（可能已存在）: {e}");
+        }
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN listen_port INTEGER NOT NULL DEFAULT 15721",
             [],
-        );
-        let _ = conn.execute(
+        ) {
+            log::warn!("添加列 listen_port 失败（可能已存在）: {e}");
+        }
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN enable_logging INTEGER NOT NULL DEFAULT 1",
             [],
-        );
+        ) {
+            log::warn!("添加列 enable_logging 失败（可能已存在）: {e}");
+        }
 
         // 尝试添加超时配置列到 proxy_config 表
-        let _ = conn.execute(
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN streaming_first_byte_timeout INTEGER NOT NULL DEFAULT 60",
             [],
-        );
-        let _ = conn.execute(
+        ) {
+            log::warn!("添加列 streaming_first_byte_timeout 失败（可能已存在）: {e}");
+        }
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN streaming_idle_timeout INTEGER NOT NULL DEFAULT 120",
             [],
-        );
-        let _ = conn.execute(
+        ) {
+            log::warn!("添加列 streaming_idle_timeout 失败（可能已存在）: {e}");
+        }
+        if let Err(e) = conn.execute(
             "ALTER TABLE proxy_config ADD COLUMN non_streaming_timeout INTEGER NOT NULL DEFAULT 600",
             [],
-        );
+        ) {
+            log::warn!("添加列 non_streaming_timeout 失败（可能已存在）: {e}");
+        }
 
         // 兼容：若旧版 proxy_config 仍为单例结构（无 app_type），则在启动时直接转换为三行结构
         // 说明：user_version=2 时不会再触发 v1->v2 迁移，但新代码查询依赖 app_type 列。

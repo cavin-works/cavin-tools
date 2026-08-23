@@ -624,7 +624,10 @@ impl Database {
     pub fn get_proxy_flags_sync(&self, app_type: &str) -> (bool, bool) {
         let conn = match self.conn.lock() {
             Ok(c) => c,
-            Err(_) => return (false, false),
+            Err(e) => {
+                log::warn!("获取数据库锁失败（锁中毒），proxy 标志按禁用处理: {e}");
+                return (false, false);
+            }
         };
 
         conn.query_row(

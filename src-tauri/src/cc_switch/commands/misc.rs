@@ -539,6 +539,15 @@ fn launch_terminal_with_env(
     env_vars: Vec<(String, String)>,
     provider_id: &str,
 ) -> Result<(), String> {
+    // 防路径穿越:provider_id 会被拼进临时文件路径，仅允许字母数字与 -_
+    if provider_id.is_empty()
+        || !provider_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err(format!("提供商 ID 含非法字符: {provider_id}"));
+    }
+
     let temp_dir = std::env::temp_dir();
     let config_file = temp_dir.join(format!(
         "claude_{}_{}.json",
@@ -588,7 +597,17 @@ fn write_claude_config(
     let config_json =
         serde_json::to_string_pretty(&config_obj).map_err(|e| format!("序列化配置失败: {e}"))?;
 
-    std::fs::write(config_file, config_json).map_err(|e| format!("写入配置文件失败: {e}"))
+    std::fs::write(config_file, config_json).map_err(|e| format!("写入配置文件失败: {e}"))?;
+
+    // 配置内含 API Key，Unix 下收紧为仅所有者可读写
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(config_file, std::fs::Permissions::from_mode(0o600))
+            .map_err(|e| format!("设置配置文件权限失败: {e}"))?;
+    }
+
+    Ok(())
 }
 
 /// macOS: 使用 Terminal.app 启动
