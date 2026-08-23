@@ -16,6 +16,7 @@ use tauri::{Manager, RunEvent};
 pub mod background_remover;
 pub mod ffmpeg;
 pub mod image_converter;
+pub mod image_editor;
 pub mod models;
 pub mod process_manager;
 pub mod sticky_notes;
@@ -324,6 +325,25 @@ async fn batch_convert_images(
         );
     })
     .await
+}
+
+#[tauri::command]
+async fn edit_image_preview(
+    input_path: String,
+    params: image_editor::EditParams,
+) -> Result<String, String> {
+    image_editor::edit_image_preview(input_path, params).await
+}
+
+#[tauri::command]
+async fn edit_image_export(
+    input_path: String,
+    params: image_editor::EditParams,
+    output_path: String,
+    format: String,
+    quality: u8,
+) -> Result<(), String> {
+    image_editor::edit_image_export(input_path, params, output_path, format, quality).await
 }
 
 #[tauri::command]
@@ -1085,6 +1105,8 @@ pub fn run() {
             get_image_info,
             convert_image,
             batch_convert_images,
+            edit_image_preview,
+            edit_image_export,
             remove_watermark,
             batch_remove_watermarks,
             #[cfg(feature = "background-remover")]

@@ -1,6 +1,7 @@
 import { ToolMetadata, ToolCategory } from './ToolMetadata';
 import videoEditorToolConfig from '@/tools/video/editor/tool.config';
 import imageConverterToolConfig from '@/tools/image/converter/tool.config';
+import imageEditorToolConfig from '@/tools/image/editor/tool.config';
 import imageCompressorToolConfig from '@/tools/image/compressor/tool.config';
 import watermarkRemoverToolConfig from '@/tools/image/watermark-remover/tool.config';
 import backgroundRemoverToolConfig from '@/tools/image/background-remover/tool.config';
@@ -23,6 +24,7 @@ import stickyNotesToolConfig from '@/tools/sticky-notes/tool.config';
 export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'video-editor': videoEditorToolConfig,
   'image-converter': imageConverterToolConfig,
+  'image-editor': imageEditorToolConfig,
   'image-compressor': imageCompressorToolConfig,
   'watermark-remover': watermarkRemoverToolConfig,
   'background-remover': backgroundRemoverToolConfig,
