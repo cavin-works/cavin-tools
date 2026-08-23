@@ -297,7 +297,9 @@ async fn process_operation_queue(
 
 #[tauri::command]
 async fn get_image_info(path: String) -> Result<models::ImageInfo, String> {
-    image_converter::get_image_info(path)
+    tokio::task::spawn_blocking(move || image_converter::get_image_info(path))
+        .await
+        .map_err(|e| format!("异步任务执行失败: {}", e))?
 }
 
 #[tauri::command]
@@ -1179,7 +1181,6 @@ pub fn run() {
             sticky_notes::update_note_window_state,
             sticky_notes::set_desktop_mode,
             sticky_notes::start_window_dragging,
-            sticky_notes::toggle_pin_all_notes,
             sticky_notes::show_hide_all_notes,
             sticky_notes::toggle_todo_widget_visibility,
             sticky_notes::show_todo_widget_and_focus_input,
