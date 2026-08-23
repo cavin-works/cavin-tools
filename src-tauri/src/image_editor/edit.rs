@@ -471,13 +471,19 @@ mod tests {
 
     #[test]
     fn test_annotation_shifted_by_crop_offset() {
-        // 标注在旋转后原图坐标系：裁剪 (5,5) 起 10x10 后，标注 (7,7) 应落在裁剪帧的 (2,2)
+        // 标注在旋转后原图坐标系：标注角点 (7,7) 经裁剪 (5,5) 平移后应落在裁剪帧的 (2,2)
         let mut params = default_params();
         params.crop = Some(CropRect { x: 5, y: 5, width: 10, height: 10 });
-        params.annotations = vec![annotation("rect")];
+        let mut ann = annotation("rect");
+        ann.x = 7;
+        ann.y = 7;
+        params.annotations = vec![ann];
         let out = apply_edits(solid_red(20), &params, 1.0).to_rgba8();
         assert_eq!(out.dimensions(), (10, 10));
+        // 平移后矩形左上角 (2,2) 在帧内，边框应为标注色
         assert_eq!(*out.get_pixel(2, 2), Rgba([0, 255, 0, 255]));
+        // 帧外部分被裁掉，(0,0) 远离边框保持原色
+        assert_eq!(*out.get_pixel(0, 0), Rgba([255, 0, 0, 255]));
     }
 
     #[test]
