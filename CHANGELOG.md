@@ -1,3 +1,12 @@
+## [0.1.19](https://github.com/cavin-works/cavin-tools/compare/v0.1.18...v0.1.19) (2026-08-23)
+
+
+### 🐛 Bug 修复
+
+* 堵住三个数据丢失路径;收紧 CSP;启动健壮性 (close [#42](https://github.com/cavin-works/cavin-tools/issues/42), close [#43](https://github.com/cavin-works/cavin-tools/issues/43)) ([463b11a](https://github.com/cavin-works/cavin-tools/commit/463b11a902cf1928f67c0319d3472fc9345e53f9))
+
+
+
 ## [0.1.18](https://github.com/cavin-works/cavin-tools/compare/v0.1.17...v0.1.18) (2026-08-23)
 
 
