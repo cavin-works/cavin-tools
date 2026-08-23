@@ -16,11 +16,7 @@ import { agentsApi } from "@ai-assistant/lib/api/agents";
 import { extractErrorMessage } from "@ai-assistant/utils/errorUtils";
 import AgentFormModal from "./AgentFormModal";
 
-interface AgentsPanelProps {
-  onOpenChange: (open: boolean) => void;
-}
-
-export function AgentsPanel({}: AgentsPanelProps) {
+export function AgentsPanel() {
   const { t } = useTranslation();
   const { data: agents = [], isLoading } = useAgents();
   const saveAgent = useSaveAgent();
@@ -50,8 +46,20 @@ export function AgentsPanel({}: AgentsPanelProps) {
   };
 
   const handleSave = async (filename: string, content: string) => {
+    // 新建模式查重：同名文件自动追加 -2/-3 后缀（stem 已是 sanitize 后的结果）
+    let target = filename;
+    if (!editing) {
+      const taken = new Set(agents.map((a) => a.filename));
+      if (taken.has(target)) {
+        const stem = filename.replace(/\.md$/, "");
+        let n = 2;
+        while (taken.has(`${stem}-${n}.md`)) n++;
+        target = `${stem}-${n}.md`;
+      }
+    }
+
     try {
-      await saveAgent.mutateAsync({ filename, content });
+      await saveAgent.mutateAsync({ filename: target, content });
       toast.success(t("agents.saveSuccess"));
       setFormOpen(false);
     } catch (e) {

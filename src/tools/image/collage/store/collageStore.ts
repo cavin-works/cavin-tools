@@ -28,9 +28,6 @@ interface ImageCollageStore {
   setExporting: (exporting: boolean) => void;
   setExportFormat: (format: ExportFormat) => void;
   setExportQuality: (quality: number) => void;
-
-  // 清空所有状态
-  reset: () => void;
 }
 
 const INITIAL = {
@@ -72,6 +69,4 @@ export const useImageCollageStore = create<ImageCollageStore>((set) => ({
   setExporting: (exporting) => set({ exporting }),
   setExportFormat: (format) => set({ exportFormat: format }),
   setExportQuality: (quality) => set({ exportQuality: quality }),
-
-  reset: () => set({ ...INITIAL, params: { ...DEFAULT_PARAMS } }),
 }));

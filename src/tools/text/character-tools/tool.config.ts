@@ -8,7 +8,7 @@ export const characterToolsToolConfig: ToolMetadata = {
   category: 'text',
   icon: 'Type',
   component: CharacterTools,
-  shortcut: 'CmdOrCtrl+Shift+T',
+  shortcut: 'CmdOrCtrl+Shift+E',
   tags: [
     'text',
     'string',

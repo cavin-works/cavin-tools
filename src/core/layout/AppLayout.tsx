@@ -3,7 +3,8 @@ import { listen } from '@tauri-apps/api/event';
 import { useAppStore } from '../store/appStore';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
-import { getToolById } from '../tool-registry/toolRegistry';
+import { getToolById, TOOL_REGISTRY } from '../tool-registry/toolRegistry';
+import { isTextEditableTarget } from '@/tools/ai-assistant/utils/domUtils';
 import { checkUpdate } from '@/lib/updateUtils';
 import { UpdateDialog } from '@/components/UpdateDialog';
 import { UpdateCompleteDialog } from '@/components/UpdateCompleteDialog';
@@ -16,6 +17,22 @@ import { TodoWidget } from '@/tools/sticky-notes/TodoWidget';
 function isTodoWidgetPath(): boolean {
   const path = window.location.pathname;
   return path === '/todo-widget';
+}
+
+/**
+ * 判断键盘事件是否匹配工具快捷键（如 "CmdOrCtrl+Shift+P"）
+ * CmdOrCtrl 在任意平台均接受 ctrl 或 meta
+ */
+function matchesToolShortcut(event: KeyboardEvent, shortcut: string): boolean {
+  const parts = shortcut.split('+').map((p) => p.trim().toLowerCase());
+  const key = parts.pop();
+  if (!key || event.key.toLowerCase() !== key) return false;
+  const wantCtrlOrCmd = parts.includes('cmdorctrl') || parts.includes('ctrl') || parts.includes('cmd');
+  return (
+    (event.ctrlKey || event.metaKey) === wantCtrlOrCmd &&
+    event.shiftKey === parts.includes('shift') &&
+    event.altKey === parts.includes('alt')
+  );
 }
 
 /**
@@ -71,6 +88,26 @@ export function AppLayout() {
     
     return () => clearTimeout(timer);
   }, [setUpdateAvailable, setShowUpdateDialog]);
+
+  // 工具页切换快捷键（tool.config 声明的 shortcut，与便签弹窗的后端 global-shortcut 无关）
+  useEffect(() => {
+    if (isTodoWidget) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isTextEditableTarget(event.target)) return;
+
+      for (const tool of Object.values(TOOL_REGISTRY)) {
+        if (tool.shortcut && matchesToolShortcut(event, tool.shortcut)) {
+          event.preventDefault();
+          setCurrentToolId(tool.id);
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTodoWidget, setCurrentToolId]);
 
   // 应用主题到 document
   useEffect(() => {

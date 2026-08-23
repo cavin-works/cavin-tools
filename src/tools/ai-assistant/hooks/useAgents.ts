@@ -1,14 +1,34 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { agentsApi, type AgentSummary } from "@ai-assistant/lib/api/agents";
 
 /**
  * 查询所有 Agents（~/.claude/agents/*.md）
+ *
+ * React Query v5 移除了 useQuery 的 onError，
+ * 此处通过 effect 提示错误，避免 list 失败伪装成空目录
  */
 export function useAgents() {
-  return useQuery({
+  const { t } = useTranslation();
+  const query = useQuery({
     queryKey: ["agents"],
     queryFn: () => agentsApi.list(),
   });
+
+  useEffect(() => {
+    if (query.error) {
+      toast.error(t("agents.loadFailed"), {
+        description:
+          query.error instanceof Error
+            ? query.error.message
+            : String(query.error),
+      });
+    }
+  }, [query.error, t]);
+
+  return query;
 }
 
 /**

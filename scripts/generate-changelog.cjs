@@ -80,7 +80,6 @@ try {
   }
 
   let releaseNotes = '';
-  let commitLink = '';
 
   if (startIndex !== -1) {
     // 查找下一个版本标题的位置
@@ -97,16 +96,6 @@ try {
     releaseNotes = contentLines.join('\n').trim();
 
     console.log(`✅ 提取了 ${endIndex - startIndex - 1} 行内容`);
-
-    // 提取 commit hash 链接
-    const noteLines = releaseNotes.split('\n').filter(line => line.trim());
-    if (noteLines.length > 0) {
-      // 获取最后一行，通常包含链接信息
-      const lastLine = noteLines[noteLines.length - 1];
-      if (lastLine.includes('https://github.com/')) {
-        commitLink = lastLine.trim();
-      }
-    }
 
     console.log('\n' + '='.repeat(60));
     console.log(`📦 v${version} Release Notes:`);

@@ -554,7 +554,7 @@ function App() {
           );
         case "agents":
           return (
-            <AgentsPanel onOpenChange={() => setCurrentView("providers")} />
+            <AgentsPanel />
           );
         case "universal":
           return (

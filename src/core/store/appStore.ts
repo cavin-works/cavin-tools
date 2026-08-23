@@ -11,10 +11,6 @@ import type { UpdateInfo, DownloadProgress, UpdateStatus } from '@/lib/updateUti
  * 应用设置
  */
 interface AppSettings {
-  /** 自动保存 */
-  autoSave: boolean;
-  /** 显示通知 */
-  showNotifications: boolean;
   /** 默认工具 ID */
   defaultTool?: string;
 }
@@ -167,10 +163,7 @@ export const useAppStore = create<AppState>()(
       setShowSettings: (show) => set({ showSettings: show }),
 
       // 应用设置
-      settings: {
-        autoSave: true,
-        showNotifications: true,
-      },
+      settings: {},
       updateSettings: (newSettings) =>
         set((state) => ({
           settings: { ...state.settings, ...newSettings },
