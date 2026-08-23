@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useImageEditorStore } from '../store/imageEditorStore';
 import type { ExportFormat } from '../types';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { buildOutputPath } from '@/tools/image/utils/outputPath';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -14,17 +15,6 @@ const FORMAT_OPTIONS: { value: ExportFormat; label: string }[] = [
   { value: 'jpg', label: 'JPEG - 有损，适合照片' },
   { value: 'webp', label: 'WebP - 现代格式，体积小' },
 ];
-
-// 输出路径：与输入同目录，{stem}_edited.{ext}
-function buildOutputPath(input: string, format: string): string {
-  const idx = Math.max(input.lastIndexOf('/'), input.lastIndexOf('\\'));
-  const dir = idx >= 0 ? input.slice(0, idx) : '';
-  const name = idx >= 0 ? input.slice(idx + 1) : input;
-  const dot = name.lastIndexOf('.');
-  const stem = dot > 0 ? name.slice(0, dot) : name;
-  const file = `${stem}_edited.${format}`;
-  return dir ? `${dir}/${file}` : file;
-}
 
 export function ExportSettings() {
   const inputPath = useImageEditorStore((s) => s.inputPath);
@@ -45,7 +35,7 @@ export function ExportSettings() {
 
     setExporting(true);
     try {
-      const output = buildOutputPath(store.inputPath, store.exportFormat);
+      const output = buildOutputPath(store.inputPath, store.exportFormat, '_edited');
       await invoke('edit_image_export', {
         inputPath: store.inputPath,
         params: store.getEditParams(true),
