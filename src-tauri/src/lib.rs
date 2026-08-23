@@ -47,6 +47,7 @@ async fn check_ffmpeg() -> Result<ffmpeg::FfmpegInfo, String> {
     ffmpeg::check_ffmpeg_available()
 }
 
+#[cfg(any(target_os = "windows", target_os = "macos"))]
 #[tauri::command]
 async fn download_ffmpeg() -> Result<String, String> {
     ffmpeg::download_ffmpeg().await
@@ -1071,6 +1072,7 @@ pub fn run() {
             // Mnemosyne Commands (Video/Image Processing)
             // ============================================================
             check_ffmpeg,
+            #[cfg(any(target_os = "windows", target_os = "macos"))]
             download_ffmpeg,
             generate_thumbnails,
             load_video,

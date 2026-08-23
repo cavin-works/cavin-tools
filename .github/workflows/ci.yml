@@ -39,6 +39,6 @@ jobs:
       - name: Typecheck frontend
         run: pnpm exec tsc --noEmit
 
-      - name: Check Rust
+      - name: Test Rust
         working-directory: src-tauri
-        run: cargo check --no-default-features
+        run: cargo test --no-default-features
