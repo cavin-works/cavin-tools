@@ -1,3 +1,28 @@
+## [0.1.13](https://github.com/cavin-works/cavin-tools/compare/v0.1.12...v0.1.13) (2026-08-23)
+
+
+### 🐛 Bug 修复
+
+* **bg-remover:** 修复打开输出文件报错并增加 Intel Mac 降级提示 (close [#16](https://github.com/cavin-works/cavin-tools/issues/16)) ([c07c608](https://github.com/cavin-works/cavin-tools/commit/c07c60818b8e76c44caa9eeb4d723eac7be9ee52)), closes [#17](https://github.com/cavin-works/cavin-tools/issues/17)
+* **ci:** 修复更新包下载 404 并补全 Intel Mac 自动更新 (close [#8](https://github.com/cavin-works/cavin-tools/issues/8)) ([e9a16aa](https://github.com/cavin-works/cavin-tools/commit/e9a16aa6056fad1354ccc6d6ede4813806c3df24))
+* **sticky-notes:** 修复 master 编译失败;删除 lib.rs.bak 备份文件 ([bdc95c1](https://github.com/cavin-works/cavin-tools/commit/bdc95c15bc704f719bfd05921d026bc5f66bb1c3)), closes [#17](https://github.com/cavin-works/cavin-tools/issues/17)
+* **ui:** 修复请求详情弹窗无底色问题 (close [#5](https://github.com/cavin-works/cavin-tools/issues/5)) ([d47026b](https://github.com/cavin-works/cavin-tools/commit/d47026bd8ef55e7c2214b29cec538fdb990f20fa))
+* **windows:** resolve desktop widget freeze/unresponsive issue ([#1](https://github.com/cavin-works/cavin-tools/issues/1)) ([f2b5d65](https://github.com/cavin-works/cavin-tools/commit/f2b5d652c02decdd262f81dfbb56e09df643df80))
+* 修复 Linux 编译失败;CI 纳入 cargo test ([d0b4868](https://github.com/cavin-works/cavin-tools/commit/d0b486820e14e0872bf58d8e166e69a70ad1dc60))
+* 修复快捷键保存后不生效的问题 ([97c4fd0](https://github.com/cavin-works/cavin-tools/commit/97c4fd0073cec24c2478b194658d775501bff249)), closes [#6](https://github.com/cavin-works/cavin-tools/issues/6) [#7](https://github.com/cavin-works/cavin-tools/issues/7)
+* 修复水印去除与进程管理器调用不存在的后端命令 (close [#14](https://github.com/cavin-works/cavin-tools/issues/14), close [#15](https://github.com/cavin-works/cavin-tools/issues/15)) ([fc18e8f](https://github.com/cavin-works/cavin-tools/commit/fc18e8fdb2d1faff9ab7d58c75385e04e3d95ac8))
+* 远程配置 Deep Link 降级提示;OpenCode/Cursor 禁用健康检查按钮 (close [#20](https://github.com/cavin-works/cavin-tools/issues/20), close [#21](https://github.com/cavin-works/cavin-tools/issues/21)) ([8a17f58](https://github.com/cavin-works/cavin-tools/commit/8a17f58f781a0fe7a88d9c1dd45fd9600425eb1a))
+
+
+### ✨ 新功能
+
+* **providers:** 新增 Claude 供应商的 OpenAI 协议转换开关 (close [#3](https://github.com/cavin-works/cavin-tools/issues/3)) ([194ccec](https://github.com/cavin-works/cavin-tools/commit/194ccec9ecfaf2fa1b84a577982b3841ab7d9f0f))
+* **skills:** 技能管理列表支持按 AI IDE 启用状态筛选 (close [#2](https://github.com/cavin-works/cavin-tools/issues/2)) ([a28b6d6](https://github.com/cavin-works/cavin-tools/commit/a28b6d68b2c24339c79bd36a4d52d4f697b03d81))
+* **todo:** add task editing and drag-drop sorting ([#9](https://github.com/cavin-works/cavin-tools/issues/9), [#11](https://github.com/cavin-works/cavin-tools/issues/11)) ([7262618](https://github.com/cavin-works/cavin-tools/commit/7262618e4113b4c6487b6c7b8532418c89a80c41))
+* 快捷键修复 ([b383b73](https://github.com/cavin-works/cavin-tools/commit/b383b7306e280bc412ac67017f252b588b61a43f))
+
+
+
 ## [0.1.11](https://github.com/cavin-works/cavin-tools/compare/v0.1.10...v0.1.11) (2026-03-14)
 
 
