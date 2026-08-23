@@ -3,6 +3,10 @@ import { RandomStringGenerator } from './components/RandomStringGenerator';
 import { Base64Converter } from './components/Base64Converter';
 import { MD5Generator } from './components/MD5Generator';
 import { JSONFormatter } from './components/JSONFormatter';
+import { UrlConverter } from './components/UrlConverter';
+import { TimestampConverter } from './components/TimestampConverter';
+import { UuidGenerator } from './components/UuidGenerator';
+import { ShaGenerator } from './components/ShaGenerator';
 
 export function CharacterTools() {
   return (
@@ -15,7 +19,7 @@ export function CharacterTools() {
         </div>
 
         <Tabs defaultValue="random" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-10 mb-6">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-10 mb-6">
             <TabsTrigger value="random" className="text-sm">
               随机字符
             </TabsTrigger>
@@ -27,6 +31,18 @@ export function CharacterTools() {
             </TabsTrigger>
             <TabsTrigger value="json" className="text-sm">
               JSON
+            </TabsTrigger>
+            <TabsTrigger value="url" className="text-sm">
+              URL
+            </TabsTrigger>
+            <TabsTrigger value="timestamp" className="text-sm">
+              时间戳
+            </TabsTrigger>
+            <TabsTrigger value="uuid" className="text-sm">
+              UUID
+            </TabsTrigger>
+            <TabsTrigger value="sha" className="text-sm">
+              SHA
             </TabsTrigger>
           </TabsList>
 
@@ -44,6 +60,22 @@ export function CharacterTools() {
 
           <TabsContent value="json" className="mt-6">
             <JSONFormatter />
+          </TabsContent>
+
+          <TabsContent value="url" className="mt-6">
+            <UrlConverter />
+          </TabsContent>
+
+          <TabsContent value="timestamp" className="mt-6">
+            <TimestampConverter />
+          </TabsContent>
+
+          <TabsContent value="uuid" className="mt-6">
+            <UuidGenerator />
+          </TabsContent>
+
+          <TabsContent value="sha" className="mt-6">
+            <ShaGenerator />
           </TabsContent>
         </Tabs>
       </div>
