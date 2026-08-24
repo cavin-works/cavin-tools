@@ -142,6 +142,15 @@ async fn extract_frames(
 }
 
 #[tauri::command]
+async fn extract_audio(
+    input_path: String,
+    format: String,
+    quality: Option<u8>,
+) -> Result<String, String> {
+    ffmpeg::extract_audio(input_path, format, quality).await
+}
+
+#[tauri::command]
 async fn trim_video(input_path: String, params: ffmpeg::TrimParams) -> Result<String, String> {
     let input_path_obj = std::path::Path::new(&input_path);
     let parent_dir = input_path_obj
@@ -1324,6 +1333,7 @@ pub fn run() {
             compress_video_command,
             change_video_speed,
             extract_frames,
+            extract_audio,
             trim_video,
             convert_to_gif,
             process_operation_queue,
@@ -1520,6 +1530,7 @@ pub fn run() {
             cc_switch::commands::update_model_pricing,
             cc_switch::commands::delete_model_pricing,
             cc_switch::commands::check_provider_limits,
+            cc_switch::commands::export_usage_csv,
             cc_switch::commands::stream_check_provider,
             cc_switch::commands::stream_check_all_providers,
             cc_switch::commands::get_stream_check_config,

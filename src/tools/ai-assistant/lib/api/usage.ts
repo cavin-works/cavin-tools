@@ -114,4 +114,8 @@ export const usageApi = {
   ): Promise<ProviderLimitStatus> => {
     return invoke("check_provider_limits", { providerId, appType });
   },
+
+  exportCsv: async (rangeDays: number, savePath: string): Promise<number> => {
+    return invoke("export_usage_csv", { rangeDays, savePath });
+  },
 };

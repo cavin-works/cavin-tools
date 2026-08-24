@@ -4,9 +4,10 @@ import { SpeedPanel } from './SpeedPanel';
 import { ExtractPanel } from './ExtractPanel';
 import { TrimPanel } from './TrimPanel';
 import { GifPanel } from './GifPanel';
+import { AudioPanel } from './AudioPanel';
 import { OperationQueuePanel } from '../OperationQueuePanel';
 
-type TabType = 'queue' | 'compress' | 'speed' | 'extract' | 'trim' | 'gif';
+type TabType = 'queue' | 'compress' | 'speed' | 'extract' | 'audio' | 'trim' | 'gif';
 
 export function ControlPanel() {
   const [activeTab, setActiveTab] = useState<TabType>('queue');
@@ -16,6 +17,7 @@ export function ControlPanel() {
     { id: 'compress' as TabType, label: '压缩', icon: '🗜️' },
     { id: 'speed' as TabType, label: '变速', icon: '⚡' },
     { id: 'extract' as TabType, label: '提取帧', icon: '🖼️' },
+    { id: 'audio' as TabType, label: '提取音频', icon: '🎵' },
     { id: 'trim' as TabType, label: '截断', icon: '✂️' },
     { id: 'gif' as TabType, label: '转GIF', icon: '🎞️' },
   ];
@@ -48,6 +50,7 @@ export function ControlPanel() {
         {activeTab === 'compress' && <CompressPanel />}
         {activeTab === 'speed' && <SpeedPanel />}
         {activeTab === 'extract' && <ExtractPanel />}
+        {activeTab === 'audio' && <AudioPanel />}
         {activeTab === 'trim' && <TrimPanel />}
         {activeTab === 'gif' && <GifPanel />}
       </div>

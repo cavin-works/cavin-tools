@@ -4,3 +4,4 @@ export { SpeedPanel } from './SpeedPanel';
 export { ExtractPanel } from './ExtractPanel';
 export { TrimPanel } from './TrimPanel';
 export { GifPanel } from './GifPanel';
+export { AudioPanel } from './AudioPanel';

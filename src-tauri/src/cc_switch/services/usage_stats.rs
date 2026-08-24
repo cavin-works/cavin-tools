@@ -563,6 +563,87 @@ impl Database {
         }
     }
 
+    /// 获取时间范围内的请求明细（CSV 导出用，不分页，按时间升序）
+    pub fn get_request_logs_for_export(
+        &self,
+        start_date: Option<i64>,
+        end_date: Option<i64>,
+    ) -> Result<Vec<RequestLogDetail>, AppError> {
+        let conn = lock_conn!(self.conn);
+
+        let mut conditions = Vec::new();
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if let Some(start) = start_date {
+            conditions.push("l.created_at >= ?");
+            params.push(Box::new(start));
+        }
+        if let Some(end) = end_date {
+            conditions.push("l.created_at <= ?");
+            params.push(Box::new(end));
+        }
+        let where_clause = if conditions.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", conditions.join(" AND "))
+        };
+
+        let sql = format!(
+            "SELECT l.request_id, l.provider_id, p.name as provider_name, l.app_type, l.model,
+                    l.input_tokens, l.output_tokens, l.cache_read_tokens, l.cache_creation_tokens,
+                    l.input_cost_usd, l.output_cost_usd, l.cache_read_cost_usd, l.cache_creation_cost_usd, l.total_cost_usd,
+                    l.is_streaming, l.latency_ms, l.first_token_ms, l.duration_ms,
+                    l.status_code, l.error_message, l.created_at
+             FROM proxy_request_logs l
+             LEFT JOIN providers p ON l.provider_id = p.id AND l.app_type = p.app_type
+             {where_clause}
+             ORDER BY l.created_at ASC"
+        );
+
+        let mut stmt = conn.prepare(&sql)?;
+        let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let rows = stmt.query_map(params_refs.as_slice(), |row| {
+            Ok(RequestLogDetail {
+                request_id: row.get(0)?,
+                provider_id: row.get(1)?,
+                provider_name: row.get(2)?,
+                app_type: row.get(3)?,
+                model: row.get(4)?,
+                input_tokens: row.get::<_, i64>(5)? as u32,
+                output_tokens: row.get::<_, i64>(6)? as u32,
+                cache_read_tokens: row.get::<_, i64>(7)? as u32,
+                cache_creation_tokens: row.get::<_, i64>(8)? as u32,
+                input_cost_usd: row.get(9)?,
+                output_cost_usd: row.get(10)?,
+                cache_read_cost_usd: row.get(11)?,
+                cache_creation_cost_usd: row.get(12)?,
+                total_cost_usd: row.get(13)?,
+                is_streaming: row.get::<_, i64>(14)? != 0,
+                latency_ms: row.get::<_, i64>(15)? as u64,
+                first_token_ms: row.get::<_, Option<i64>>(16)?.map(|v| v as u64),
+                duration_ms: row.get::<_, Option<i64>>(17)?.map(|v| v as u64),
+                status_code: row.get::<_, i64>(18)? as u16,
+                error_message: row.get(19)?,
+                created_at: row.get(20)?,
+            })
+        })?;
+
+        let mut logs = Vec::new();
+        let mut provider_cache = HashMap::new();
+        let mut pricing_cache = HashMap::new();
+        for row in rows {
+            let mut log = row?;
+            Self::maybe_backfill_log_costs(
+                &conn,
+                &mut log,
+                &mut provider_cache,
+                &mut pricing_cache,
+            )?;
+            logs.push(log);
+        }
+
+        Ok(logs)
+    }
+
     /// 检查 Provider 使用限额
     pub fn check_provider_limits(
         &self,

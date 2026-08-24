@@ -4,6 +4,7 @@ pub mod speed;
 pub mod extract;
 pub mod trim;
 pub mod gif;
+pub mod extract_audio;
 pub mod thumbnails;
 
 pub use info::get_video_info;
@@ -13,6 +14,7 @@ pub use speed::{change_video_speed, SpeedParams};
 pub use extract::{extract_frames, ExtractParams};
 pub use trim::{trim_video, TrimParams};
 pub use gif::{convert_to_gif, GifParams};
+pub use extract_audio::extract_audio;
 
 use std::env;
 use std::path::PathBuf;

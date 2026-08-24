@@ -140,6 +140,66 @@ pub fn update_model_pricing(
     Ok(())
 }
 
+/// CSV 字段转义：含逗号/引号/换行时包引号，内部双引号翻倍
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') || s.contains('\r') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+/// 导出用量报表 CSV（UTF-8 BOM，Excel 中文兼容）
+#[tauri::command]
+pub fn export_usage_csv(
+    state: State<'_, AppState>,
+    range_days: Option<i64>,
+    save_path: String,
+) -> Result<usize, String> {
+    use chrono::{Local, TimeZone};
+
+    let start_date = range_days.map(|n| Local::now().timestamp() - n * 24 * 60 * 60);
+    let logs = state
+        .db
+        .get_request_logs_for_export(start_date, None)
+        .map_err(|e| e.to_string())?;
+
+    let mut csv = String::from('\u{FEFF}'); // UTF-8 BOM
+    csv.push_str("时间,供应商,应用,模型,输入Token,输出Token,缓存命中Token,缓存创建Token,总Token,成本(USD),状态码,延迟(ms)\n");
+
+    for log in &logs {
+        let time = Local
+            .timestamp_opt(log.created_at, 0)
+            .single()
+            .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
+            .unwrap_or_else(|| log.created_at.to_string());
+        let provider = log
+            .provider_name
+            .clone()
+            .unwrap_or_else(|| log.provider_id.clone());
+
+        csv.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            csv_escape(&time),
+            csv_escape(&provider),
+            csv_escape(&log.app_type),
+            csv_escape(&log.model),
+            log.input_tokens,
+            log.output_tokens,
+            log.cache_read_tokens,
+            log.cache_creation_tokens,
+            log.input_tokens + log.output_tokens,
+            log.total_cost_usd,
+            log.status_code,
+            log.latency_ms,
+        ));
+    }
+
+    std::fs::write(&save_path, csv).map_err(|e| format!("写入 CSV 文件失败: {e}"))?;
+    log::info!("已导出 {} 条用量记录到 {save_path}", logs.len());
+    Ok(logs.len())
+}
+
 /// 检查 Provider 使用限额
 #[tauri::command]
 pub fn check_provider_limits(
@@ -178,5 +238,16 @@ pub struct ModelPricingInfo {
     pub cache_creation_cost_per_million: String,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::csv_escape;
 
+    #[test]
+    fn test_csv_escape() {
+        assert_eq!(csv_escape("plain"), "plain");
+        assert_eq!(csv_escape("a,b"), "\"a,b\"");
+        assert_eq!(csv_escape("say \"hi\""), "\"say \"\"hi\"\"\"");
+        assert_eq!(csv_escape("line\nbreak"), "\"line\nbreak\"");
+    }
+}
 
