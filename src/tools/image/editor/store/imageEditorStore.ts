@@ -38,6 +38,7 @@ interface ImageEditorStore {
   setAnnotationColor: (color: string) => void;
   setAnnotationStroke: (stroke: number) => void;
   addAnnotation: (annotation: Annotation) => void;
+  addTextAnnotation: (x: number, y: number, text: string, color: string, size: number) => void;
   removeAnnotation: (index: number) => void;
   clearAnnotations: () => void;
 
@@ -58,6 +59,7 @@ interface ImageEditorStore {
   // 获取发送给后端的参数
   // includeCrop=false 时不含裁剪（裁剪模式下预览显示完整图片，裁剪框叠加其上）
   // includeAnnotations=false 时不含标注（标注模式下由 AnnotationLayer 叠加显示）
+  // 文字标注永不进后端标注管线：预览由 DOM 呈现，导出时另渲染为 textOverlays
   getEditParams: (includeCrop: boolean, includeAnnotations?: boolean) => EditParams;
 }
 
@@ -126,6 +128,16 @@ export const useImageEditorStore = create<ImageEditorStore>((set, get) => ({
   addAnnotation: (annotation) => set((state) => ({
     params: { ...state.params, annotations: [...state.params.annotations, annotation] },
   })),
+  // 文字标注并入 annotations（kind:"text" + text/size 字段，矩形字段对文字无意义置 0）
+  addTextAnnotation: (x, y, text, color, size) => set((state) => ({
+    params: {
+      ...state.params,
+      annotations: [
+        ...state.params.annotations,
+        { kind: 'text' as const, x, y, width: 0, height: 0, color, stroke: 0, flip: false, text, size },
+      ],
+    },
+  })),
   removeAnnotation: (index) => set((state) => ({
     params: {
       ...state.params,
@@ -151,7 +163,9 @@ export const useImageEditorStore = create<ImageEditorStore>((set, get) => ({
     return {
       ...state.params,
       crop: includeCrop ? state.crop ?? undefined : undefined,
-      annotations: includeAnnotations ? state.params.annotations : [],
+      annotations: includeAnnotations
+        ? state.params.annotations.filter((a) => a.kind !== 'text')
+        : [],
     };
   },
 }));

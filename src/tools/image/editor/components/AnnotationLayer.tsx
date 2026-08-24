@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useImageEditorStore } from '../store/imageEditorStore';
+import { TEXT_FONT_SIZE } from '../types';
 import type { AnnotationKind } from '../types';
 
 /** 拖拽中的对角点（显示像素，x0/y0 为按下点） */
@@ -96,6 +97,7 @@ function Shape({
 /**
  * 标注层：叠加在（已旋转/翻转/滤镜/裁剪的）预览图之上。
  * 显示已有标注 + 拖拽绘制新标注（拖出对角线，松开即提交一条）。
+ * 文字工具：点击预览图 → 点击处弹出内联输入框 → Enter 确认 / Esc 取消。
  * 坐标换算：标注与裁剪同处"旋转后的原图坐标系"——标注模式下预览含裁剪，
  * 故 原图坐标 = 显示坐标 * f + 裁剪原点，f = (crop ? crop.width : 旋转后原图宽) / 预览显示宽。
  */
@@ -112,10 +114,14 @@ export function AnnotationLayer({
   const annotations = useImageEditorStore((s) => s.params.annotations);
   const crop = useImageEditorStore((s) => s.crop);
   const addAnnotation = useImageEditorStore((s) => s.addAnnotation);
+  const addTextAnnotation = useImageEditorStore((s) => s.addTextAnnotation);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const dragRef = useRef<Draft | null>(null);
+  // 文字输入框位置（显示像素，null = 关闭）
+  const [textInput, setTextInput] = useState<{ x: number; y: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   // 预览图显示宽（挂载后读取一次：effect 在布局提交后执行，clientWidth 已可用）
   const [displayWidth, setDisplayWidth] = useState(0);
   useEffect(() => {
@@ -141,8 +147,20 @@ export function AnnotationLayer({
   const onPointerDown = (e: React.PointerEvent) => {
     if (!tool) return;
     e.preventDefault();
-    rootRef.current?.setPointerCapture(e.pointerId);
     const p = localPoint(e);
+    // 文字工具：点击处弹出内联输入框，不进入拖拽。
+    // 已有输入框打开时本次点击仅提交（blur 在 pointerdown 之后才触发，
+    // 若直接换位会提交到新点击位置），下次点击再开新框
+    if (tool === 'text') {
+      if (textInput) {
+        commitTextInput();
+      } else {
+        setTextInput(p);
+        requestAnimationFrame(() => inputRef.current?.focus());
+      }
+      return;
+    }
+    rootRef.current?.setPointerCapture(e.pointerId);
     const d: Draft = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
     dragRef.current = d;
     setDraft(d);
@@ -182,31 +200,65 @@ export function AnnotationLayer({
     });
   };
 
+  /** 确认文字输入：按现有 factor 模式换算坐标后提交（空文本视为取消） */
+  const commitTextInput = () => {
+    const p = textInput;
+    const value = inputRef.current?.value.trim();
+    setTextInput(null);
+    const m = mapping();
+    if (!p || !m || !value) return;
+    addTextAnnotation(
+      Math.round(p.x * m.f + m.ox),
+      Math.round(p.y * m.f + m.oy),
+      value,
+      color,
+      TEXT_FONT_SIZE[stroke] ?? 28,
+    );
+  };
+
   const m = mapping();
+  // 输入框字号与目标渲染字号一致（WYSIWYG）
+  const inputFontSize = (TEXT_FONT_SIZE[stroke] ?? 28) / (m?.f ?? 1);
 
   return (
     <div
       ref={rootRef}
-      className="absolute inset-0 touch-none cursor-crosshair"
+      className={`absolute inset-0 touch-none ${tool === 'text' ? 'cursor-text' : 'cursor-crosshair'}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
       {m &&
-        annotations.map((ann, i) => (
-          <Shape
-            key={i}
-            kind={ann.kind}
-            x0={(ann.x - m.ox) / m.f}
-            y0={(ann.y - m.oy) / m.f}
-            x1={(ann.x + ann.width - m.ox) / m.f}
-            y1={(ann.y + ann.height - m.oy) / m.f}
-            color={ann.color}
-            stroke={ann.stroke / m.f}
-            flip={ann.flip}
-          />
-        ))}
+        annotations.map((ann, i) =>
+          ann.kind === 'text' ? (
+            <span
+              key={i}
+              className="absolute pointer-events-none whitespace-pre leading-none"
+              style={{
+                left: (ann.x - m.ox) / m.f,
+                top: (ann.y - m.oy) / m.f,
+                color: ann.color,
+                fontFamily: 'sans-serif',
+                fontSize: (ann.size ?? 28) / m.f,
+              }}
+            >
+              {ann.text}
+            </span>
+          ) : (
+            <Shape
+              key={i}
+              kind={ann.kind}
+              x0={(ann.x - m.ox) / m.f}
+              y0={(ann.y - m.oy) / m.f}
+              x1={(ann.x + ann.width - m.ox) / m.f}
+              y1={(ann.y + ann.height - m.oy) / m.f}
+              color={ann.color}
+              stroke={ann.stroke / m.f}
+              flip={ann.flip}
+            />
+          ),
+        )}
       {m && draft && (
         <Shape
           kind={tool!}
@@ -217,6 +269,23 @@ export function AnnotationLayer({
           color={color}
           stroke={stroke / m.f}
           flip={(draft.x1 - draft.x0) * (draft.y1 - draft.y0) < 0}
+        />
+      )}
+      {textInput && (
+        <input
+          ref={inputRef}
+          type="text"
+          className="absolute z-10 rounded border-2 border-primary bg-background/90 px-1 outline-none"
+          style={{ left: textInput.x, top: textInput.y, color, fontSize: inputFontSize, minWidth: 120 }}
+          // 阻止冒泡到容器的 pointerdown（否则点击输入框内部会被当成再次落点）
+          onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitTextInput();
+            if (e.key === 'Escape') setTextInput(null);
+            e.stopPropagation();
+          }}
+          // 点击输入框外部（如再点预览图其他位置）时按已输入内容提交
+          onBlur={commitTextInput}
         />
       )}
     </div>

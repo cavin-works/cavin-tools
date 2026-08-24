@@ -1,5 +1,5 @@
 use image::{DynamicImage, Rgba, RgbaImage};
-use super::types::{Annotation, EditParams};
+use super::types::{Annotation, EditParams, TextOverlay};
 #[cfg(test)]
 use super::types::CropRect;
 
@@ -88,6 +88,9 @@ pub fn apply_edits(img: DynamicImage, params: &EditParams, scale: f64) -> Dynami
 
     // 标注（管线最后：标注颜色不受灰度/反色影响）
     draw_annotations(&mut img, &params.annotations, crop_offset);
+
+    // 文字标注（管线最末：前端渲染好的 PNG 直接叠加）
+    overlay_text(&mut img, &params.text_overlays, crop_offset);
 
     img
 }
@@ -184,6 +187,32 @@ fn barbs(
     ]
 }
 
+/// 管线末端叠加文字 PNG。坐标与标注同处旋转/翻转后的原图坐标系，
+/// 同样按裁剪原点平移；imageops::overlay 的坐标为 i64，负坐标/越界自动容忍。
+/// decode 或图片解析失败时跳过该条（不中断导出）。
+fn overlay_text(img: &mut DynamicImage, overlays: &[TextOverlay], crop_offset: (u32, u32)) {
+    if overlays.is_empty() {
+        return;
+    }
+    use base64::Engine;
+    let mut buf = img.to_rgba8();
+    for t in overlays {
+        let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(&t.png_base64) else {
+            continue;
+        };
+        let Ok(overlay) = image::load_from_memory(&bytes) else {
+            continue;
+        };
+        image::imageops::overlay(
+            &mut buf,
+            &overlay.to_rgba8(),
+            t.x as i64 - crop_offset.0 as i64,
+            t.y as i64 - crop_offset.1 as i64,
+        );
+    }
+    *img = DynamicImage::ImageRgba8(buf);
+}
+
 /// 管线末端绘制标注。标注坐标与裁剪同处旋转/翻转后的原图坐标系，
 /// 裁剪之后绘制，故需按裁剪原点 crop_offset 平移回裁剪后帧；越界部分自动裁掉。
 fn draw_annotations(img: &mut DynamicImage, annotations: &[Annotation], crop_offset: (u32, u32)) {
@@ -250,6 +279,7 @@ fn draw_annotations(img: &mut DynamicImage, annotations: &[Annotation], crop_off
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::Engine as _;
     use image::{GenericImageView, Rgba, RgbaImage};
 
     fn default_params() -> EditParams {
@@ -267,6 +297,7 @@ mod tests {
             sharpen: None,
             saturation: None,
             annotations: Vec::new(),
+            text_overlays: Vec::new(),
         }
     }
 
@@ -494,5 +525,43 @@ mod tests {
         let out = apply_edits(solid_red(20), &params, 1.0).to_rgba8();
         // 灰度在标注之前：边框保持标注原色（绿），非纯灰
         assert_eq!(*out.get_pixel(2, 2), Rgba([0, 255, 0, 255]));
+    }
+
+    #[test]
+    fn test_text_overlay_composites_png() {
+        // 2x1 左绿右蓝 PNG 作为 overlay，叠加到纯红图 (1,1) 处
+        let mut png = RgbaImage::new(2, 1);
+        png.put_pixel(0, 0, Rgba([0, 255, 0, 255]));
+        png.put_pixel(1, 0, Rgba([0, 0, 255, 255]));
+        let mut buf = std::io::Cursor::new(Vec::new());
+        DynamicImage::ImageRgba8(png)
+            .write_to(&mut buf, image::ImageFormat::Png)
+            .unwrap();
+        let b64 = base64::engine::general_purpose::STANDARD.encode(buf.into_inner());
+
+        let mut params = default_params();
+        params.text_overlays = vec![TextOverlay { x: 1, y: 1, png_base64: b64 }];
+        let out = apply_edits(solid_red(4), &params, 1.0).to_rgba8();
+        let red = Rgba([255, 0, 0, 255]);
+        // overlay 覆盖处变为 PNG 对应像素
+        assert_eq!(*out.get_pixel(1, 1), Rgba([0, 255, 0, 255]));
+        assert_eq!(*out.get_pixel(2, 1), Rgba([0, 0, 255, 255]));
+        // 未覆盖区域保持原色
+        assert_eq!(*out.get_pixel(0, 0), red);
+        assert_eq!(*out.get_pixel(3, 3), red);
+    }
+
+    #[test]
+    fn test_text_overlay_ignores_invalid_base64() {
+        let mut params = default_params();
+        params.text_overlays = vec![TextOverlay {
+            x: 0,
+            y: 0,
+            png_base64: "!!!not-base64!!!".to_string(),
+        }];
+        let img = solid_red(4);
+        let out = apply_edits(img.clone(), &params, 1.0);
+        // 非法 base64 跳过该条，图像不变
+        assert_eq!(out.as_bytes(), img.as_bytes());
     }
 }

@@ -4,6 +4,7 @@ import { useImageEditorStore } from '../store/imageEditorStore';
 import type { ExportFormat } from '../types';
 import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
 import { buildOutputPath } from '@/tools/image/utils/outputPath';
+import { renderTextOverlays } from '../utils/textOverlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -36,10 +37,16 @@ export function ExportSettings() {
     setExporting(true);
     try {
       const output = buildOutputPath(store.inputPath, store.exportFormat, '_edited');
+      // 导出参数单独构造：文字标注在此渲染为 PNG（textOverlays），
+      // 不影响预览链（预览不传 textOverlays，由 AnnotationLayer DOM 呈现）
+      const params = {
+        ...store.getEditParams(true),
+        textOverlays: renderTextOverlays(store.params.annotations),
+      };
       // 同名文件已存在时后端自动改为 {stem}_1、_2…，返回实际写入路径
       const actualPath = await invoke<string>('edit_image_export', {
         inputPath: store.inputPath,
-        params: store.getEditParams(true),
+        params,
         outputPath: output,
         format: store.exportFormat,
         quality: store.exportQuality,

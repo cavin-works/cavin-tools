@@ -11,6 +11,7 @@ import {
   Square,
   MoveUpRight,
   Highlighter,
+  Type,
   Trash2,
   X,
 } from 'lucide-react';
@@ -24,7 +25,7 @@ import { showError, showInfo } from '@/tools/video/editor/utils/errorHandling';
 import { EditCanvas } from './components/EditCanvas';
 import { FilterControls } from './components/FilterControls';
 import { ExportSettings } from './components/ExportSettings';
-import { ANNOTATION_COLORS, ANNOTATION_STROKES } from './types';
+import { ANNOTATION_COLORS, ANNOTATION_STROKES, TEXT_FONT_SIZE } from './types';
 import type { AnnotationKind, CropRatio, EditParams, ImageInfo } from './types';
 
 const RATIO_OPTIONS: { value: CropRatio; label: string }[] = [
@@ -38,12 +39,14 @@ const ANNOTATION_TOOLS: { value: AnnotationKind; label: string; icon: typeof Squ
   { value: 'rect', label: '矩形', icon: Square },
   { value: 'arrow', label: '箭头', icon: MoveUpRight },
   { value: 'highlight', label: '高亮', icon: Highlighter },
+  { value: 'text', label: '文字', icon: Type },
 ];
 
 const ANNOTATION_KIND_LABELS: Record<AnnotationKind, string> = {
   rect: '矩形',
   arrow: '箭头',
   highlight: '高亮',
+  text: '文字',
 };
 
 const STROKE_LABELS = ['细', '中', '粗'];
@@ -309,7 +312,7 @@ export function ImageEditor() {
                   <CardTitle>标注</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {ANNOTATION_TOOLS.map(({ value, label, icon: Icon }) => (
                       <Button
                         key={value}
@@ -340,13 +343,17 @@ export function ImageEditor() {
                         ))}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">线宽</span>
+                        <span className="text-xs text-muted-foreground">
+                          {annotationTool === 'text' ? '字号' : '线宽'}
+                        </span>
                         {ANNOTATION_STROKES.map((s, i) => (
                           <Button
                             key={s}
                             size="sm"
                             variant={annotationStroke === s ? 'default' : 'outline'}
                             className="h-7 px-3 text-xs"
+                            // 文字工具时该档位映射字号：2→16px、4→28px、8→48px（见 types.TEXT_FONT_SIZE）
+                            title={annotationTool === 'text' ? `${TEXT_FONT_SIZE[s]}px` : undefined}
                             onClick={() => setAnnotationStroke(s)}
                           >
                             {STROKE_LABELS[i]}
@@ -354,7 +361,9 @@ export function ImageEditor() {
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        在左侧预览图上拖动绘制标注，松开后立即生效
+                        {annotationTool === 'text'
+                          ? '在左侧预览图上点击位置输入文字，Enter 确认、Esc 取消'
+                          : '在左侧预览图上拖动绘制标注，松开后立即生效'}
                       </p>
                     </>
                   )}

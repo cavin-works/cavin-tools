@@ -32,6 +32,10 @@ pub struct EditParams {
     /// 标注列表（管线最后绘制，预览时坐标/线宽由调用方按 scale 预换算）
     #[serde(default)]
     pub annotations: Vec<Annotation>,
+    /// 文字标注列表（管线最末叠加；前端离屏 canvas 渲染的 PNG。
+    /// 预览不传（前端 DOM 呈现），仅导出使用，坐标 scale=1 不换算）
+    #[serde(default)]
+    pub text_overlays: Vec<TextOverlay>,
 }
 
 /// 裁剪区域
@@ -62,4 +66,14 @@ pub struct Annotation {
     /// arrow 专用：true 时对角线为右上→左下（默认左上→右下）
     #[serde(default)]
     pub flip: bool,
+}
+
+/// 文字标注：前端渲染好的 PNG（base64，不带 data: 前缀），
+/// 坐标为 PNG 左上角，与标注同处"旋转/翻转后的原图坐标系"（裁剪后按原点平移）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextOverlay {
+    pub x: u32,
+    pub y: u32,
+    pub png_base64: String,
 }

@@ -7,7 +7,7 @@ use image::{
 };
 use tokio::task::spawn_blocking;
 
-pub use types::{Annotation, CropRect, EditParams};
+pub use types::{Annotation, CropRect, EditParams, TextOverlay};
 
 /// 预览参数按缩放比换算：裁剪坐标与标注坐标/线宽（sigma 由 apply_edits 内部按 scale 缩放）
 fn scale_crop(params: &EditParams, scale: f64) -> EditParams {
@@ -36,6 +36,8 @@ fn scale_crop(params: &EditParams, scale: f64) -> EditParams {
             })
             .collect();
     }
+    // 文字标注不进预览管线（预览由前端 DOM 呈现）；导出路径 scale=1 原样使用
+    scaled.text_overlays = Vec::new();
     scaled
 }
 

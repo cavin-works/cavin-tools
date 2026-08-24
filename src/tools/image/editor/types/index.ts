@@ -29,6 +29,8 @@ export interface EditParams {
   saturation: number;
   /** 标注列表 */
   annotations: Annotation[];
+  /** 文字标注 PNG 列表（仅导出时传入；预览由前端 DOM 呈现不传） */
+  textOverlays?: TextOverlay[];
 }
 
 // 默认编辑参数（数值 0 / 开关 false / 空列表均为"无操作"，后端会跳过）
@@ -47,8 +49,8 @@ export const DEFAULT_PARAMS: EditParams = {
   annotations: [],
 };
 
-// 标注类型
-export type AnnotationKind = 'rect' | 'arrow' | 'highlight';
+// 标注类型（text 为前端 DOM 呈现 + 导出时渲染为 PNG 走 textOverlays，不进后端标注管线）
+export type AnnotationKind = 'rect' | 'arrow' | 'highlight' | 'text';
 
 // 标注（与后端 image_editor::Annotation 对应，坐标与裁剪同处旋转/翻转后的原图坐标系）
 export interface Annotation {
@@ -64,6 +66,18 @@ export interface Annotation {
   stroke: number;
   /** arrow 专用：true 时对角线为右上→左下（默认左上→右下） */
   flip: boolean;
+  /** text 专用：文字内容 */
+  text?: string;
+  /** text 专用：字号 px（原图坐标系） */
+  size?: number;
+}
+
+// 文字标注（与后端 image_editor::TextOverlay 对应：前端离屏 canvas 渲染的 PNG）
+export interface TextOverlay {
+  x: number;
+  y: number;
+  /** PNG base64（不带 data: 前缀） */
+  pngBase64: string;
 }
 
 // 标注色板
@@ -71,6 +85,9 @@ export const ANNOTATION_COLORS = ['#FF4D4F', '#FFC53D', '#63E6BE', '#4DABF7', '#
 
 // 标注线宽档位
 export const ANNOTATION_STROKES = [2, 4, 8];
+
+// 文字标注字号：跟随线宽档位映射（共用"细/中/粗"选择器，避免为文字单开一档 UI）
+export const TEXT_FONT_SIZE: Record<number, number> = { 2: 16, 4: 28, 8: 48 };
 
 // 图片信息（get_image_info 返回）
 export interface ImageInfo {
