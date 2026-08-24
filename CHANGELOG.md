@@ -1,3 +1,13 @@
+## [0.1.21](https://github.com/cavin-works/cavin-tools/compare/v0.1.20...v0.1.21) (2026-08-24)
+
+
+### ✨ 新功能
+
+* **image:** 编辑器三期:文字标注,canvas 渲染 + Rust 合成零字体依赖 (close [#46](https://github.com/cavin-works/cavin-tools/issues/46)) ([c42ecfd](https://github.com/cavin-works/cavin-tools/commit/c42ecfdb0c50075531ae5464ac828e3880c4cd93))
+* 视频音频提取与用量报表 CSV 导出 (close [#47](https://github.com/cavin-works/cavin-tools/issues/47), close [#48](https://github.com/cavin-works/cavin-tools/issues/48)) ([5e8207d](https://github.com/cavin-works/cavin-tools/commit/5e8207d936b51c3e71f05504353bf4c8a05b5fe5))
+
+
+
 ## [0.1.20](https://github.com/cavin-works/cavin-tools/compare/v0.1.19...v0.1.20) (2026-08-23)
 
 
