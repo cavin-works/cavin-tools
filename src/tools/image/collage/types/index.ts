@@ -18,6 +18,8 @@ export interface CollageParams {
   margin: number;
   /** 背景色 "#RRGGBB" | "transparent" */
   background: string;
+  /** 每张图圆角半径 0..64，0 表示直角 */
+  cornerRadius: number;
 }
 
 export const DEFAULT_PARAMS: CollageParams = {
@@ -25,6 +27,7 @@ export const DEFAULT_PARAMS: CollageParams = {
   gap: 8,
   margin: 12,
   background: '#ffffff',
+  cornerRadius: 0,
 };
 
 // 已添加的图片（宽度/高度由 get_image_info 获取）

@@ -215,7 +215,20 @@ export function ImageCollage() {
                       }
                     />
                   </div>
-                </CardContent>
+                  <div className="space-y-3">
+                    <Label htmlFor="collage-corner-radius">圆角: {params.cornerRadius}px</Label>
+                    <Slider
+                      id="collage-corner-radius"
+                      min={0}
+                      max={64}
+                      step={1}
+                      value={[params.cornerRadius]}
+                      onValueChange={(value) =>
+                        useImageCollageStore.getState().updateParams({ cornerRadius: value[0] })
+                      }
+                    />
+                  </div>
+</CardContent>
               </Card>
 
               {/* 背景色 */}

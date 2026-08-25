@@ -12,4 +12,7 @@ pub struct CollageParams {
     pub margin: u32,
     /// 背景色 "#RRGGBB" | "#RRGGBBAA" | "transparent"
     pub background: String,
+    /// 每张图圆角半径 0..64，0 表示直角
+    #[serde(default)]
+    pub corner_radius: u32,
 }

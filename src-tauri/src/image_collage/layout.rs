@@ -141,6 +141,7 @@ mod tests {
             gap,
             margin,
             background: "#ffffff".to_string(),
+            corner_radius: 0,
         }
     }
 

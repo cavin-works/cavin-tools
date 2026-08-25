@@ -20,6 +20,8 @@ fn render_collage(imgs: &[DynamicImage], params: &CollageParams, scale: f64) -> 
     // 网格模板单元格统一尺寸，用裁剪填充；行/列模板目标即原比例，直接拉伸到精确尺寸
     let fill = params.template.starts_with("grid");
     let filter = image::imageops::FilterType::Lanczos3;
+    // scaled 的 .max(1) 会把 0 变 1，圆角为 0 时保持 0 以跳过蒙版
+    let radius = if params.corner_radius == 0 { 0 } else { scaled(params.corner_radius) };
 
     for (img, rect) in imgs.iter().zip(&rects) {
         let (tw, th) = (scaled(rect.width), scaled(rect.height));
@@ -28,12 +30,40 @@ fn render_collage(imgs: &[DynamicImage], params: &CollageParams, scale: f64) -> 
         } else {
             img.resize_exact(tw, th, filter)
         };
+        let mut cell = resized.to_rgba8();
+        if radius > 0 {
+            cell = rounded_corners(&cell, radius);
+        }
         let x = (rect.x as f64 * scale).round() as i64;
         let y = (rect.y as f64 * scale).round() as i64;
-        imageops::overlay(&mut canvas, &resized.to_rgba8(), x, y);
+        imageops::overlay(&mut canvas, &cell, x, y);
     }
 
     Ok(canvas)
+}
+
+/// 圆角蒙版：返回等大新图，四角圆外的像素 alpha 置 0，圆内/边中/中心原样。
+/// radius 钳位到 min(w,h)/2；按像素中心到角圆心的距离判定（像素中心即 x+0.5, y+0.5）。
+fn rounded_corners(img: &RgbaImage, radius: u32) -> RgbaImage {
+    let (w, h) = img.dimensions();
+    let radius = radius.min(w.min(h) / 2) as f64;
+    let mut out = img.clone();
+    if radius == 0.0 {
+        return out;
+    }
+    let (fw, fh) = (w as f64, h as f64);
+    for y in 0..h {
+        for x in 0..w {
+            let (px, py) = (x as f64 + 0.5, y as f64 + 0.5);
+            // 超出直边深入角区的横向/纵向距离，0 表示不在角区
+            let dx = if px < radius { radius - px } else if px > fw - radius { px - (fw - radius) } else { 0.0 };
+            let dy = if py < radius { radius - py } else if py > fh - radius { py - (fh - radius) } else { 0.0 };
+            if dx > 0.0 && dy > 0.0 && dx * dx + dy * dy > radius * radius {
+                out.get_pixel_mut(x, y).0[3] = 0;
+            }
+        }
+    }
+    out
 }
 
 /// 生成拼贴预览：布局在原图域计算后整体缩放至最长边 600px，返回 PNG base64 data URL
@@ -128,4 +158,44 @@ pub async fn collage_export(
     })
     .await
     .map_err(|e| format!("异步任务执行失败: {}", e))?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn solid(w: u32, h: u32) -> RgbaImage {
+        RgbaImage::from_pixel(w, h, Rgba([200, 100, 50, 255]))
+    }
+
+    #[test]
+    fn test_rounded_corners_4x4_radius2() {
+        let out = rounded_corners(&solid(4, 4), 2);
+        assert_eq!(out.dimensions(), (4, 4));
+        // 四角圆外透明
+        for (x, y) in [(0, 0), (3, 0), (0, 3), (3, 3)] {
+            assert_eq!(out.get_pixel(x, y).0[3], 0, "角 ({x},{y}) 应透明");
+        }
+        // 边中与中心保持不透明
+        for (x, y) in [
+            (1, 0), (2, 0), (0, 1), (0, 2), (3, 1), (3, 2), (1, 3), (2, 3),
+            (1, 1), (1, 2), (2, 1), (2, 2),
+        ] {
+            assert_eq!(out.get_pixel(x, y).0[3], 255, "边中/中心 ({x},{y}) 应保持不透明");
+        }
+    }
+
+    #[test]
+    fn test_rounded_corners_zero_identity() {
+        let img = solid(7, 5);
+        assert_eq!(rounded_corners(&img, 0), img);
+    }
+
+    #[test]
+    fn test_rounded_corners_radius_clamped() {
+        let img = solid(4, 4);
+        // 超大半径钳位到 min(w,h)/2 = 2，与 radius=2 结果一致，且不越界
+        assert_eq!(rounded_corners(&img, 64), rounded_corners(&img, 2));
+        assert_eq!(rounded_corners(&img, u32::MAX), rounded_corners(&img, 2));
+    }
 }
