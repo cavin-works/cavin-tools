@@ -25,6 +25,7 @@ import { showError, showInfo } from '@/tools/video/editor/utils/errorHandling';
 import { EditCanvas } from './components/EditCanvas';
 import { FilterControls } from './components/FilterControls';
 import { ExportSettings } from './components/ExportSettings';
+import { renderTextOverlays } from './utils/textOverlay';
 import { ANNOTATION_COLORS, ANNOTATION_STROKES, TEXT_FONT_SIZE } from './types';
 import type { AnnotationKind, CropRatio, EditParams, ImageInfo } from './types';
 
@@ -97,11 +98,22 @@ export function ImageEditor() {
 
   // 防抖预览：编辑参数变化后 200ms 请求新预览。
   // 以序列化后的"生效参数"为依赖：裁剪模式下预览不含 crop，
-  // 标注模式下预览不含标注（由 AnnotationLayer 叠加显示），
+  // 标注模式下预览不含形状标注（由 AnnotationLayer 叠加显示），
   // 拖动裁剪框/绘制标注不会触发多余请求，也不会引起预览图闪烁。
-  const previewParamsKey = JSON.stringify(
-    useImageEditorStore.getState().getEditParams(!cropEnabled, !annotationTool)
-  );
+  // 文字标注始终走后端 textOverlays 管线（含标注模式，AnnotationLayer 不再
+  // DOM 渲染文字，避免双重绘制），其变化用摘要拼进 key（PNG base64 太大不参与）。
+  const textSummary = params.annotations
+    .filter((a) => a.kind === 'text')
+    .map((a) => `${a.x},${a.y},${a.size ?? ''},${a.color},${a.text ?? ''}`)
+    .join('|');
+  const previewParamsKey =
+    JSON.stringify(useImageEditorStore.getState().getEditParams(!cropEnabled, !annotationTool)) +
+    `|text:${textSummary}`;
+  // 与后端 edit_image_preview 的缩放公式一致（原图最长边 600px）：
+  // 预览文字 PNG 按该比例渲染小号，坐标仍传原图值由后端换算
+  const previewScale = imageInfo
+    ? Math.min(600 / Math.max(imageInfo.width, imageInfo.height), 1)
+    : 1;
 
   useEffect(() => {
     if (!inputPath) return;
@@ -112,7 +124,10 @@ export function ImageEditor() {
       try {
         const url = await invoke<string>('edit_image_preview', {
           inputPath,
-          params: store.getEditParams(!store.cropEnabled, !store.annotationTool),
+          params: {
+            ...store.getEditParams(!store.cropEnabled, !store.annotationTool),
+            textOverlays: renderTextOverlays(store.params.annotations, previewScale),
+          },
         });
         if (!cancelled) {
           useImageEditorStore.getState().setPreview(url);
@@ -128,7 +143,7 @@ export function ImageEditor() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [inputPath, previewParamsKey]);
+  }, [inputPath, previewParamsKey, previewScale]);
 
   // 旋转/翻转会改变坐标系，已保存的裁剪区域与标注不再适用，需一并清除
   const applyTransform = (patch: Partial<EditParams>) => {

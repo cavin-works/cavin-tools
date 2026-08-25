@@ -81,7 +81,7 @@ auto-launch = "0.5"
 rquickjs = { version = "0.8", features = ["array-buffer", "classes"] }
 
 # Image processing (cavin-tools)
-image = { version = "0.24", features = ["png", "jpeg", "gif", "webp", "bmp", "tiff", "ico"] }
+image = { version = "0.24", features = ["png", "jpeg", "gif", "webp", "webp-encoder", "bmp", "tiff", "ico"] }
 qrcode = { version = "0.14", default-features = false }
 oxipng = "9.1"
 imagequant = "4.4"

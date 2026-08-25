@@ -33,7 +33,8 @@ pub struct EditParams {
     #[serde(default)]
     pub annotations: Vec<Annotation>,
     /// 文字标注列表（管线最末叠加；前端离屏 canvas 渲染的 PNG。
-    /// 预览不传（前端 DOM 呈现），仅导出使用，坐标 scale=1 不换算）
+    /// 预览与导出均传入：预览时前端按缩放比渲染小号 PNG，
+    /// 后端仅按 scale 换算锚点坐标；导出 scale=1 原样使用）
     #[serde(default)]
     pub text_overlays: Vec<TextOverlay>,
 }

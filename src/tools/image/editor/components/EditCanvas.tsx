@@ -7,7 +7,7 @@ import { CropOverlay } from './CropOverlay';
 /**
  * 预览画布：显示后端完整管线（旋转/翻转/滤镜/裁剪）输出的 base64 预览图。
  * 预览未就绪时回退显示原图；裁剪模式下叠加 CropOverlay（预览不含 crop）；
- * 标注模式下叠加 AnnotationLayer（预览不含标注，已有标注由图层绘制）。
+ * 标注模式下叠加 AnnotationLayer（预览不含形状标注、由图层绘制；文字走预览管线）。
  */
 export function EditCanvas() {
   const inputPath = useImageEditorStore((s) => s.inputPath);

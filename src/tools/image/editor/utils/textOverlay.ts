@@ -40,14 +40,15 @@ export function renderTextOverlay(
 }
 
 /**
- * 把所有文字标注渲染为后端 textOverlays（非文字标注忽略，坐标原样 scale=1）。
- * 导出链专用：预览链不传 textOverlays（预览由 AnnotationLayer DOM 呈现）。
+ * 把所有文字标注渲染为后端 textOverlays（非文字标注忽略）。
+ * 坐标保持原图坐标系（后端预览按 scale 换算锚点）；
+ * sizeScale=预览缩放比时 PNG 按比例渲染小号，保证预览与导出同比例（WYSIWYG）。
  */
-export function renderTextOverlays(annotations: Annotation[]): TextOverlay[] {
+export function renderTextOverlays(annotations: Annotation[], sizeScale = 1): TextOverlay[] {
   const overlays: TextOverlay[] = [];
   for (const ann of annotations) {
     if (ann.kind !== 'text' || !ann.text) continue;
-    const size = ann.size ?? TEXT_FONT_SIZE[ann.stroke] ?? 28;
+    const size = (ann.size ?? TEXT_FONT_SIZE[ann.stroke] ?? 28) * sizeScale;
     const png = renderTextOverlay(ann.text, ann.color, size);
     if (png) overlays.push({ x: ann.x, y: ann.y, pngBase64: png.pngBase64 });
   }

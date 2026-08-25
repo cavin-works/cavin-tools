@@ -3,7 +3,8 @@ pub mod types;
 
 use base64::Engine;
 use image::{
-    codecs::jpeg::JpegEncoder, imageops, DynamicImage, GenericImageView, ImageFormat, Rgba, RgbaImage,
+    codecs::jpeg::JpegEncoder, codecs::webp::{WebPEncoder, WebPQuality}, imageops, DynamicImage,
+    GenericImageView, ImageFormat, Rgba, RgbaImage,
 };
 use tokio::task::spawn_blocking;
 
@@ -36,8 +37,19 @@ fn scale_crop(params: &EditParams, scale: f64) -> EditParams {
             })
             .collect();
     }
-    // 文字标注不进预览管线（预览由前端 DOM 呈现）；导出路径 scale=1 原样使用
-    scaled.text_overlays = Vec::new();
+    // 文字 PNG 由前端按预览缩放比预渲染小号（保持 WYSIWYG），
+    // 后端仅换算锚点坐标，PNG 本身不再缩放
+    if !params.text_overlays.is_empty() {
+        scaled.text_overlays = params
+            .text_overlays
+            .iter()
+            .map(|t| TextOverlay {
+                x: (t.x as f64 * scale).round() as u32,
+                y: (t.y as f64 * scale).round() as u32,
+                png_base64: t.png_base64.clone(),
+            })
+            .collect();
+    }
     scaled
 }
 
@@ -113,8 +125,16 @@ pub async fn edit_image_export(
                     .map_err(|e| format!("保存JPEG失败: {}", e))?;
             }
             "webp" => {
+                // 有损 WebP 才有质量参数（libwebp，quality 0-100 越大质量越高）；
+                // lossy 路径仅支持 Rgb8/Rgba8，先拍平（无损 save_with_format 无质量可言）
+                let mut output_file = std::fs::File::create(&output_path)
+                    .map_err(|e| format!("创建输出文件失败: {}", e))?;
+                #[allow(deprecated)] // 0.24 将 lossy 构造标记 deprecated，质量参数仅此路径可用
+                let encoder =
+                    WebPEncoder::new_with_quality(&mut output_file, WebPQuality::lossy(quality));
                 processed
-                    .save_with_format(&output_path, ImageFormat::WebP)
+                    .to_rgba8()
+                    .write_with_encoder(encoder)
                     .map_err(|e| format!("保存WebP失败: {}", e))?;
             }
             _ => {
@@ -128,4 +148,64 @@ pub async fn edit_image_export(
     })
     .await
     .map_err(|e| format!("异步任务执行失败: {}", e))?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn params_with_text() -> EditParams {
+        EditParams {
+            crop: Some(CropRect { x: 100, y: 50, width: 400, height: 300 }),
+            annotations: vec![Annotation {
+                kind: "rect".to_string(),
+                x: 10,
+                y: 20,
+                width: 30,
+                height: 40,
+                color: "#FF0000".to_string(),
+                stroke: 4,
+                flip: false,
+            }],
+            text_overlays: vec![TextOverlay {
+                x: 200,
+                y: 100,
+                png_base64: "png-bytes".to_string(),
+            }],
+            rotation: 0,
+            flip_h: false,
+            flip_v: false,
+            brightness: None,
+            contrast: None,
+            hue: None,
+            grayscale: false,
+            invert: false,
+            blur: None,
+            sharpen: None,
+            saturation: None,
+        }
+    }
+
+    /// H1 回归：预览换算不得清空 text_overlays，坐标与 stroke 一样按 scale 缩放，PNG 原样保留
+    #[test]
+    fn test_scale_crop_scales_text_overlays() {
+        let scaled = scale_crop(&params_with_text(), 0.5);
+        assert_eq!(scaled.text_overlays.len(), 1);
+        assert_eq!(scaled.text_overlays[0].x, 100);
+        assert_eq!(scaled.text_overlays[0].y, 50);
+        assert_eq!(scaled.text_overlays[0].png_base64, "png-bytes");
+        // crop 与标注同样换算
+        let crop = scaled.crop.unwrap();
+        assert_eq!((crop.x, crop.y, crop.width, crop.height), (50, 25, 200, 150));
+        assert_eq!(scaled.annotations[0].stroke, 2);
+    }
+
+    /// scale=1（导出路径）时完全不变
+    #[test]
+    fn test_scale_crop_identity_at_one() {
+        let p = params_with_text();
+        let scaled = scale_crop(&p, 1.0);
+        assert_eq!(scaled.text_overlays[0].x, 200);
+        assert_eq!(scaled.text_overlays[0].y, 100);
+    }
 }

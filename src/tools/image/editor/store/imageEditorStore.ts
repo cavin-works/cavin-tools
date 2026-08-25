@@ -58,8 +58,9 @@ interface ImageEditorStore {
 
   // 获取发送给后端的参数
   // includeCrop=false 时不含裁剪（裁剪模式下预览显示完整图片，裁剪框叠加其上）
-  // includeAnnotations=false 时不含标注（标注模式下由 AnnotationLayer 叠加显示）
-  // 文字标注永不进后端标注管线：预览由 DOM 呈现，导出时另渲染为 textOverlays
+  // includeAnnotations=false 时不含标注（标注模式下由 AnnotationLayer 叠加显示形状）
+  // 文字标注永不进 annotations（后端标注管线无文字绘制）：
+  // 预览/导出均由调用方另行渲染为 textOverlays 传入（见 index.tsx / ExportSettings）
   getEditParams: (includeCrop: boolean, includeAnnotations?: boolean) => EditParams;
 }
 
@@ -99,7 +100,6 @@ export const useImageEditorStore = create<ImageEditorStore>((set, get) => ({
       blur: 0,
       sharpen: 0,
       saturation: 0,
-      annotations: [],
     },
   })),
 

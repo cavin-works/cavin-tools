@@ -29,7 +29,7 @@ export interface EditParams {
   saturation: number;
   /** 标注列表 */
   annotations: Annotation[];
-  /** 文字标注 PNG 列表（仅导出时传入；预览由前端 DOM 呈现不传） */
+  /** 文字标注 PNG 列表（预览/导出均传入；预览时前端按缩放比渲染小号 PNG，坐标由后端换算） */
   textOverlays?: TextOverlay[];
 }
 

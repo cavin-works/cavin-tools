@@ -96,8 +96,9 @@ function Shape({
 
 /**
  * 标注层：叠加在（已旋转/翻转/滤镜/裁剪的）预览图之上。
- * 显示已有标注 + 拖拽绘制新标注（拖出对角线，松开即提交一条）。
- * 文字工具：点击预览图 → 点击处弹出内联输入框 → Enter 确认 / Esc 取消。
+ * 显示已有形状标注 + 拖拽绘制新标注（拖出对角线，松开即提交一条）。
+ * 文字标注不在此渲染（预览链经后端 textOverlays 管线绘制，避免双重绘制），
+ * 仅保留输入交互：点击预览图 → 点击处弹出内联输入框 → Enter 确认 / Esc 取消。
  * 坐标换算：标注与裁剪同处"旋转后的原图坐标系"——标注模式下预览含裁剪，
  * 故 原图坐标 = 显示坐标 * f + 裁剪原点，f = (crop ? crop.width : 旋转后原图宽) / 预览显示宽。
  */
@@ -122,11 +123,22 @@ export function AnnotationLayer({
   // 文字输入框位置（显示像素，null = 关闭）
   const [textInput, setTextInput] = useState<{ x: number; y: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // 预览图显示宽（挂载后读取一次：effect 在布局提交后执行，clientWidth 已可用）
+  // 输入框当前值镜像：卸载时 React 会先把 DOM ref 置空，提交需从镜像读取
+  const inputValueRef = useRef('');
+  // 预览图显示宽：初始读一次 + ResizeObserver 跟随窗口缩放同步
   const [displayWidth, setDisplayWidth] = useState(0);
   useEffect(() => {
-    const w = imgRef.current?.clientWidth ?? 0;
-    if (w) setDisplayWidth(w);
+    const img = imgRef.current;
+    if (!img) return;
+    const sync = () => {
+      const w = img.clientWidth;
+      if (w) setDisplayWidth(w);
+    };
+    sync();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(sync);
+    ro.observe(img);
+    return () => ro.disconnect();
   }, [imgRef]);
 
   /** 显示像素 → 原图坐标换算参数（f = 原图/显示 比例，ox/oy = 裁剪原点） */
@@ -155,6 +167,7 @@ export function AnnotationLayer({
       if (textInput) {
         commitTextInput();
       } else {
+        inputValueRef.current = '';
         setTextInput(p);
         requestAnimationFrame(() => inputRef.current?.focus());
       }
@@ -203,7 +216,7 @@ export function AnnotationLayer({
   /** 确认文字输入：按现有 factor 模式换算坐标后提交（空文本视为取消） */
   const commitTextInput = () => {
     const p = textInput;
-    const value = inputRef.current?.value.trim();
+    const value = inputValueRef.current.trim();
     setTextInput(null);
     const m = mapping();
     if (!p || !m || !value) return;
@@ -215,6 +228,18 @@ export function AnnotationLayer({
       TEXT_FONT_SIZE[stroke] ?? 28,
     );
   };
+
+  // 最新提交函数（render 期间刷新），供卸载/切工具的 effect cleanup 调用，
+  // 避免闭包过期读不到最新的 textInput/mapping
+  const commitRef = useRef(commitTextInput);
+  commitRef.current = commitTextInput;
+
+  // 卸载（退出标注模式等）时补提交挂起的文字，避免已输入内容静默丢失
+  useEffect(() => () => commitRef.current(), []);
+  // 切换到非文字工具时输入框仍在挂载状态，同样先提交
+  useEffect(() => {
+    if (tool !== 'text') commitRef.current();
+  }, [tool]);
 
   const m = mapping();
   // 输入框字号与目标渲染字号一致（WYSIWYG）
@@ -231,21 +256,8 @@ export function AnnotationLayer({
     >
       {m &&
         annotations.map((ann, i) =>
-          ann.kind === 'text' ? (
-            <span
-              key={i}
-              className="absolute pointer-events-none whitespace-pre leading-none"
-              style={{
-                left: (ann.x - m.ox) / m.f,
-                top: (ann.y - m.oy) / m.f,
-                color: ann.color,
-                fontFamily: 'sans-serif',
-                fontSize: (ann.size ?? 28) / m.f,
-              }}
-            >
-              {ann.text}
-            </span>
-          ) : (
+          // 文字标注由预览图（后端 textOverlays）呈现，这里只画形状，避免双重绘制
+          ann.kind === 'text' ? null : (
             <Shape
               key={i}
               kind={ann.kind}
@@ -279,6 +291,9 @@ export function AnnotationLayer({
           style={{ left: textInput.x, top: textInput.y, color, fontSize: inputFontSize, minWidth: 120 }}
           // 阻止冒泡到容器的 pointerdown（否则点击输入框内部会被当成再次落点）
           onPointerDown={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            inputValueRef.current = e.target.value;
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') commitTextInput();
             if (e.key === 'Escape') setTextInput(null);

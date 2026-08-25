@@ -2,7 +2,10 @@ pub mod layout;
 pub mod types;
 
 use base64::Engine;
-use image::{codecs::jpeg::JpegEncoder, imageops, DynamicImage, GenericImageView, ImageFormat, Rgba, RgbaImage};
+use image::{
+    codecs::jpeg::JpegEncoder, codecs::webp::{WebPEncoder, WebPQuality}, imageops, DynamicImage,
+    GenericImageView, ImageFormat, Rgba, RgbaImage,
+};
 use tokio::task::spawn_blocking;
 
 pub use types::CollageParams;
@@ -143,8 +146,14 @@ pub async fn collage_export(
                     .map_err(|e| format!("保存JPEG失败: {}", e))?;
             }
             "webp" => {
-                DynamicImage::ImageRgba8(canvas)
-                    .save_with_format(&output_path, ImageFormat::WebP)
+                // 有损 WebP 才有质量参数（libwebp，quality 0-100 越大质量越高）
+                let mut output_file = std::fs::File::create(&output_path)
+                    .map_err(|e| format!("创建输出文件失败: {}", e))?;
+                #[allow(deprecated)] // 0.24 将 lossy 构造标记 deprecated，质量参数仅此路径可用
+                let encoder =
+                    WebPEncoder::new_with_quality(&mut output_file, WebPQuality::lossy(quality));
+                canvas
+                    .write_with_encoder(encoder)
                     .map_err(|e| format!("保存WebP失败: {}", e))?;
             }
             _ => {
