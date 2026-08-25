@@ -1,3 +1,14 @@
+## [0.1.22](https://github.com/cavin-works/cavin-tools/compare/v0.1.21...v0.1.22) (2026-08-25)
+
+
+### ✨ 新功能
+
+* **collage:** 拼贴支持圆角 (close [#51](https://github.com/cavin-works/cavin-tools/issues/51)) ([02c226e](https://github.com/cavin-works/cavin-tools/commit/02c226e52f99523c5a10a4eab1489c5a860f65da))
+* **text:** 字符工具新增颜色转换器 Tab (close [#50](https://github.com/cavin-works/cavin-tools/issues/50)) ([3aa0a91](https://github.com/cavin-works/cavin-tools/commit/3aa0a91ffc16bdf95ea64cb85e27da4ce1f6dab3))
+* **tools:** 新增二维码生成器 (close [#49](https://github.com/cavin-works/cavin-tools/issues/49)) ([e243ff7](https://github.com/cavin-works/cavin-tools/commit/e243ff71ad3fcbaf5909c1ae78c1bb843e411e34))
+
+
+
 ## [0.1.21](https://github.com/cavin-works/cavin-tools/compare/v0.1.20...v0.1.21) (2026-08-24)
 
 
