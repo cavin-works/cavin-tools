@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { showError, showSuccess } from '../../utils/errorHandling';
 
 type ExtractMode = 'single' | 'interval' | 'uniform';
 
@@ -32,12 +33,14 @@ export function ExtractPanel() {
           quality,
           interval: mode === 'interval' ? interval : undefined,
           count: mode === 'uniform' ? count : undefined,
+          duration: currentVideo.duration,
+          fps: currentVideo.fps,
           outputDir: './extracted_frames'
         }
       });
-      alert(`提取完成,生成了${result.length}帧`);
+      showSuccess(`提取完成,生成了${result.length}帧`);
     } catch (error) {
-      alert(`提取失败: ${error}`);
+      showError(`提取失败: ${error}`, error);
     } finally {
       setProcessing(false);
     }

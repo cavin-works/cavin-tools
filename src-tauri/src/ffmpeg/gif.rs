@@ -2,6 +2,7 @@ use std::process::{Command, Stdio};
 use super::get_ffmpeg_path;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GifParams {
     pub start_time: f64,
     pub end_time: f64,

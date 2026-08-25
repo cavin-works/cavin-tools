@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CompressPanel } from './CompressPanel';
 import { SpeedPanel } from './SpeedPanel';
 import { ExtractPanel } from './ExtractPanel';
@@ -6,11 +6,20 @@ import { TrimPanel } from './TrimPanel';
 import { GifPanel } from './GifPanel';
 import { AudioPanel } from './AudioPanel';
 import { OperationQueuePanel } from '../OperationQueuePanel';
+import { useVideoStore } from '../../store/videoStore';
+import { useOperationQueue } from '../../contexts/OperationQueueContext';
 
 type TabType = 'queue' | 'compress' | 'speed' | 'extract' | 'audio' | 'trim' | 'gif';
 
 export function ControlPanel() {
   const [activeTab, setActiveTab] = useState<TabType>('queue');
+  const videoPath = useVideoStore((state) => state.currentVideo?.path);
+  const { clearQueue } = useOperationQueue();
+
+  // 换视频时清空操作队列,避免上一视频的操作作用到新视频
+  useEffect(() => {
+    clearQueue();
+  }, [videoPath, clearQueue]);
 
   const tabs = [
     { id: 'queue' as TabType, label: '队列', icon: '📋' },

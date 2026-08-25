@@ -5,15 +5,18 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { showError, showSuccess } from '../../utils/errorHandling';
 
 export function GifPanel() {
-  const { currentVideo, timelineStart, timelineEnd } = useVideoStore();
+  const { currentVideo, timelineStart, timelineEnd, isProcessing, setProcessing } = useVideoStore();
   const [fps, setFps] = useState(10);
   const [width, setWidth] = useState(480);
   const [colors, setColors] = useState(256);
 
   const handleConvert = async () => {
     if (!currentVideo) return;
+
+    setProcessing(true);
 
     try {
       const outputPath = await invoke<string>('convert_to_gif', {
@@ -28,9 +31,11 @@ export function GifPanel() {
         }
       });
 
-      alert(`转换完成: ${outputPath}`);
+      showSuccess(`转换完成: ${outputPath}`);
     } catch (error) {
-      alert(`转换失败: ${error}`);
+      showError(`转换失败: ${error}`, error);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -78,6 +83,7 @@ export function GifPanel() {
 
         <Button
           onClick={handleConvert}
+          disabled={isProcessing}
           className="w-full"
         >
           开始转换

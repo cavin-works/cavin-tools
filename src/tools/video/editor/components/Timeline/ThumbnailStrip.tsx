@@ -12,6 +12,7 @@ interface ThumbnailStripProps {
 
 export function ThumbnailStrip({
   videoPath,
+  duration,
   width,
   height = 80,
   className = ''
@@ -45,12 +46,13 @@ export function ThumbnailStrip({
           const count = Math.min(batchSize, thumbnailCount - startIndex);
 
           try {
-            // 批量生成缩略图
+            // 批量生成缩略图；传入 durationHint 避免每批重复解码探测时长
             const thumbs = await invoke<string[]>('generate_thumbnails', {
               inputPath: videoPath,
               count,
               startIndex,
               totalCount: thumbnailCount,
+              durationHint: duration,
             });
 
             if (thumbs && thumbs.length > 0) {
@@ -80,7 +82,7 @@ export function ThumbnailStrip({
     return () => {
       mounted = false;
     };
-  }, [videoPath, thumbnailCount]);
+  }, [videoPath, thumbnailCount, duration]);
 
   if (error) {
     return (

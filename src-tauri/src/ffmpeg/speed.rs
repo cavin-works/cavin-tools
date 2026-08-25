@@ -4,8 +4,6 @@ use super::get_ffmpeg_path;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct SpeedParams {
     pub speed: f64,  // 0.25 - 4.0
-    #[serde(alias = "preservePitch")]
-    pub preserve_pitch: bool,
 }
 
 /// 改变视频播放速度
@@ -34,29 +32,27 @@ pub async fn change_video_speed(
         cmd.arg("-filter:v")
             .arg(format!("setpts={}*PTS", video_speed));
 
-        // 音频速度
-        if !params.preserve_pitch {
-            // atempo只支持0.5到2.0,需要链式调用
-            let mut speed = params.speed;
-            let mut filters = Vec::new();
+        // 音频永远走 atempo 链(atempo 本身保持音高),与视频 setpts 同倍率,保证音画同步
+        // atempo 只支持 0.5 到 2.0,超出范围时链式拆分
+        let mut speed = params.speed;
+        let mut filters = Vec::new();
 
-            while speed > 2.0 {
-                filters.push("atempo=2.0".to_string());
-                speed /= 2.0;
-            }
+        while speed > 2.0 {
+            filters.push("atempo=2.0".to_string());
+            speed /= 2.0;
+        }
 
-            while speed < 0.5 {
-                filters.push("atempo=0.5".to_string());
-                speed *= 2.0;
-            }
+        while speed < 0.5 {
+            filters.push("atempo=0.5".to_string());
+            speed *= 2.0;
+        }
 
-            if speed >= 0.5 && speed <= 2.0 {
-                filters.push(format!("atempo={}", speed));
-            }
+        if speed >= 0.5 && speed <= 2.0 {
+            filters.push(format!("atempo={}", speed));
+        }
 
-            if !filters.is_empty() {
-                cmd.arg("-filter:a").arg(filters.join(","));
-            }
+        if !filters.is_empty() {
+            cmd.arg("-filter:a").arg(filters.join(","));
         }
 
         cmd.arg("-y").arg(&output_path);

@@ -33,7 +33,14 @@ interface VideoStore {
 export const useVideoStore = create<VideoStore>((set) => ({
   // 当前视频
   currentVideo: null,
-  setCurrentVideo: (video) => set({ currentVideo: video }),
+  // 换视频时重置播放/选区/错误状态,并把选区初始化为 (0, duration),避免残留上一视频的状态
+  setCurrentVideo: (video) => set({
+    currentVideo: video,
+    timelineStart: 0,
+    timelineEnd: video ? video.duration : 0,
+    currentTime: 0,
+    error: null,
+  }),
 
   // 时间轴
   timelineStart: 0,

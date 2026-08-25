@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { showError, showSuccess } from '../../utils/errorHandling';
 
 export function TrimPanel() {
   const { currentVideo, timelineStart, timelineEnd, isProcessing, setProcessing, setProgress, setOperation } = useVideoStore();
@@ -32,9 +33,9 @@ export function TrimPanel() {
       });
 
       setProgress(100);
-      alert(`截断完成: ${outputPath}`);
+      showSuccess(`截断完成: ${outputPath}`);
     } catch (error) {
-      alert(`截断失败: ${error}`);
+      showError(`截断失败: ${error}`, error);
     } finally {
       setProcessing(false);
     }

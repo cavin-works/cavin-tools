@@ -6,15 +6,14 @@ import { useOperationQueue } from '../../contexts/OperationQueueContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { FolderOpen, Plus } from 'lucide-react';
+import { showError } from '../../utils/errorHandling';
 
 export function SpeedPanel() {
   const { currentVideo, isProcessing, setProcessing } = useVideoStore();
   const { addToQueue } = useOperationQueue();
   const [speed, setSpeed] = useState(1.0);
-  const [preservePitch, setPreservePitch] = useState(false);
   const [outputPath, setOutputPath] = useState<string | null>(null);
 
   const handleSpeedChange = async () => {
@@ -26,12 +25,12 @@ export function SpeedPanel() {
     try {
       const path = await invoke<string>('change_video_speed', {
         inputPath: currentVideo.path,
-        params: { speed, preservePitch }
+        params: { speed }
       });
 
       setOutputPath(path);
     } catch (error) {
-      alert(`变速失败: ${error}`);
+      showError(`变速失败: ${error}`, error);
     } finally {
       setProcessing(false);
     }
@@ -42,8 +41,8 @@ export function SpeedPanel() {
 
     addToQueue({
       type: 'speed',
-      name: `变速 ${speed}x${preservePitch ? ' (保持音高)' : ''}`,
-      params: { speed, preservePitch }
+      name: `变速 ${speed}x`,
+      params: { speed }
     });
   };
 
@@ -78,17 +77,6 @@ export function SpeedPanel() {
             <span>1x</span>
             <span>4x</span>
           </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="pitch"
-            checked={preservePitch}
-            onCheckedChange={setPreservePitch}
-          />
-          <Label htmlFor="pitch" className="cursor-pointer">
-            保持音高(避免声音变调)
-          </Label>
         </div>
 
         <div className="flex gap-2">

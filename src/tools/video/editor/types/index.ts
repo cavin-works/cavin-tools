@@ -37,7 +37,6 @@ export interface CompressParams {
 // 变速参数
 export interface SpeedParams {
   speed: number; // 0.25 - 4.0
-  preservePitch: boolean;
 }
 
 // 提取帧模式
@@ -50,6 +49,8 @@ export interface ExtractFramesParams {
   quality: number;
   interval?: number; // 秒
   count?: number; // 帧数
+  duration: number; // 视频时长(秒),uniform 模式估算总帧数
+  fps: number; // 视频帧率,uniform 模式估算总帧数
 }
 
 // 截断参数

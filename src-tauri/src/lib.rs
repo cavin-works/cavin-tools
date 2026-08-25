@@ -62,8 +62,9 @@ async fn generate_thumbnails(
     count: usize,
     start_index: Option<usize>,
     total_count: Option<usize>,
+    duration_hint: Option<f64>,
 ) -> Result<Vec<String>, String> {
-    ffmpeg::generate_thumbnails(input_path, count, start_index, total_count).await
+    ffmpeg::generate_thumbnails(input_path, count, start_index, total_count, duration_hint).await
 }
 
 #[tauri::command]
@@ -207,6 +208,7 @@ async fn process_operation_queue(
 
     let mut current_path = input_path.clone();
     let mut temp_files: Vec<String> = Vec::new();
+    let mut final_output: Option<String> = None;
     let total_operations = operations.len();
 
     let process_result = async {
@@ -226,10 +228,12 @@ async fn process_operation_queue(
                         .and_then(|s| s.to_str())
                         .unwrap_or("mp4"),
                 };
-                parent_dir
-                    .join(format!("{}_final.{}", filename, extension))
-                    .to_string_lossy()
-                    .into_owned()
+                // 最终输出是用户可见文件:过 unique_output_path 避免覆盖已有输出(数据丢失)
+                unique_output_path(
+                    &parent_dir
+                        .join(format!("{}_final.{}", filename, extension))
+                        .to_string_lossy(),
+                )
             } else {
                 let extension = match operation.operation_type.as_str() {
                     "to_gif" => "gif",
@@ -247,6 +251,9 @@ async fn process_operation_queue(
                 temp_path_with_ext.to_string_lossy().into_owned()
             };
 
+            if is_last {
+                final_output = Some(output_path.clone());
+            }
             temp_files.push(output_path.clone());
 
             let window_clone = window.clone();
@@ -303,7 +310,11 @@ async fn process_operation_queue(
     match process_result {
         Ok(final_path) => Ok(final_path),
         Err(error) => {
+            // 失败清理只删中间临时文件;_final 是用户可见输出,保留(即使只是部分写入,也交由用户处置)
             for temp_file in &temp_files {
+                if Some(temp_file) == final_output.as_ref() {
+                    continue;
+                }
                 let _ = std::fs::remove_file(temp_file);
             }
             Err(error)

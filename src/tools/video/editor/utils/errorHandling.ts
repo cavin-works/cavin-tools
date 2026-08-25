@@ -19,11 +19,15 @@ function ensureContainer() {
   return toastContainer;
 }
 
-function createToast(message: string, type: 'success' | 'error' | 'info') {
+function createToast(message: string, type: 'success' | 'warning' | 'error' | 'info') {
   const container = ensureContainer();
 
   const toast = document.createElement('div');
-  const bgColor = type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3B82F6';
+  const bgColor =
+    type === 'success' ? '#10B981'
+    : type === 'warning' ? '#F59E0B'
+    : type === 'error' ? '#EF4444'
+    : '#3B82F6';
 
   toast.style.cssText = `
     background: ${bgColor};
@@ -88,6 +92,10 @@ export function showError(message: string, error?: unknown) {
 
 export function showSuccess(message: string) {
   createToast(message, 'success');
+}
+
+export function showWarning(message: string) {
+  createToast(message, 'warning');
 }
 
 export function showInfo(message: string) {

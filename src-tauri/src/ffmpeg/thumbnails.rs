@@ -9,6 +9,7 @@ use base64::Engine;
 /// * count - 提取的缩略图数量
 /// * start_index - 起始索引（可选，用于增量生成）
 /// * total_count - 总缩略图数量（用于计算时间位置，当 start_index 存在时必需）
+/// * duration_hint - 视频时长提示（秒，可选；提供时跳过 FFmpeg 探测，避免每批重复解码）
 ///
 /// # Returns
 /// 返回缩略图的 base64 编码列表（JPEG格式）
@@ -17,6 +18,7 @@ pub async fn generate_thumbnails(
     count: usize,
     start_index: Option<usize>,
     total_count: Option<usize>,
+    duration_hint: Option<f64>,
 ) -> Result<Vec<String>, String> {
     tokio::task::spawn_blocking(move || {
         let ffmpeg_path = get_ffmpeg_path()
@@ -25,33 +27,10 @@ pub async fn generate_thumbnails(
         println!("开始生成缩略图: input={}, count={}", input_path, count);
         let mut thumbnails = Vec::new();
 
-        // 首先获取视频时长
-        let duration_output = Command::new(&ffmpeg_path)
-            .args(["-i", &input_path, "-f", "null", "-"])
-            .stderr(Stdio::piped())
-            .output()
-            .map_err(|e| format!("获取视频时长失败: {}", e))?;
-
-        let duration_str = String::from_utf8_lossy(&duration_output.stderr);
-        // 从FFmpeg输出中解析时长 (Duration: HH:MM:SS.MM)
-        let duration = duration_str
-            .lines()
-            .find(|line| line.contains("Duration:"))
-            .and_then(|line| {
-                line.split("Duration: ")
-                    .nth(1)
-                    .and_then(|d| d.split_whitespace().next())
-            })
-            .ok_or_else(|| "无法解析视频时长".to_string())?;
-
-        // 解析时长为秒数
-        let parts: Vec<&str> = duration.split(':').collect();
-        let total_seconds = if parts.len() >= 3 {
-            parts[0].parse::<f64>().unwrap_or(0.0) * 3600.0
-                + parts[1].parse::<f64>().unwrap_or(0.0) * 60.0
-                + parts[2].parse::<f64>().unwrap_or(0.0)
-        } else {
-            return Err("无效的时长格式".to_string());
+        // 优先使用调用方传入的时长提示，否则用 FFmpeg 探测
+        let total_seconds = match duration_hint {
+            Some(d) => d,
+            None => probe_duration(&ffmpeg_path, &input_path)?,
         };
 
         println!("视频时长: {} 秒", total_seconds);
@@ -118,4 +97,33 @@ pub async fn generate_thumbnails(
     })
     .await
     .map_err(|e| format!("任务执行失败: {}", e))?
+}
+
+/// 探测视频时长（秒），从 FFmpeg 输出解析 "Duration: HH:MM:SS.MM"
+fn probe_duration(ffmpeg_path: &std::path::Path, input_path: &str) -> Result<f64, String> {
+    let duration_output = Command::new(ffmpeg_path)
+        .args(["-i", input_path, "-f", "null", "-"])
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|e| format!("获取视频时长失败: {}", e))?;
+
+    let duration_str = String::from_utf8_lossy(&duration_output.stderr);
+    let duration = duration_str
+        .lines()
+        .find(|line| line.contains("Duration:"))
+        .and_then(|line| {
+            line.split("Duration: ")
+                .nth(1)
+                .and_then(|d| d.split_whitespace().next())
+        })
+        .ok_or_else(|| "无法解析视频时长".to_string())?;
+
+    let parts: Vec<&str> = duration.split(':').collect();
+    if parts.len() >= 3 {
+        Ok(parts[0].parse::<f64>().unwrap_or(0.0) * 3600.0
+            + parts[1].parse::<f64>().unwrap_or(0.0) * 60.0
+            + parts[2].parse::<f64>().unwrap_or(0.0))
+    } else {
+        Err("无效的时长格式".to_string())
+    }
 }

@@ -9,6 +9,8 @@ pub struct ExtractParams {
     pub quality: u32,  // 1-100
     pub interval: Option<f64>,  // 秒
     pub count: Option<u32>,  // 帧数
+    pub duration: f64,  // 视频时长(秒),uniform 模式用于估算总帧数
+    pub fps: f64,  // 视频帧率,uniform 模式用于估算总帧数
     pub output_dir: String,
 }
 
@@ -71,10 +73,14 @@ pub async fn extract_frames(
                 cmd.arg("-vf").arg(format!("fps=1/{}", interval));
             }
             "uniform" => {
-                // 均匀提取N帧
-                let count = params.count.unwrap_or(10);
-                cmd.arg("-vf").arg(format!("select='eq(n,0)+gt(mod(n,{}),{})'",
-                    count, count - 1));
+                // 均匀提取N帧:估算总帧数 TOTAL = duration × fps,
+                // 步长 step = TOTAL / count,select='not(mod(n,step))' 通过 n = 0, step, 2·step, …
+                // (count=1 时 step=TOTAL,mod(0,TOTAL)=0,恰好只取第 0 帧)
+                let count = params.count.unwrap_or(10).max(1) as u64;
+                let fps = if params.fps > 0.0 { params.fps } else { 25.0 };
+                let total = (params.duration * fps).round().max(1.0) as u64;
+                let step = (total / count).max(1);
+                cmd.arg("-vf").arg(format!("select='not(mod(n,{step}))'"));
             }
             _ => return Err("无效的提取模式".to_string()),
         }

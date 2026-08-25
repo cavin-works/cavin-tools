@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { showError, showSuccess } from '../../utils/errorHandling';
 
 type CompressPreset = 'mobile' | 'web' | 'high_quality' | 'custom';
 
@@ -32,9 +33,9 @@ export function CompressPanel() {
       });
 
       setProgress(100);
-      alert(`压缩完成: ${outputPath}`);
+      showSuccess(`压缩完成: ${outputPath}`);
     } catch (error) {
-      alert(`压缩失败: ${error}`);
+      showError(`压缩失败: ${error}`, error);
     } finally {
       setProcessing(false);
     }

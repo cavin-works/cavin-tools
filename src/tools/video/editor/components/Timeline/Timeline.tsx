@@ -132,6 +132,7 @@ export function Timeline() {
           )}
 
           <TimelineSlider
+            key={currentVideo.path}
             duration={duration}
             onRegionChange={handleRegionChange}
           />
