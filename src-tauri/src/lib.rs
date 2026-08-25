@@ -20,6 +20,7 @@ pub mod image_converter;
 pub mod image_editor;
 pub mod models;
 pub mod process_manager;
+pub mod qrcode_tool;
 pub mod sticky_notes;
 pub mod updater;
 pub mod watermark_remover;
@@ -1360,6 +1361,8 @@ pub fn run() {
             query_port_command,
             kill_port_command,
             query_ports_by_pid_command,
+            qrcode_tool::generate_qr_png,
+            qrcode_tool::save_qr,
             updater::check_update,
             updater::download_and_install_update,
             // ============================================================

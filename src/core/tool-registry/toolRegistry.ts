@@ -7,6 +7,7 @@ import imageCompressorToolConfig from '@/tools/image/compressor/tool.config';
 import watermarkRemoverToolConfig from '@/tools/image/watermark-remover/tool.config';
 import backgroundRemoverToolConfig from '@/tools/image/background-remover/tool.config';
 import processManagerToolConfig from '@/tools/dev/process-manager/tool.config';
+import qrcodeToolConfig from '@/tools/dev/qrcode/tool.config';
 import characterToolsToolConfig from '@/tools/text/character-tools/tool.config';
 // AI 助手工具（已拆分为独立工具）
 import aiProvidersToolConfig from '@/tools/ai-assistant/ai-providers.tool.config';
@@ -31,6 +32,7 @@ export const TOOL_REGISTRY: Record<string, ToolMetadata> = {
   'watermark-remover': watermarkRemoverToolConfig,
   'background-remover': backgroundRemoverToolConfig,
   'process-manager': processManagerToolConfig,
+  'qrcode': qrcodeToolConfig,
   'character-tools': characterToolsToolConfig,
   // AI 助手工具（已拆分为独立工具）
   'ai-providers': aiProvidersToolConfig,
