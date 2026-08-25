@@ -1,3 +1,14 @@
+## [0.1.23](https://github.com/cavin-works/cavin-tools/compare/v0.1.22...v0.1.23) (2026-08-25)
+
+
+### 🐛 Bug 修复
+
+* **image:** 修复四老工具 review 高危:NaN/水印诚实化/模型批加载 (close [#54](https://github.com/cavin-works/cavin-tools/issues/54)) ([fbe830b](https://github.com/cavin-works/cavin-tools/commit/fbe830b81d2a8d6c90c030aace898392dfc799ba))
+* **image:** 修复文字标注 WYSIWYG 破裂与 WebP 质量安慰剂 (close [#53](https://github.com/cavin-works/cavin-tools/issues/53)) ([5dc0746](https://github.com/cavin-works/cavin-tools/commit/5dc0746f642d64736dc884cb7746dfdd62fc129f))
+* **video:** 修复 review 发现的 6 高危与反馈/选区缺陷 (close [#52](https://github.com/cavin-works/cavin-tools/issues/52)) ([8caf3c3](https://github.com/cavin-works/cavin-tools/commit/8caf3c38e64b74230af103453632d1fce74e4b06))
+
+
+
 ## [0.1.22](https://github.com/cavin-works/cavin-tools/compare/v0.1.21...v0.1.22) (2026-08-25)
 
 
