@@ -78,7 +78,7 @@ function TaskItem({ task }: { task: RemoveTask }) {
         <div className="mt-2">
           <StatusBadge status={task.status}>
             {task.status === 'completed' && task.result ? (
-              `水印 ${task.result.watermarkInfo?.watermarkSize}×${task.result.watermarkInfo?.watermarkSize}`
+              `水印区 ${task.result.watermarkInfo?.watermarkSize}×${task.result.watermarkInfo?.watermarkSize}`
             ) : task.status === 'failed' && task.error ? (
               task.error
             ) : null}

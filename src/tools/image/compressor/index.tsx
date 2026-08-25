@@ -6,7 +6,7 @@ import { useImageCompressorStore } from './store/imageCompressorStore';
 import { FileUploadZone } from '@/components/ui/file-upload-zone';
 import { FileList } from './components/FileList';
 import { CompressSettings } from './components/CompressSettings';
-import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { showError, showSuccess, showWarning } from '@/tools/video/editor/utils/errorHandling';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -80,7 +80,7 @@ export function ImageCompressor() {
           inputPath: path,
           filename: info.filename,
           format: info.format.toLowerCase(),
-          originalSize: info.fileSize,
+          originalSize: info.file_size,
           width: info.width,
           height: info.height,
           status: 'pending',
@@ -175,7 +175,11 @@ export function ImageCompressor() {
       });
 
       const successCount = allResults.filter((r) => 'Ok' in r.result).length;
-      showSuccess(`压缩完成: ${successCount}/${allResults.length} 个文件`);
+      if (successCount < allResults.length) {
+        showWarning(`压缩完成: 成功 ${successCount}/共 ${allResults.length},失败 ${allResults.length - successCount}`);
+      } else {
+        showSuccess(`压缩完成: ${successCount}/${allResults.length} 个文件`);
+      }
     } catch (error) {
       showError('批量压缩失败', error);
 

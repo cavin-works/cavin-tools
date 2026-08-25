@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct ConvertParams {
     /// 目标格式 (png, jpg, webp, gif, bmp, tiff, ico)
     pub target_format: String,
-    /// 质量参数 (1-100, 仅用于 JPEG/WebP)
+    /// 质量参数 (1-100, 仅用于 JPEG/PNG；WebP 为无损编码不使用)
     pub quality: Option<u8>,
     /// 尺寸调整参数
     pub resize: Option<ResizeParams>,

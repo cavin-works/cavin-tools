@@ -38,9 +38,15 @@ function TaskItem({ task }: { task: CompressTask }) {
             <span className="text-xs text-neutral-500 dark:text-neutral-400">
               {formatFileSize(task.result.originalSize)} → {formatFileSize(task.result.compressedSize)}
             </span>
-            {task.result.compressionRatio > 0 && (
-              <span className="text-xs font-medium text-green-500">
-                ↓ {task.result.compressionRatio.toFixed(1)}%
+            {task.result.compressionRatio !== 0 && (
+              <span className={`text-xs font-medium ${
+                task.result.compressionRatio > 0
+                  ? 'text-green-500'
+                  : 'text-orange-600 dark:text-orange-500'
+              }`}>
+                {task.result.compressionRatio > 0
+                  ? `↓ ${task.result.compressionRatio.toFixed(1)}%`
+                  : `↑ ${Math.abs(task.result.compressionRatio).toFixed(1)}%`}
               </span>
             )}
           </div>

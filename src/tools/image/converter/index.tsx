@@ -6,7 +6,7 @@ import { useImageConverterStore } from './store/imageConverterStore';
 import { FileUploadZone } from '@/components/ui/file-upload-zone';
 import { FileList } from './components/FileList';
 import { ConvertSettings } from './components/ConvertSettings';
-import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { showError, showSuccess, showWarning } from '@/tools/video/editor/utils/errorHandling';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -132,7 +132,11 @@ export function ImageConverter() {
       });
 
       const successCount = results.filter((r) => 'Ok' in r).length;
-      showSuccess(`转换完成: ${successCount}/${results.length} 个文件`);
+      if (successCount < results.length) {
+        showWarning(`转换完成: 成功 ${successCount}/共 ${results.length},失败 ${results.length - successCount}`);
+      } else {
+        showSuccess(`转换完成: ${successCount}/${results.length} 个文件`);
+      }
     } catch (error) {
       showError('批量转换失败', error);
 

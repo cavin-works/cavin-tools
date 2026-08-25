@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 const FORMAT_OPTIONS: { value: ImageFormat; label: string; description: string }[] = [
   { value: 'png', label: 'PNG', description: '支持透明，可优化压缩' },
   { value: 'jpg', label: 'JPEG', description: '有损压缩,适合照片' },
-  { value: 'webp', label: 'WebP', description: '现代格式,体积小' },
+  { value: 'webp', label: 'WebP', description: '现代格式,无损输出' },
   { value: 'gif', label: 'GIF', description: '支持动画' },
   { value: 'bmp', label: 'BMP', description: '位图格式' },
   { value: 'tiff', label: 'TIFF', description: '专业格式' },
@@ -35,7 +35,8 @@ export function ConvertSettings() {
     setMaintainAspectRatio,
   } = useImageConverterStore();
 
-  const showQuality = ['jpg', 'webp', 'png'].includes(targetFormat);
+  // WebP 输出为无损编码（image 0.24 无有损编码），质量设置不适用
+  const showQuality = ['jpg', 'png'].includes(targetFormat);
   const isPNG = targetFormat === 'png';
 
   return (

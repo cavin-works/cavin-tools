@@ -150,17 +150,18 @@ pub async fn remove_watermark(
             detect_watermark_params(&img)
         };
 
-        // 加载对应的 Alpha Map
-        let alpha_map = load_alpha_map(watermark_info.watermark_size)?;
-
-        // 计算 Alpha 值数组
-        let alpha_values = calculate_alpha_values(&alpha_map);
-
         // 转换为 RGBA
         let mut rgba_img = img.to_rgba8();
 
-        // 应用反向 Alpha 混合
-        reverse_alpha_blend(&mut rgba_img, &alpha_values, &watermark_info);
+        // 应用反向 Alpha 混合（未检测到水印区域时跳过，输出原图副本）
+        if watermark_info.detected {
+            let alpha_map = load_alpha_map(watermark_info.watermark_size)?;
+
+            // 计算 Alpha 值数组
+            let alpha_values = calculate_alpha_values(&alpha_map);
+
+            reverse_alpha_blend(&mut rgba_img, &alpha_values, &watermark_info);
+        }
 
         // 生成输出路径
         let output_path = generate_output_path(&input_path_clone);

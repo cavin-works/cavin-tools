@@ -6,6 +6,8 @@ use super::types::WatermarkInfo;
 /// Gemini 水印规则：
 /// - 宽 > 1024 且 高 > 1024：使用 96×96 水印，64px 边距
 /// - 其他情况：使用 48×48 水印，32px 边距
+///
+/// 图片放不下水印区域（如 <80px）时视为未检测，避免误处理左上角
 pub fn detect_watermark_params(img: &DynamicImage) -> WatermarkInfo {
     let width = img.width();
     let height = img.height();
@@ -15,6 +17,17 @@ pub fn detect_watermark_params(img: &DynamicImage) -> WatermarkInfo {
     } else {
         (48u32, 32u32)
     };
+
+    if width < watermark_size + margin || height < watermark_size + margin {
+        return WatermarkInfo {
+            detected: false,
+            watermark_size,
+            region_x: 0,
+            region_y: 0,
+            margin_right: margin,
+            margin_bottom: margin,
+        };
+    }
 
     // 计算水印区域位置（右下角）
     let region_x = width.saturating_sub(watermark_size + margin);
@@ -33,6 +46,17 @@ pub fn detect_watermark_params(img: &DynamicImage) -> WatermarkInfo {
 /// 根据手动指定的尺寸计算水印参数
 pub fn calculate_watermark_params(width: u32, height: u32, size: u32) -> WatermarkInfo {
     let margin = if size == 96 { 64 } else { 32 };
+
+    if width < size + margin || height < size + margin {
+        return WatermarkInfo {
+            detected: false,
+            watermark_size: size,
+            region_x: 0,
+            region_y: 0,
+            margin_right: margin,
+            margin_bottom: margin,
+        };
+    }
 
     let region_x = width.saturating_sub(size + margin);
     let region_y = height.saturating_sub(size + margin);

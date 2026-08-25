@@ -5,7 +5,7 @@ import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Download, Trash2, CheckCircle, XCircle, Loader2, ImageIcon, FolderOpen, Image as ImageIconLucide } from 'lucide-react';
 import { useBackgroundRemoverStore } from './store/backgroundRemoverStore';
-import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { showError, showSuccess, showWarning } from '@/tools/video/editor/utils/errorHandling';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUploadZone } from '@/components/ui/file-upload-zone';
 import { Button } from '@/components/ui/button';
@@ -203,7 +203,11 @@ export function BackgroundRemover() {
       });
 
       const successCount = results.filter((r) => 'Ok' in r).length;
-      showSuccess(`处理完成: ${successCount}/${results.length} 个文件`);
+      if (successCount < results.length) {
+        showWarning(`处理完成: 成功 ${successCount}/共 ${results.length},失败 ${results.length - successCount}`);
+      } else {
+        showSuccess(`处理完成: ${successCount}/${results.length} 个文件`);
+      }
     } catch (error) {
       showError('批量处理失败', error);
       pendingTasks.forEach((task) => {

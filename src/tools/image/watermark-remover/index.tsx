@@ -4,7 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { useWatermarkRemoverStore } from './store/watermarkRemoverStore';
 import { FileList } from './components/FileList';
 import { PreviewPanel } from './components/PreviewPanel';
-import { showError, showSuccess } from '@/tools/video/editor/utils/errorHandling';
+import { showError, showSuccess, showWarning } from '@/tools/video/editor/utils/errorHandling';
 import { open } from '@tauri-apps/plugin-dialog';
 import { FileUploadZone } from '@/components/ui/file-upload-zone';
 import { Button } from '@/components/ui/button';
@@ -142,7 +142,11 @@ export function WatermarkRemover() {
       });
 
       const successCount = results.filter((r) => 'Ok' in r).length;
-      showSuccess(`处理完成: ${successCount}/${results.length} 个文件`);
+      if (successCount < results.length) {
+        showWarning(`处理完成: 成功 ${successCount}/共 ${results.length},失败 ${results.length - successCount}`);
+      } else {
+        showSuccess(`处理完成: ${successCount}/${results.length} 个文件`);
+      }
     } catch (error) {
       showError('批量处理失败', error);
 
@@ -213,7 +217,7 @@ export function WatermarkRemover() {
               <CardHeader>
                 <CardTitle>去水印说明</CardTitle>
                 <CardDescription>
-                  自动检测 Gemini AI 生成图片的水印位置并无损去除。使用反向 Alpha 混合算法，完全本地处理，保护您的隐私。
+                  去除 Gemini 生成图片右下角水印（48/96px）；其它图片该区域也会被处理，请勿对非 Gemini 图片使用。完全本地处理，保护您的隐私。
                 </CardDescription>
               </CardHeader>
               <CardContent>

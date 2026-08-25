@@ -178,128 +178,137 @@ fn apply_background_color(img: &mut RgbaImage, color: &str) {
     }
 }
 
+/// 加载模型会话（批量处理时只构建一次，循环复用）
+fn load_session() -> Result<Session, String> {
+    // 获取模型路径
+    let model_path = get_model_path()?;
+    if !model_path.exists() {
+        return Err("模型未下载，请先下载模型".to_string());
+    }
+
+    Session::builder()
+        .map_err(|e| format!("创建会话构建器失败: {}", e))?
+        .commit_from_file(&model_path)
+        .map_err(|e| format!("加载模型失败: {}", e))
+}
+
+/// 去除单张图片背景（同步实现，复用传入的模型会话）
+fn remove_background_with_session(
+    session: &mut Session,
+    input_path: &str,
+    params: &RemoveBackgroundParams,
+) -> Result<RemoveBackgroundResult, String> {
+    let start_time = Instant::now();
+
+    // 读取原始文件大小
+    let original_size = std::fs::metadata(input_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    // 打开图片
+    let img = image::open(input_path)
+        .map_err(|e| format!("无法打开图片: {}", e))?;
+
+    let original_dimensions = Dimensions {
+        width: img.width(),
+        height: img.height(),
+    };
+
+    // 预处理图像
+    let (input_data, orig_width, orig_height) = preprocess_image(&img);
+
+    // 创建输入张量
+    let shape = vec![1i64, 3, MODEL_INPUT_SIZE as i64, MODEL_INPUT_SIZE as i64];
+    let input_value = ort::value::Value::from_array((shape.as_slice(), input_data.into_boxed_slice()))
+        .map_err(|e| format!("创建输入张量失败: {}", e))?;
+
+    // 获取输入名称
+    let input_name = session.inputs().first()
+        .map(|i| i.name().to_string())
+        .unwrap_or_else(|| "input".to_string());
+
+    // 运行推理
+    let outputs = session.run(ort::inputs![input_name.as_str() => input_value])
+        .map_err(|e| format!("推理失败: {}", e))?;
+
+    // 获取输出
+    let (_, output_value) = outputs.iter().next()
+        .ok_or("无法获取模型输出")?;
+
+    let (output_shape, output_data) = output_value
+        .try_extract_tensor::<f32>()
+        .map_err(|e| format!("提取输出张量失败: {}", e))?;
+
+    // 后处理得到 mask
+    let shape_dims: Vec<i64> = output_shape.iter().map(|&d| d as i64).collect();
+    let mask = postprocess_mask(&shape_dims, output_data, orig_width, orig_height);
+
+    // 应用 mask 到原图
+    let mut rgba_img = apply_mask(&img, &mask);
+
+    // 应用边缘羽化
+    if params.feather > 0 {
+        apply_feather(&mut rgba_img, params.feather);
+    }
+
+    // 应用背景颜色
+    if let Some(ref color) = params.background_color {
+        apply_background_color(&mut rgba_img, color);
+    }
+
+    // 生成输出路径
+    let output_path = generate_output_path(input_path, &params.output_format);
+
+    // 保存结果
+    match params.output_format.as_str() {
+        "webp" => {
+            DynamicImage::ImageRgba8(rgba_img.clone()).save(&output_path)
+                .map_err(|e| format!("保存 WebP 失败: {}", e))?;
+        }
+        _ => {
+            rgba_img.save(&output_path)
+                .map_err(|e| format!("保存 PNG 失败: {}", e))?;
+        }
+    }
+
+    // 获取处理后文件大小
+    let processed_size = std::fs::metadata(&output_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    // 生成 Base64（如果需要）
+    let base64_data = if params.return_base64 {
+        use base64::Engine;
+        let mut buffer = Vec::new();
+        let mut cursor = Cursor::new(&mut buffer);
+        rgba_img.write_to(&mut cursor, ImageFormat::Png)
+            .map_err(|e| format!("编码图片失败: {}", e))?;
+        Some(format!("data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(&buffer)))
+    } else {
+        None
+    };
+
+    let processing_time_ms = start_time.elapsed().as_millis() as u64;
+
+    Ok(RemoveBackgroundResult {
+        output_path: output_path.to_string_lossy().to_string(),
+        original_size,
+        processed_size,
+        processing_time_ms,
+        base64_data,
+        original_dimensions,
+    })
+}
+
 /// 去除单张图片背景
 pub async fn remove_background(
     input_path: String,
     params: RemoveBackgroundParams,
 ) -> Result<RemoveBackgroundResult, String> {
-    let start_time = Instant::now();
-
-    let input_path_clone = input_path.clone();
-    let params_clone = params.clone();
-
     tokio::task::spawn_blocking(move || {
-        // 读取原始文件大小
-        let original_size = std::fs::metadata(&input_path_clone)
-            .map(|m| m.len())
-            .unwrap_or(0);
-
-        // 打开图片
-        let img = image::open(&input_path_clone)
-            .map_err(|e| format!("无法打开图片: {}", e))?;
-
-        let original_dimensions = Dimensions {
-            width: img.width(),
-            height: img.height(),
-        };
-
-        // 获取模型路径
-        let model_path = get_model_path()?;
-        if !model_path.exists() {
-            return Err("模型未下载，请先下载模型".to_string());
-        }
-
-        // 加载模型
-        let mut session = Session::builder()
-            .map_err(|e| format!("创建会话构建器失败: {}", e))?
-            .commit_from_file(&model_path)
-            .map_err(|e| format!("加载模型失败: {}", e))?;
-
-        // 预处理图像
-        let (input_data, orig_width, orig_height) = preprocess_image(&img);
-
-        // 创建输入张量
-        let shape = vec![1i64, 3, MODEL_INPUT_SIZE as i64, MODEL_INPUT_SIZE as i64];
-        let input_value = ort::value::Value::from_array((shape.as_slice(), input_data.into_boxed_slice()))
-            .map_err(|e| format!("创建输入张量失败: {}", e))?;
-
-        // 获取输入名称
-        let input_name = session.inputs().first()
-            .map(|i| i.name().to_string())
-            .unwrap_or_else(|| "input".to_string());
-
-        // 运行推理
-        let outputs = session.run(ort::inputs![input_name.as_str() => input_value])
-            .map_err(|e| format!("推理失败: {}", e))?;
-
-        // 获取输出
-        let (_, output_value) = outputs.iter().next()
-            .ok_or("无法获取模型输出")?;
-
-        let (output_shape, output_data) = output_value
-            .try_extract_tensor::<f32>()
-            .map_err(|e| format!("提取输出张量失败: {}", e))?;
-
-        // 后处理得到 mask
-        let shape_dims: Vec<i64> = output_shape.iter().map(|&d| d as i64).collect();
-        let mask = postprocess_mask(&shape_dims, output_data, orig_width, orig_height);
-
-        // 应用 mask 到原图
-        let mut rgba_img = apply_mask(&img, &mask);
-
-        // 应用边缘羽化
-        if params_clone.feather > 0 {
-            apply_feather(&mut rgba_img, params_clone.feather);
-        }
-
-        // 应用背景颜色
-        if let Some(ref color) = params_clone.background_color {
-            apply_background_color(&mut rgba_img, color);
-        }
-
-        // 生成输出路径
-        let output_path = generate_output_path(&input_path_clone, &params_clone.output_format);
-
-        // 保存结果
-        match params_clone.output_format.as_str() {
-            "webp" => {
-                DynamicImage::ImageRgba8(rgba_img.clone()).save(&output_path)
-                    .map_err(|e| format!("保存 WebP 失败: {}", e))?;
-            }
-            _ => {
-                rgba_img.save(&output_path)
-                    .map_err(|e| format!("保存 PNG 失败: {}", e))?;
-            }
-        }
-
-        // 获取处理后文件大小
-        let processed_size = std::fs::metadata(&output_path)
-            .map(|m| m.len())
-            .unwrap_or(0);
-
-        // 生成 Base64（如果需要）
-        let base64_data = if params_clone.return_base64 {
-            use base64::Engine;
-            let mut buffer = Vec::new();
-            let mut cursor = Cursor::new(&mut buffer);
-            rgba_img.write_to(&mut cursor, ImageFormat::Png)
-                .map_err(|e| format!("编码图片失败: {}", e))?;
-            Some(format!("data:image/png;base64,{}",
-                base64::engine::general_purpose::STANDARD.encode(&buffer)))
-        } else {
-            None
-        };
-
-        let processing_time_ms = start_time.elapsed().as_millis() as u64;
-
-        Ok(RemoveBackgroundResult {
-            output_path: output_path.to_string_lossy().to_string(),
-            original_size,
-            processed_size,
-            processing_time_ms,
-            base64_data,
-            original_dimensions,
-        })
+        let mut session = load_session()?;
+        remove_background_with_session(&mut session, &input_path, &params)
     })
     .await
     .map_err(|e| format!("异步任务执行失败: {}", e))?
@@ -314,14 +323,20 @@ pub async fn batch_remove_backgrounds<F>(
 where
     F: Fn(usize, usize) + Send + 'static,
 {
-    let total = input_paths.len();
-    let mut results = Vec::new();
+    tokio::task::spawn_blocking(move || {
+        // 模型会话只构建一次，避免逐张重复加载模型
+        let mut session = load_session()?;
+        let total = input_paths.len();
+        let mut results = Vec::with_capacity(total);
 
-    for (index, path) in input_paths.into_iter().enumerate() {
-        let result = remove_background(path, params.clone()).await;
-        results.push(result);
-        progress_callback(index + 1, total);
-    }
+        for (index, path) in input_paths.into_iter().enumerate() {
+            let result = remove_background_with_session(&mut session, &path, &params);
+            results.push(result);
+            progress_callback(index + 1, total);
+        }
 
-    Ok(results)
+        Ok(results)
+    })
+    .await
+    .map_err(|e| format!("异步任务执行失败: {}", e))?
 }

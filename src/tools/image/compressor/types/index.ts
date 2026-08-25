@@ -5,8 +5,8 @@ export interface ImageInfo {
   width: number;
   height: number;
   format: string;
-  fileSize: number;
-  colorType: string;
+  file_size: number;
+  color_type: string;
 }
 
 // 压缩状态

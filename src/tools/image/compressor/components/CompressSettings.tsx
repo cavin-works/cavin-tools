@@ -9,19 +9,23 @@ import { Separator } from '@/components/ui/separator';
 
 export function CompressSettings() {
   const {
+    tasks,
     quality,
     enableResize,
     resizeWidth,
     resizeHeight,
     maintainAspectRatio,
-    preserveMetadata,
     setQuality,
     setEnableResize,
     setResizeWidth,
     setResizeHeight,
     setMaintainAspectRatio,
-    setPreserveMetadata,
   } = useImageCompressorStore();
+
+  // 质量设置仅对 PNG/JPEG 输出生效；WebP 为无损编码，其它格式不使用质量参数
+  const formats = new Set(tasks.map((t) => t.format));
+  const qualityIgnored =
+    formats.size > 0 && ![...formats].some((f) => ['png', 'jpg', 'jpeg'].includes(f));
 
   return (
     <Card>
@@ -38,34 +42,32 @@ export function CompressSettings() {
 
           <div className="space-y-6 pl-6">
             {/* 质量设置 */}
-            <div className="space-y-3">
-              <Label htmlFor="quality">压缩质量: {quality}%</Label>
-              <Slider
-                id="quality"
-                min={1}
-                max={100}
-                step={1}
-                value={[quality]}
-                onValueChange={(value) => setQuality(value[0])}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>高压缩 (体积小，质量低)</span>
-                <span>低压缩 (体积大，质量高)</span>
+            {qualityIgnored ? (
+              <p className="text-xs text-muted-foreground">
+                当前列表中的格式（如 WebP）不使用质量设置，输出为无损编码。
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <Label htmlFor="quality">压缩质量: {quality}%</Label>
+                <Slider
+                  id="quality"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[quality]}
+                  onValueChange={(value) => setQuality(value[0])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>高压缩 (体积小，质量低)</span>
+                  <span>低压缩 (体积大，质量高)</span>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* 去除元数据 */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="metadata"
-                checked={!preserveMetadata}
-                onCheckedChange={() => setPreserveMetadata(false)}
-              />
-              <Label htmlFor="metadata" className="cursor-pointer">
-                <div className="font-medium text-neutral-700 dark:text-neutral-300">去除元数据</div>
-                <div className="text-xs text-muted-foreground">删除 EXIF、位置等信息以减小体积</div>
-              </Label>
-            </div>
+            {/* 元数据说明 */}
+            <p className="text-xs text-muted-foreground">
+              输出不保留元数据（EXIF、位置等信息不会写入压缩结果）。
+            </p>
           </div>
         </div>
 
