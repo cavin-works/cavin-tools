@@ -7,6 +7,7 @@ import { UrlConverter } from './components/UrlConverter';
 import { TimestampConverter } from './components/TimestampConverter';
 import { UuidGenerator } from './components/UuidGenerator';
 import { ShaGenerator } from './components/ShaGenerator';
+import { ColorConverter } from './components/ColorConverter';
 
 export function CharacterTools() {
   return (
@@ -19,7 +20,7 @@ export function CharacterTools() {
         </div>
 
         <Tabs defaultValue="random" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-10 mb-6">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9 h-10 mb-6">
             <TabsTrigger value="random" className="text-sm">
               随机字符
             </TabsTrigger>
@@ -43,6 +44,9 @@ export function CharacterTools() {
             </TabsTrigger>
             <TabsTrigger value="sha" className="text-sm">
               SHA
+            </TabsTrigger>
+            <TabsTrigger value="color" className="text-sm">
+              颜色
             </TabsTrigger>
           </TabsList>
 
@@ -76,6 +80,10 @@ export function CharacterTools() {
 
           <TabsContent value="sha" className="mt-6">
             <ShaGenerator />
+          </TabsContent>
+
+          <TabsContent value="color" className="mt-6">
+            <ColorConverter />
           </TabsContent>
         </Tabs>
       </div>
