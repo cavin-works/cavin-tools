@@ -1,3 +1,14 @@
+## [0.1.24](https://github.com/cavin-works/cavin-tools/compare/v0.1.23...v0.1.24) (2026-08-26)
+
+
+### 🐛 Bug 修复
+
+* **ai-assistant:** 修复 review 高危:i18n 三语补齐/防抖/弹窗卡死 (close [#57](https://github.com/cavin-works/cavin-tools/issues/57)) ([0015532](https://github.com/cavin-works/cavin-tools/commit/00155321a56fddabcc6023736a362add85a6ef27))
+* **tools:** 修复字符工具/二维码/进程管理器 review 高危 (close [#55](https://github.com/cavin-works/cavin-tools/issues/55)) ([850ae01](https://github.com/cavin-works/cavin-tools/commit/850ae0163cc0bd4a650518af68b23e2403b2209c))
+* 修复便签/设置 review 高危 (close [#56](https://github.com/cavin-works/cavin-tools/issues/56)) ([fb584de](https://github.com/cavin-works/cavin-tools/commit/fb584debd94d2305a16df99aca8112d23bf8b82f))
+
+
+
 ## [0.1.23](https://github.com/cavin-works/cavin-tools/compare/v0.1.22...v0.1.23) (2026-08-25)
 
 
