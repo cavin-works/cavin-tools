@@ -16,6 +16,7 @@ interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  confirming?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -26,6 +27,7 @@ export function ConfirmDialog({
   message,
   confirmText,
   cancelText,
+  confirming = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -51,10 +53,14 @@ export function ConfirmDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex gap-2 border-t-0 bg-transparent pt-2 sm:justify-end">
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} disabled={confirming}>
             {cancelText || t("common.cancel")}
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={confirming}
+          >
             {confirmText || t("common.confirm")}
           </Button>
         </DialogFooter>

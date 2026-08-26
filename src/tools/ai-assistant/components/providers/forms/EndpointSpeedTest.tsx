@@ -640,7 +640,7 @@ const EndpointSpeedTest: React.FC<EndpointSpeedTestProps> = ({
           </div>
         ) : (
           <div className="rounded-md border border-dashed border-border-default bg-muted px-4 py-8 text-center text-sm text-muted-foreground">
-            {t("endpointTest.empty")}
+            {t("endpointTest.noEndpoints")}
           </div>
         )}
 

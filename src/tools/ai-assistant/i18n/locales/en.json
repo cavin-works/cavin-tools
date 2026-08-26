@@ -36,7 +36,9 @@
     "search": "Search",
     "reset": "Reset",
     "actions": "Actions",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "enabled": "Enabled",
+    "notSet": "Not set"
   },
   "apiKeyInput": {
     "placeholder": "Enter API Key",
@@ -130,7 +132,11 @@
         "oauthHint": "Google official uses OAuth personal authentication, no need to fill in API Key. The browser will automatically open for login on first use.",
         "apiKeyPlaceholder": "Enter Gemini API Key"
       }
-    }
+    },
+    "officialPartner": "Official Partner",
+    "openTerminal": "Open Terminal",
+    "terminalOpenFailed": "Failed to open terminal",
+    "terminalOpened": "Terminal opened"
   },
   "notifications": {
     "providerAdded": "Provider added",
@@ -155,7 +161,9 @@
     "deleteSuccess": "Provider deleted",
     "deleteFailed": "Failed to delete provider: {{error}}",
     "settingsSaved": "Settings saved",
-    "settingsSaveFailed": "Failed to save settings: {{error}}"
+    "settingsSaveFailed": "Failed to save settings: {{error}}",
+    "openLinkFailed": "Failed to open link",
+    "removeFromConfigFailed": "Failed to remove from config"
   },
   "confirm": {
     "deleteProvider": "Delete Provider",
@@ -345,6 +353,10 @@
       "saveFailed": "Save failed: {{error}}",
       "testSuccess": "Connected! Latency {{latency}}ms",
       "testFailed": "Connection failed: {{error}}"
+    },
+    "saveFailedGeneric": "Save failed, please retry",
+    "usage": {
+      "title": "Usage Statistics"
     }
   },
   "apps": {
@@ -466,7 +478,8 @@
     "testUnavailable": "Speed test unavailable",
     "noResult": "No result returned",
     "testFailed": "Speed test failed: {{error}}",
-    "status": "Status: {{code}}"
+    "status": "Status: {{code}}",
+    "notTested": "Not tested"
   },
   "providerAdvanced": {
     "testConfig": "Model Test Config",
@@ -498,7 +511,10 @@
     "extractFromCurrent": "Extract from Editor",
     "extractNoCommonConfig": "No common config available to extract from editor",
     "extractFailed": "Extract failed: {{error}}",
-    "saveFailed": "Save failed: {{error}}"
+    "saveFailed": "Save failed: {{error}}",
+    "modelName": "Model Name",
+    "modelNameHint": "Model to use; automatically written to config.toml",
+    "modelNamePlaceholder": "e.g. gpt-5-codex"
   },
   "geminiConfig": {
     "envFile": "Environment Variables (.env)",
@@ -630,7 +646,34 @@
     "input": "Input",
     "output": "Output",
     "cacheWrite": "Creation",
-    "cacheRead": "Hit"
+    "cacheRead": "Hit",
+    "addPricing": "Add Pricing",
+    "avgCost": "Avg Cost",
+    "avgLatency": "Avg Latency",
+    "basicInfo": "Basic Info",
+    "cacheCreationCost": "Cache Write Cost",
+    "cacheCreationCostPerMillion": "Cache write cost (per million tokens, USD)",
+    "cacheReadCostPerMillion": "Cache read cost (per million tokens, USD)",
+    "costBreakdown": "Cost Breakdown",
+    "editPricing": "Edit Pricing",
+    "errorMessage": "Error Message",
+    "inputCostPerMillion": "Input cost (per million tokens, USD)",
+    "invalidPrice": "Price must be a non-negative number",
+    "latency": "Latency",
+    "modelId": "Model ID",
+    "modelIdRequired": "Model ID is required",
+    "never": "Never updated",
+    "outputCostPerMillion": "Output cost (per million tokens, USD)",
+    "performance": "Performance",
+    "pricingAdded": "Pricing added",
+    "pricingUpdated": "Pricing updated",
+    "requestDetail": "Request Detail",
+    "requestId": "Request ID",
+    "requestNotFound": "Request not found",
+    "requests": "Requests",
+    "successRate": "Success Rate",
+    "tokenUsage": "Token Usage",
+    "tokens": "Tokens"
   },
   "usageScript": {
     "title": "Configure Usage Query",
@@ -1071,7 +1114,31 @@
         "localImport": "Local Import",
         "syncToTools": "Sync to Tools",
         "sync": "Sync",
-        "createdAt": "Created at {{time}}"
+        "createdAt": "Created at {{time}}",
+        "fileBinary": "(binary file)",
+        "fileSize": "Size: {{size}}",
+        "fileTree": "File Tree",
+        "fileTreeSearchPlaceholder": "Search file name or path",
+        "fileTreeTruncated": "Too many files; showing the first 5000.",
+        "fileTruncated": "(content too long; first 512KB shown)",
+        "loadFileTreeFailed": "Failed to load skill file tree",
+        "noFiles": "No readable files in this skill.",
+        "noSearchFiles": "No matching files.",
+        "readFileFailed": "Failed to read skill file",
+        "refreshing": "Refreshing...",
+        "remoteRefreshDone": "Remote refresh done",
+        "remoteRefreshResult": "Checked {{checked}} repos, scanned {{scanned}} installed skills, updated {{updated}}.",
+        "selectFile": "Select a file on the left",
+        "selectFileToPreview": "Select a file to preview its content here.",
+        "singleRefreshNoChange": "Refreshed, no changes",
+        "singleRefreshNoChangeDesc": "{{name}} is already up to date.",
+        "singleRefreshUpdated": "Skill refreshed and updated",
+        "singleRefreshUpdatedDesc": "{{name}} remote metadata updated.",
+        "treeCommit": "Tree Commit",
+        "treeCommitId": "Tree Commit ID",
+        "viewerSubtitle": "Directory: {{directory}}",
+        "viewerSubtitleFallback": "View skill file content",
+        "viewerTitle": "Skill Files"
       },
       "local": {
         "title": "Scan Existing Skills",
@@ -1113,7 +1180,12 @@
         "gitRepo": "Git Repository URL",
         "gitPlaceholder": "https://github.com/user/repo or user/repo",
         "gitFormats": "Supported formats",
-        "gitNameHint": "Leave empty to auto-infer"
+        "gitNameHint": "Leave empty to auto-infer",
+        "alreadyInstalled": "Already installed",
+        "installed": "Installed",
+        "installing": "Installing...",
+        "noSearchResults": "No matching skills found",
+        "searchPlaceholder": "Search skills.sh skills"
       },
       "settings": {
         "title": "Settings",
@@ -1149,7 +1221,8 @@
         "zipNotSupported": "Current version only supports importing skill folders from tool directories",
         "cannotIdentifyDir": "Cannot identify skill directory name",
         "skillNotFoundInTools": "Skill not found in supported tool directories",
-        "noSkillInRepo": "No installable skills found in repository"
+        "noSkillInRepo": "No installable skills found in repository",
+        "refreshFailed": "Refresh failed"
       }
     }
   },
@@ -1219,7 +1292,15 @@
       "skillsPath": "Skills Path",
       "hint": "This will add the Skill repository to the list.",
       "hintDetail": "After adding, you can install specific Skills from the Skills management page."
-    }
+    },
+    "usageApiKey": "Usage API Key",
+    "usageAutoInterval": "Auto query",
+    "usageAutoIntervalValue": "Every {{minutes}} min",
+    "usageBaseUrl": "Usage query URL",
+    "usageScript": "Usage query",
+    "usageScriptDisabled": "Disabled",
+    "usageScriptEnabled": "Enabled",
+    "importInProgress": "Import in progress. Please click the link again after it completes"
   },
   "iconPicker": {
     "search": "Search Icons",
@@ -1442,7 +1523,37 @@
       "successThresholdLabel": "Recovery Success Threshold",
       "successThresholdExplain": "In half-open state, close circuit breaker after this many successes, making provider available again",
       "errorRateLabel": "Error Rate Threshold",
-      "errorRateExplain": "Open circuit breaker when error rate exceeds this value, even if failure threshold not reached"
+      "errorRateExplain": "Open circuit breaker when error rate exceeds this value, even if failure threshold not reached",
+      "maxRetries": "Max Retries",
+      "maxRetriesHint": "Retries on request failure (0-10)",
+      "nonStreaming": "Non-streaming timeout (s)",
+      "nonStreamingHint": "Total timeout for non-streaming requests, 60-1200s, default 600s",
+      "streamingFirstByte": "First-byte timeout (s)",
+      "streamingFirstByteHint": "Max wait for the first chunk, 1-120s, default 60s",
+      "streamingIdle": "Streaming idle timeout (s)",
+      "streamingIdleHint": "Max gap between chunks, 60-600s, 0 disables it",
+      "timeoutSettings": "Timeout Settings"
+    },
+    "logging": {
+      "disabled": "Logging disabled",
+      "enabled": "Logging enabled",
+      "failed": "Failed to toggle logging"
+    },
+    "server": {
+      "startFailed": "Failed to start proxy server: {{detail}}",
+      "started": "Proxy server started - {{address}}:{{port}}"
+    },
+    "stopWithRestoreFailed": "Failed to stop: {{detail}}",
+    "stoppedWithRestore": "Proxy server stopped; all takeover configs restored",
+    "takeover": {
+      "disabled": "Restored {{app}} config",
+      "enabled": "Took over {{app}} config (requests go through local proxy)",
+      "failed": "Failed to toggle takeover: {{detail}}",
+      "tooltip": {
+        "active": "{{app}} taken over - {{address}}:{{port}}\nSwitching this app's provider is hot-swapped",
+        "broken": "{{app}} taken over, but the proxy server is not running",
+        "inactive": "Take over {{app}}'s live config so its requests go through the local proxy"
+      }
     }
   },
   "streamCheck": {
@@ -1457,7 +1568,11 @@
     "maxRetries": "Max Retries",
     "degradedThreshold": "Degraded Threshold (ms)",
     "testPrompt": "Test Prompt",
-    "notSupported": "Health check not supported yet"
+    "notSupported": "Health check not supported yet",
+    "degraded": "{{name}} is responding slowly ({{time}}ms)",
+    "error": "Error checking {{name}}: {{error}}",
+    "failed": "{{name}} check failed: {{error}}",
+    "operational": "{{name}} is operational ({{time}}ms)"
   },
   "proxyConfig": {
     "proxyEnabled": "Proxy Enabled",
@@ -1479,11 +1594,20 @@
     "failureThreshold": "Failure Threshold",
     "successThreshold": "Success Threshold",
     "timeoutSeconds": "Timeout (seconds)",
-    "errorRateThreshold": "Error Rate Threshold",
+    "errorRateThreshold": "Error Rate Threshold (%)",
     "minRequests": "Min Requests",
     "validationFailed": "The following fields are out of valid range: {{fields}}",
     "configSaved": "Circuit breaker config saved",
-    "saveFailed": "Failed to save"
+    "saveFailed": "Failed to save",
+    "title": "Circuit Breaker Settings",
+    "description": "Tune circuit breaker parameters for failure detection and recovery",
+    "failureThresholdHint": "Open the breaker after this many consecutive failures",
+    "timeoutSecondsHint": "How long before recovery is attempted (half-open state)",
+    "successThresholdHint": "Successes in half-open state needed to close the breaker",
+    "errorRateHint": "Open the breaker when the error rate exceeds this value",
+    "minRequestsHint": "Minimum requests before the error rate is computed",
+    "saveConfig": "Save Config",
+    "configNotes": "Configuration Notes"
   },
   "universalProvider": {
     "title": "Universal Provider",
@@ -1527,6 +1651,10 @@
     "savedAndSynced": "Saved and synced to all apps",
     "saveAndSyncError": "Failed to save and sync",
     "configJsonPreview": "Config JSON Preview",
-    "configJsonPreviewHint": "The following configurations will be synced to each app (only the displayed fields will be overwritten, other custom settings will be preserved)"
+    "configJsonPreviewHint": "The following configurations will be synced to each app (only the displayed fields will be overwritten, other custom settings will be preserved)",
+    "hint": "Unified config across apps, auto-synced to Claude/Codex/Gemini"
+  },
+  "modelTest": {
+    "testProvider": "Test Model"
   }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ interface EditProviderDialogProps {
   onSubmit: (provider: Provider) => Promise<void> | void;
   appId: AppId;
   isProxyTakeover?: boolean; // 代理接管模式下不读取 live（避免显示被接管后的代理配置）
+  isSubmitting?: boolean;
 }
 
 export function EditProviderDialog({
@@ -32,8 +33,11 @@ export function EditProviderDialog({
   onSubmit,
   appId,
   isProxyTakeover = false,
+  isSubmitting = false,
 }: EditProviderDialogProps) {
   const { t } = useTranslation();
+  // 防止 Enter 双发等重复提交（ref 守卫：不依赖渲染周期）
+  const submittingRef = useRef(false);
 
   // 默认使用传入的 provider.settingsConfig，若当前编辑对象是"当前生效供应商"，则尝试读取实时配置替换初始值
   const [liveSettings, setLiveSettings] = useState<Record<
@@ -142,30 +146,35 @@ export function EditProviderDialog({
 
   const handleSubmit = useCallback(
     async (values: ProviderFormValues) => {
-      if (!provider) return;
+      if (!provider || submittingRef.current) return;
+      submittingRef.current = true;
 
-      // 注意：values.settingsConfig 已经是最终的配置字符串
-      // ProviderForm 已经为不同的 app 类型（Claude/Codex/Gemini）正确组装了配置
-      const parsedConfig = JSON.parse(values.settingsConfig) as Record<
-        string,
-        unknown
-      >;
+      try {
+        // 注意：values.settingsConfig 已经是最终的配置字符串
+        // ProviderForm 已经为不同的 app 类型（Claude/Codex/Gemini）正确组装了配置
+        const parsedConfig = JSON.parse(values.settingsConfig) as Record<
+          string,
+          unknown
+        >;
 
-      const updatedProvider: Provider = {
-        ...provider,
-        name: values.name.trim(),
-        notes: values.notes?.trim() || undefined,
-        websiteUrl: values.websiteUrl?.trim() || undefined,
-        settingsConfig: parsedConfig,
-        icon: values.icon?.trim() || undefined,
-        iconColor: values.iconColor?.trim() || undefined,
-        ...(values.presetCategory ? { category: values.presetCategory } : {}),
-        // 保留或更新 meta 字段
-        ...(values.meta ? { meta: values.meta } : {}),
-      };
+        const updatedProvider: Provider = {
+          ...provider,
+          name: values.name.trim(),
+          notes: values.notes?.trim() || undefined,
+          websiteUrl: values.websiteUrl?.trim() || undefined,
+          settingsConfig: parsedConfig,
+          icon: values.icon?.trim() || undefined,
+          iconColor: values.iconColor?.trim() || undefined,
+          ...(values.presetCategory ? { category: values.presetCategory } : {}),
+          // 保留或更新 meta 字段
+          ...(values.meta ? { meta: values.meta } : {}),
+        };
 
-      await onSubmit(updatedProvider);
-      onOpenChange(false);
+        await onSubmit(updatedProvider);
+        onOpenChange(false);
+      } finally {
+        submittingRef.current = false;
+      }
     },
     [onSubmit, onOpenChange, provider],
   );
@@ -198,12 +207,17 @@ export function EditProviderDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             {t("common.cancel")}
           </Button>
           <Button
             type="submit"
             form="provider-form"
+            disabled={isSubmitting}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Save className="h-4 w-4 mr-2" />

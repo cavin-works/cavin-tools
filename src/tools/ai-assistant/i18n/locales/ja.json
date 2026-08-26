@@ -36,7 +36,9 @@
     "search": "検索",
     "reset": "リセット",
     "actions": "操作",
-    "deleting": "削除中..."
+    "deleting": "削除中...",
+    "enabled": "有効",
+    "notSet": "未設定"
   },
   "apiKeyInput": {
     "placeholder": "API Key を入力",
@@ -130,7 +132,11 @@
         "oauthHint": "Google 公式は OAuth 個人認証を使用するため API Key は不要です。初回利用時にブラウザが開きます。",
         "apiKeyPlaceholder": "Gemini API Key を入力"
       }
-    }
+    },
+    "officialPartner": "公式パートナー",
+    "openTerminal": "ターミナルを開く",
+    "terminalOpenFailed": "ターミナルを開けませんでした",
+    "terminalOpened": "ターミナルを開きました"
   },
   "notifications": {
     "providerAdded": "プロバイダーを追加しました",
@@ -155,7 +161,9 @@
     "deleteSuccess": "プロバイダーを削除しました",
     "deleteFailed": "プロバイダーの削除に失敗しました: {{error}}",
     "settingsSaved": "設定を保存しました",
-    "settingsSaveFailed": "設定の保存に失敗しました: {{error}}"
+    "settingsSaveFailed": "設定の保存に失敗しました: {{error}}",
+    "openLinkFailed": "リンクを開けませんでした",
+    "removeFromConfigFailed": "設定からの削除に失敗しました"
   },
   "confirm": {
     "deleteProvider": "プロバイダーを削除",
@@ -345,6 +353,10 @@
       "saveFailed": "保存に失敗しました: {{error}}",
       "testSuccess": "接続成功！遅延 {{latency}}ms",
       "testFailed": "接続に失敗しました: {{error}}"
+    },
+    "saveFailedGeneric": "保存に失敗しました。再試行してください",
+    "usage": {
+      "title": "使用統計"
     }
   },
   "apps": {
@@ -466,7 +478,8 @@
     "testUnavailable": "速度テストを実行できません",
     "noResult": "結果がありません",
     "testFailed": "速度テストに失敗しました: {{error}}",
-    "status": "ステータス: {{code}}"
+    "status": "ステータス: {{code}}",
+    "notTested": "未テスト"
   },
   "providerAdvanced": {
     "testConfig": "モデルテスト設定",
@@ -498,7 +511,10 @@
     "extractFromCurrent": "編集内容から抽出",
     "extractNoCommonConfig": "編集内容から抽出できる共通設定がありません",
     "extractFailed": "抽出に失敗しました: {{error}}",
-    "saveFailed": "保存に失敗しました: {{error}}"
+    "saveFailed": "保存に失敗しました: {{error}}",
+    "modelName": "モデル名",
+    "modelNameHint": "使用するモデル。config.toml に自動反映されます",
+    "modelNamePlaceholder": "例: gpt-5-codex"
   },
   "geminiConfig": {
     "envFile": "環境変数 (.env)",
@@ -630,7 +646,34 @@
     "input": "Input",
     "output": "Output",
     "cacheWrite": "作成",
-    "cacheRead": "ヒット"
+    "cacheRead": "ヒット",
+    "addPricing": "定価を追加",
+    "avgCost": "平均コスト",
+    "avgLatency": "平均レイテンシ",
+    "basicInfo": "基本情報",
+    "cacheCreationCost": "キャッシュ書き込みコスト",
+    "cacheCreationCostPerMillion": "キャッシュ書き込みコスト（100万トークンあたり、USD）",
+    "cacheReadCostPerMillion": "キャッシュ読み取りコスト（100万トークンあたり、USD）",
+    "costBreakdown": "コスト内訳",
+    "editPricing": "定価を編集",
+    "errorMessage": "エラーメッセージ",
+    "inputCostPerMillion": "入力コスト（100万トークンあたり、USD）",
+    "invalidPrice": "価格は 0 以上にしてください",
+    "latency": "レイテンシ",
+    "modelId": "モデル ID",
+    "modelIdRequired": "モデル ID は必須です",
+    "never": "未更新",
+    "outputCostPerMillion": "出力コスト（100万トークンあたり、USD）",
+    "performance": "パフォーマンス",
+    "pricingAdded": "定価を追加しました",
+    "pricingUpdated": "定価を更新しました",
+    "requestDetail": "リクエスト詳細",
+    "requestId": "リクエスト ID",
+    "requestNotFound": "リクエストが見つかりません",
+    "requests": "リクエスト数",
+    "successRate": "成功率",
+    "tokenUsage": "トークン使用量",
+    "tokens": "トークン"
   },
   "usageScript": {
     "title": "利用状況を設定",
@@ -1071,7 +1114,31 @@
         "localImport": "ローカルインポート",
         "syncToTools": "ツールに同期",
         "sync": "同期",
-        "createdAt": "作成日時 {{time}}"
+        "createdAt": "作成日時 {{time}}",
+        "fileBinary": "（バイナリファイル）",
+        "fileSize": "サイズ：{{size}}",
+        "fileTree": "ファイルツリー",
+        "fileTreeSearchPlaceholder": "ファイル名またはパスを検索",
+        "fileTreeTruncated": "ファイルが多いため先頭 5000 件のみ表示します。",
+        "fileTruncated": "（内容が長いため先頭 512KB のみ表示）",
+        "loadFileTreeFailed": "スキルのファイルツリー読み込みに失敗しました",
+        "noFiles": "このスキルに読み取り可能なファイルはありません。",
+        "noSearchFiles": "一致するファイルはありません。",
+        "readFileFailed": "スキルファイルの読み取りに失敗しました",
+        "refreshing": "更新中...",
+        "remoteRefreshDone": "リモート更新が完了しました",
+        "remoteRefreshResult": "リポジトリ {{checked}} 件を確認、インストール済みスキル {{scanned}} 件をスキャン、{{updated}} 件を更新しました。",
+        "selectFile": "左側のファイルを選択してください",
+        "selectFileToPreview": "ファイルを選択するとここに内容が表示されます。",
+        "singleRefreshNoChange": "更新しました。変更はありません",
+        "singleRefreshNoChangeDesc": "{{name}} はすでに最新です。",
+        "singleRefreshUpdated": "スキルを更新しました",
+        "singleRefreshUpdatedDesc": "{{name}} のリモートメタデータを更新しました。",
+        "treeCommit": "Tree コミット",
+        "treeCommitId": "Tree コミット ID",
+        "viewerSubtitle": "ディレクトリ：{{directory}}",
+        "viewerSubtitleFallback": "スキルファイルの内容を表示",
+        "viewerTitle": "スキルファイル"
       },
       "local": {
         "title": "既存スキルをスキャン",
@@ -1113,7 +1180,12 @@
         "gitRepo": "Git リポジトリ URL",
         "gitPlaceholder": "https://github.com/user/repo または user/repo",
         "gitFormats": "対応フォーマット",
-        "gitNameHint": "空欄の場合、自動推測"
+        "gitNameHint": "空欄の場合、自動推測",
+        "alreadyInstalled": "インストール済み",
+        "installed": "インストール済み",
+        "installing": "インストール中...",
+        "noSearchResults": "一致するスキルが見つかりません",
+        "searchPlaceholder": "skills.sh のスキルを検索"
       },
       "settings": {
         "title": "設定",
@@ -1149,7 +1221,8 @@
         "zipNotSupported": "現在のバージョンはツールディレクトリ内のスキルフォルダのインポートのみ対応",
         "cannotIdentifyDir": "スキルディレクトリ名を識別できません",
         "skillNotFoundInTools": "対応ツールのスキルディレクトリにスキルが見つかりません",
-        "noSkillInRepo": "リポジトリにインストール可能なスキルが見つかりません"
+        "noSkillInRepo": "リポジトリにインストール可能なスキルが見つかりません",
+        "refreshFailed": "更新に失敗しました"
       }
     }
   },
@@ -1219,7 +1292,15 @@
       "skillsPath": "スキルパス",
       "hint": "この操作でスキルリポジトリが一覧に追加されます。",
       "hintDetail": "追加後、スキル管理ページから個別のスキルをインストールできます。"
-    }
+    },
+    "usageApiKey": "使用量 API Key",
+    "usageAutoInterval": "自動クエリ",
+    "usageAutoIntervalValue": "{{minutes}} 分ごと",
+    "usageBaseUrl": "使用量クエリ URL",
+    "usageScript": "使用量クエリ",
+    "usageScriptDisabled": "無効",
+    "usageScriptEnabled": "有効",
+    "importInProgress": "インポート中です。完了後にもう一度リンクをクリックしてください"
   },
   "iconPicker": {
     "search": "アイコンを検索",
@@ -1386,7 +1467,12 @@
       "toast": {
         "saved": "プロキシ設定を保存しました",
         "saveFailed": "保存に失敗しました: {{error}}"
-      }
+      },
+      "configSaveFailed": "保存に失敗しました",
+      "configSaved": "プロキシ設定を保存しました",
+      "invalidAddress": "無効なアドレスです",
+      "invalidPort": "無効なポートです",
+      "restartRequired": "反映にはプロキシの再起動が必要です"
     },
     "switchFailed": "切り替えに失敗しました: {{error}}",
     "failover": {
@@ -1436,7 +1522,38 @@
       "successThresholdLabel": "回復成功しきい値",
       "successThresholdExplain": "半開状態でこの回数成功するとサーキットブレーカーが閉じ、プロバイダーが再び利用可能になります",
       "errorRateLabel": "エラー率しきい値",
-      "errorRateExplain": "失敗しきい値に達していなくても、エラー率がこの値を超えるとサーキットブレーカーが開きます"
+      "errorRateExplain": "失敗しきい値に達していなくても、エラー率がこの値を超えるとサーキットブレーカーが開きます",
+      "maxRetries": "最大リトライ回数",
+      "maxRetriesHint": "失敗時のリトライ回数（0-10）",
+      "nonStreaming": "非ストリーミングタイムアウト（秒）",
+      "nonStreamingHint": "非ストリーミング要求の合計タイムアウト。60〜1200 秒、デフォルト 600 秒",
+      "streamingFirstByte": "ストリーミング初バイトタイムアウト（秒）",
+      "streamingFirstByteHint": "最初のチャンクを待つ最大時間。1〜120 秒、デフォルト 60 秒",
+      "streamingIdle": "ストリーミング無通信タイムアウト（秒）",
+      "streamingIdleHint": "チャンク間の最大間隔。60〜600 秒、0 で無効",
+      "timeoutSettings": "タイムアウト設定",
+      "validationFailed": "以下のフィールドが有効範囲外です: {{fields}}"
+    },
+    "logging": {
+      "disabled": "ログ記録を無効にしました",
+      "enabled": "ログ記録を有効にしました",
+      "failed": "ログ記録の切り替えに失敗しました"
+    },
+    "server": {
+      "startFailed": "プロキシサーバーの起動に失敗しました: {{detail}}",
+      "started": "プロキシサーバーを起動しました - {{address}}:{{port}}"
+    },
+    "stopWithRestoreFailed": "停止に失敗しました: {{detail}}",
+    "stoppedWithRestore": "プロキシサーバーを停止し、すべてのテイクオーバー設定を復元しました",
+    "takeover": {
+      "disabled": "{{app}} の設定を復元しました",
+      "enabled": "{{app}} の設定をテイクオーバーしました（リクエストはローカルプロキシ経由）",
+      "failed": "テイクオーバーの切り替えに失敗しました: {{detail}}",
+      "tooltip": {
+        "active": "{{app}} テイクオーバー中 - {{address}}:{{port}}\nこのアプリのプロバイダー切替はホットスワップされます",
+        "broken": "{{app}} をテイクオーバー中ですが、プロキシサーバーが停止しています",
+        "inactive": "{{app}} のライブ設定をテイクオーバーし、このアプリのリクエストをローカルプロキシ経由にします"
+      }
     }
   },
   "streamCheck": {
@@ -1451,7 +1568,11 @@
     "maxRetries": "最大リトライ回数",
     "degradedThreshold": "劣化しきい値（ミリ秒）",
     "testPrompt": "テストプロンプト",
-    "notSupported": "ヘルスチェックはまだサポートされていません"
+    "notSupported": "ヘルスチェックはまだサポートされていません",
+    "degraded": "{{name}} の応答が遅いです（{{time}}ms）",
+    "error": "{{name}} のチェック中にエラー: {{error}}",
+    "failed": "{{name}} のチェックに失敗しました: {{error}}",
+    "operational": "{{name}} は正常です（{{time}}ms）"
   },
   "proxyConfig": {
     "proxyEnabled": "プロキシ有効",
@@ -1510,6 +1631,30 @@
     "savedAndSynced": "すべてのアプリに保存・同期されました",
     "saveAndSyncError": "保存と同期に失敗しました",
     "configJsonPreview": "設定 JSON プレビュー",
-    "configJsonPreviewHint": "以下は各アプリに同期される設定内容です（表示されているフィールドのみ上書きされ、他のカスタム設定は保持されます）"
+    "configJsonPreviewHint": "以下は各アプリに同期される設定内容です（表示されているフィールドのみ上書きされ、他のカスタム設定は保持されます）",
+    "hint": "アプリ横断の統一設定。Claude/Codex/Gemini へ自動同期します",
+    "addedAndSynced": "追加してすべてのアプリに同期しました"
+  },
+  "modelTest": {
+    "testProvider": "モデルをテスト"
+  },
+  "circuitBreaker": {
+    "title": "サーキットブレーカー設定",
+    "description": "障害検出と復旧動作を調整するサーキットブレーカーパラメータ",
+    "failureThresholdHint": "連続失敗がこの回数に達するとブレーカーを開く",
+    "timeoutSecondsHint": "ブレーカー開放後に復旧を試みるまでの時間（ハーフオープン）",
+    "successThresholdHint": "ハーフオープン状態でこの回数成功するとブレーカーを閉じる",
+    "errorRateHint": "エラー率がこの値を超えるとブレーカーを開く",
+    "minRequestsHint": "エラー率を計算する前の最小リクエスト数",
+    "saveConfig": "設定を保存",
+    "configNotes": "設定の説明",
+    "failureThreshold": "失敗しきい値",
+    "successThreshold": "成功しきい値",
+    "minRequests": "最小リクエスト数",
+    "validationFailed": "以下のフィールドが有効範囲外です: {{fields}}",
+    "configSaved": "サーキットブレーカー設定を保存しました",
+    "saveFailed": "保存に失敗しました",
+    "timeoutSeconds": "タイムアウト（秒）",
+    "errorRateThreshold": "エラー率しきい値 (%)"
   }
 }

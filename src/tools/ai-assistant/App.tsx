@@ -149,6 +149,7 @@ function App() {
     switchProvider,
     deleteProvider,
     saveUsageScript,
+    isLoading: isProviderActionPending,
   } = useProviderActions(activeApp);
 
   // 监听来自托盘菜单的切换事件
@@ -364,29 +365,46 @@ function App() {
   };
 
   // 确认删除/移除供应商
+  const [isConfirming, setIsConfirming] = useState(false);
   const handleConfirmAction = async () => {
-    if (!confirmAction) return;
+    if (!confirmAction || isConfirming) return;
     const { provider, action } = confirmAction;
+    setIsConfirming(true);
 
-    if (action === "remove") {
-      // Remove from live config only (for additive mode apps like OpenCode)
-      // Does NOT delete from database - provider remains in the list
-      await providersApi.removeFromLiveConfig(provider.id, activeApp);
-      // Invalidate queries to refresh the isInConfig state
-      await queryClient.invalidateQueries({
-        queryKey: ["opencodeLiveProviderIds"],
-      });
-      toast.success(
-        t("notifications.removeFromConfigSuccess", {
-          defaultValue: "已从配置移除",
-        }),
-        { closeButton: true },
-      );
-    } else {
-      // Delete from database
-      await deleteProvider(provider.id);
+    try {
+      if (action === "remove") {
+        // Remove from live config only (for additive mode apps like OpenCode)
+        // Does NOT delete from database - provider remains in the list
+        await providersApi.removeFromLiveConfig(provider.id, activeApp);
+        // Invalidate queries to refresh the isInConfig state
+        await queryClient.invalidateQueries({
+          queryKey: ["opencodeLiveProviderIds"],
+        });
+        toast.success(
+          t("notifications.removeFromConfigSuccess", {
+            defaultValue: "已从配置移除",
+          }),
+          { closeButton: true },
+        );
+      } else {
+        // Delete from database
+        await deleteProvider(provider.id);
+      }
+    } catch (error) {
+      console.error("[App] Failed to execute confirm action:", error);
+      // delete 路径已由 mutation onError 统一提示，这里只兜底 remove 路径
+      if (action === "remove") {
+        const detail =
+          extractErrorMessage(error) ||
+          t("notifications.removeFromConfigFailed", {
+            defaultValue: "从配置移除失败",
+          });
+        toast.error(detail);
+      }
+    } finally {
+      setIsConfirming(false);
+      setConfirmAction(null);
     }
-    setConfirmAction(null);
   };
 
   // Generate a unique provider key for OpenCode duplication
@@ -897,6 +915,7 @@ function App() {
         onOpenChange={setIsAddOpen}
         appId={activeApp}
         onSubmit={addProvider}
+        isSubmitting={isProviderActionPending}
       />
 
       <EditProviderDialog
@@ -910,6 +929,7 @@ function App() {
         onSubmit={handleEditProvider}
         appId={activeApp}
         isProxyTakeover={isProxyRunning && isCurrentAppTakeoverActive}
+        isSubmitting={isProviderActionPending}
       />
 
       {effectiveUsageProvider && (
@@ -947,6 +967,7 @@ function App() {
         }
         onConfirm={() => void handleConfirmAction()}
         onCancel={() => setConfirmAction(null)}
+        confirming={isConfirming}
       />
 
       <DeepLinkImportDialog />

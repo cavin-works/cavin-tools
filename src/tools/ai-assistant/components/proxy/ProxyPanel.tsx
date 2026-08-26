@@ -74,6 +74,7 @@ export function ProxyPanel() {
     } catch (error) {
       toast.error(
         t("proxy.takeover.failed", {
+          detail: error instanceof Error ? error.message : String(error),
           defaultValue: "切换接管状态失败",
         }),
       );

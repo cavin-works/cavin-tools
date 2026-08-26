@@ -36,7 +36,9 @@
     "search": "查询",
     "reset": "重置",
     "actions": "操作",
-    "deleting": "删除中..."
+    "deleting": "删除中...",
+    "enabled": "已开启",
+    "notSet": "未设置"
   },
   "apiKeyInput": {
     "placeholder": "请输入API Key",
@@ -130,7 +132,11 @@
         "oauthHint": "Google 官方使用 OAuth 个人认证，无需填写 API Key。首次使用时会自动打开浏览器进行登录。",
         "apiKeyPlaceholder": "请输入 Gemini API Key"
       }
-    }
+    },
+    "officialPartner": "官方合作伙伴",
+    "openTerminal": "打开终端",
+    "terminalOpenFailed": "打开终端失败",
+    "terminalOpened": "终端已打开"
   },
   "notifications": {
     "providerAdded": "供应商已添加",
@@ -155,7 +161,9 @@
     "deleteSuccess": "供应商已删除",
     "deleteFailed": "删除供应商失败：{{error}}",
     "settingsSaved": "设置已保存",
-    "settingsSaveFailed": "保存设置失败：{{error}}"
+    "settingsSaveFailed": "保存设置失败：{{error}}",
+    "openLinkFailed": "链接打开失败",
+    "removeFromConfigFailed": "从配置移除失败"
   },
   "confirm": {
     "deleteProvider": "删除供应商",
@@ -345,6 +353,10 @@
       "saveFailed": "保存失败：{{error}}",
       "testSuccess": "连接成功！延迟 {{latency}}ms",
       "testFailed": "连接失败：{{error}}"
+    },
+    "saveFailedGeneric": "保存失败，请重试",
+    "usage": {
+      "title": "使用统计"
     }
   },
   "apps": {
@@ -466,7 +478,8 @@
     "testUnavailable": "测速功能不可用",
     "noResult": "未返回结果",
     "testFailed": "测速失败: {{error}}",
-    "status": "状态码：{{code}}"
+    "status": "状态码：{{code}}",
+    "notTested": "未测试"
   },
   "providerAdvanced": {
     "testConfig": "模型测试配置",
@@ -498,7 +511,10 @@
     "extractFromCurrent": "从编辑内容提取",
     "extractNoCommonConfig": "当前编辑内容没有可提取的通用配置",
     "extractFailed": "提取失败: {{error}}",
-    "saveFailed": "保存失败: {{error}}"
+    "saveFailed": "保存失败: {{error}}",
+    "modelName": "模型名称",
+    "modelNameHint": "指定使用的模型，将自动更新到 config.toml 中",
+    "modelNamePlaceholder": "例如: gpt-5-codex"
   },
   "geminiConfig": {
     "envFile": "环境变量 (.env)",
@@ -630,7 +646,34 @@
     "input": "Input",
     "output": "Output",
     "cacheWrite": "创建",
-    "cacheRead": "命中"
+    "cacheRead": "命中",
+    "addPricing": "新增定价",
+    "avgCost": "平均成本",
+    "avgLatency": "平均延迟",
+    "basicInfo": "基本信息",
+    "cacheCreationCost": "缓存写入成本",
+    "cacheCreationCostPerMillion": "缓存写入成本 (每百万 tokens, USD)",
+    "cacheReadCostPerMillion": "缓存读取成本 (每百万 tokens, USD)",
+    "costBreakdown": "成本明细",
+    "editPricing": "编辑定价",
+    "errorMessage": "错误信息",
+    "inputCostPerMillion": "输入成本 (每百万 tokens, USD)",
+    "invalidPrice": "价格必须为非负数",
+    "latency": "延迟",
+    "modelId": "模型 ID",
+    "modelIdRequired": "模型 ID 不能为空",
+    "never": "从未更新",
+    "outputCostPerMillion": "输出成本 (每百万 tokens, USD)",
+    "performance": "性能信息",
+    "pricingAdded": "定价已添加",
+    "pricingUpdated": "定价已更新",
+    "requestDetail": "请求详情",
+    "requestId": "请求ID",
+    "requestNotFound": "请求未找到",
+    "requests": "请求数",
+    "successRate": "成功率",
+    "tokenUsage": "Token 使用量",
+    "tokens": "Tokens"
   },
   "usageScript": {
     "title": "配置用量查询",
@@ -1071,7 +1114,31 @@
         "localImport": "本地导入",
         "syncToTools": "同步到工具",
         "sync": "同步",
-        "createdAt": "创建于 {{time}}"
+        "createdAt": "创建于 {{time}}",
+        "fileBinary": "（二进制文件）",
+        "fileSize": "大小：{{size}}",
+        "fileTree": "文件树",
+        "fileTreeSearchPlaceholder": "搜索文件名或路径",
+        "fileTreeTruncated": "文件过多，仅展示前 5000 项。",
+        "fileTruncated": "（内容过长，仅展示前 512KB）",
+        "loadFileTreeFailed": "加载技能文件树失败",
+        "noFiles": "当前技能没有可读文件。",
+        "noSearchFiles": "没有匹配的文件。",
+        "readFileFailed": "读取技能文件失败",
+        "refreshing": "刷新中...",
+        "remoteRefreshDone": "远程刷新完成",
+        "remoteRefreshResult": "检查仓库 {{checked}} 个，扫描已安装技能 {{scanned}} 个，更新 {{updated}} 个。",
+        "selectFile": "请选择左侧文件",
+        "selectFileToPreview": "选择文件后在这里预览内容。",
+        "singleRefreshNoChange": "已刷新，无变化",
+        "singleRefreshNoChangeDesc": "{{name}} 当前已是最新状态。",
+        "singleRefreshUpdated": "技能已刷新并更新",
+        "singleRefreshUpdatedDesc": "{{name}} 已更新远程元数据。",
+        "treeCommit": "Tree 提交",
+        "treeCommitId": "Tree 提交 ID",
+        "viewerSubtitle": "目录：{{directory}}",
+        "viewerSubtitleFallback": "查看技能文件内容",
+        "viewerTitle": "技能文件"
       },
       "local": {
         "title": "扫描现有技能",
@@ -1113,7 +1180,12 @@
         "gitRepo": "Git 仓库地址",
         "gitPlaceholder": "https://github.com/user/repo 或 user/repo",
         "gitFormats": "支持格式",
-        "gitNameHint": "留空则自动推断"
+        "gitNameHint": "留空则自动推断",
+        "alreadyInstalled": "该技能已安装",
+        "installed": "已安装",
+        "installing": "安装中...",
+        "noSearchResults": "未找到匹配技能",
+        "searchPlaceholder": "搜索 skills.sh 技能（关键词）"
       },
       "settings": {
         "title": "设置",
@@ -1149,7 +1221,8 @@
         "zipNotSupported": "当前版本仅支持导入已在工具目录中的技能文件夹",
         "cannotIdentifyDir": "无法识别技能目录名",
         "skillNotFoundInTools": "未在已支持的工具技能目录中发现该技能",
-        "noSkillInRepo": "仓库中未发现可安装的技能"
+        "noSkillInRepo": "仓库中未发现可安装的技能",
+        "refreshFailed": "刷新失败"
       }
     }
   },
@@ -1219,7 +1292,15 @@
       "skillsPath": "Skills 路径",
       "hint": "此操作将添加 Skill 仓库到列表。",
       "hintDetail": "添加后，您可以在 Skills 管理界面中选择安装具体的 Skill。"
-    }
+    },
+    "usageApiKey": "用量 API Key",
+    "usageAutoInterval": "自动查询",
+    "usageAutoIntervalValue": "每 {{minutes}} 分钟",
+    "usageBaseUrl": "用量查询地址",
+    "usageScript": "用量查询",
+    "usageScriptDisabled": "未启用",
+    "usageScriptEnabled": "已启用",
+    "importInProgress": "正在导入中，导入完成后请重新点击链接"
   },
   "iconPicker": {
     "search": "搜索图标",
@@ -1442,7 +1523,37 @@
       "successThresholdLabel": "恢复成功阈值",
       "successThresholdExplain": "半开状态下，成功达到此次数时关闭熔断器，供应商恢复可用",
       "errorRateLabel": "错误率阈值",
-      "errorRateExplain": "错误率超过此值时，即使未达到失败阈值也会打开熔断器"
+      "errorRateExplain": "错误率超过此值时，即使未达到失败阈值也会打开熔断器",
+      "maxRetries": "最大重试次数",
+      "maxRetriesHint": "请求失败时的重试次数（0-10）",
+      "nonStreaming": "非流式超时（秒）",
+      "nonStreamingHint": "非流式请求的总超时时间，范围 60-1200 秒，默认 600 秒（10 分钟）",
+      "streamingFirstByte": "流式首字节超时（秒）",
+      "streamingFirstByteHint": "等待首个数据块的最大时间，范围 1-120 秒，默认 60 秒",
+      "streamingIdle": "流式静默超时（秒）",
+      "streamingIdleHint": "数据块之间的最大间隔，范围 60-600 秒，填 0 禁用（防止中途卡住）",
+      "timeoutSettings": "超时配置"
+    },
+    "logging": {
+      "disabled": "日志记录已关闭",
+      "enabled": "日志记录已启用",
+      "failed": "切换日志状态失败"
+    },
+    "server": {
+      "startFailed": "启动代理服务失败: {{detail}}",
+      "started": "代理服务已启动 - {{address}}:{{port}}"
+    },
+    "stopWithRestoreFailed": "停止失败: {{detail}}",
+    "stoppedWithRestore": "代理服务已关闭，已恢复所有接管配置",
+    "takeover": {
+      "disabled": "已恢复 {{app}} 配置",
+      "enabled": "已接管 {{app}} 配置（请求将走本地代理）",
+      "failed": "切换接管状态失败: {{detail}}",
+      "tooltip": {
+        "active": "{{app}} 已接管 - {{address}}:{{port}}\n切换该应用供应商为热切换",
+        "broken": "{{app}} 已接管，但代理服务未运行",
+        "inactive": "接管 {{app}} 的 Live 配置，让该应用请求走本地代理"
+      }
     }
   },
   "streamCheck": {
@@ -1457,7 +1568,11 @@
     "maxRetries": "最大重试次数",
     "degradedThreshold": "降级阈值（毫秒）",
     "testPrompt": "检查提示词",
-    "notSupported": "暂不支持健康检查"
+    "notSupported": "暂不支持健康检查",
+    "degraded": "{{name}} 响应较慢 ({{time}}ms)",
+    "error": "{{name}} 检查出错: {{error}}",
+    "failed": "{{name}} 检查失败: {{error}}",
+    "operational": "{{name}} 运行正常 ({{time}}ms)"
   },
   "proxyConfig": {
     "proxyEnabled": "代理总开关",
@@ -1478,12 +1593,21 @@
   "circuitBreaker": {
     "failureThreshold": "失败阈值",
     "successThreshold": "成功阈值",
-    "timeoutSeconds": "超时时间",
-    "errorRateThreshold": "错误率阈值",
+    "timeoutSeconds": "超时时间（秒）",
+    "errorRateThreshold": "错误率阈值 (%)",
     "minRequests": "最小请求数",
     "validationFailed": "以下字段超出有效范围: {{fields}}",
     "configSaved": "熔断器配置已保存",
-    "saveFailed": "保存失败"
+    "saveFailed": "保存失败",
+    "title": "熔断器配置",
+    "description": "调整熔断器参数以控制故障检测和恢复行为",
+    "failureThresholdHint": "连续失败多少次后打开熔断器",
+    "timeoutSecondsHint": "熔断器打开后多久尝试恢复（半开状态）",
+    "successThresholdHint": "半开状态下成功多少次后关闭熔断器",
+    "errorRateHint": "错误率超过此值时打开熔断器",
+    "minRequestsHint": "计算错误率前的最小请求数",
+    "saveConfig": "保存配置",
+    "configNotes": "配置说明"
   },
   "universalProvider": {
     "title": "统一供应商",
@@ -1527,6 +1651,10 @@
     "savedAndSynced": "已保存并同步到所有应用",
     "saveAndSyncError": "保存并同步失败",
     "configJsonPreview": "配置 JSON 预览",
-    "configJsonPreviewHint": "以下是将要同步到各应用的配置内容（仅覆盖显示的字段，保留其他自定义配置）"
+    "configJsonPreviewHint": "以下是将要同步到各应用的配置内容（仅覆盖显示的字段，保留其他自定义配置）",
+    "hint": "跨应用统一配置，自动同步到 Claude/Codex/Gemini"
+  },
+  "modelTest": {
+    "testProvider": "测试模型"
   }
 }

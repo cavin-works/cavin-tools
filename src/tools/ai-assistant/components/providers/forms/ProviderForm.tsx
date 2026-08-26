@@ -119,6 +119,7 @@ interface ProviderFormProps {
     iconColor?: string;
   };
   showButtons?: boolean;
+  submitDisabled?: boolean;
 }
 
 export function ProviderForm({
@@ -131,6 +132,7 @@ export function ProviderForm({
   onManageUniversalProviders,
   initialData,
   showButtons = true,
+  submitDisabled = false,
 }: ProviderFormProps) {
   const { t } = useTranslation();
   const isEditMode = Boolean(initialData);
@@ -554,7 +556,10 @@ export function ProviderForm({
   });
 
   // OpenCode: query existing providers for duplicate key checking
-  const { data: opencodeProvidersData } = useProvidersQuery("opencode");
+  // 非 OpenCode 表单禁用该查询，避免无谓请求
+  const { data: opencodeProvidersData } = useProvidersQuery("opencode", {
+    enabled: appId === "opencode",
+  });
   const existingOpencodeKeys = useMemo(() => {
     if (!opencodeProvidersData?.providers) return [];
     // Exclude current provider ID when in edit mode
@@ -1508,7 +1513,9 @@ export function ProviderForm({
             <Button variant="outline" type="button" onClick={onCancel}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit">{submitLabel}</Button>
+            <Button type="submit" disabled={submitDisabled}>
+              {submitLabel}
+            </Button>
           </div>
         )}
       </form>

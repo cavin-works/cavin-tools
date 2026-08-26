@@ -146,15 +146,17 @@ export function CircuitBreakerConfigPanel() {
   };
 
   if (isLoading) {
-    return <div className="text-sm text-muted-foreground">加载中...</div>;
+    return (
+      <div className="text-sm text-muted-foreground">{t("common.loading")}</div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold">熔断器配置</h3>
+        <h3 className="text-lg font-semibold">{t("circuitBreaker.title")}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          调整熔断器参数以控制故障检测和恢复行为
+          {t("circuitBreaker.description")}
         </p>
       </div>
 
@@ -163,7 +165,9 @@ export function CircuitBreakerConfigPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 失败阈值 */}
         <div className="space-y-2">
-          <Label htmlFor="failureThreshold">失败阈值</Label>
+          <Label htmlFor="failureThreshold">
+            {t("circuitBreaker.failureThreshold")}
+          </Label>
           <Input
             id="failureThreshold"
             type="number"
@@ -175,13 +179,15 @@ export function CircuitBreakerConfigPanel() {
             }
           />
           <p className="text-xs text-muted-foreground">
-            连续失败多少次后打开熔断器
+            {t("circuitBreaker.failureThresholdHint")}
           </p>
         </div>
 
         {/* 超时时间 */}
         <div className="space-y-2">
-          <Label htmlFor="timeoutSeconds">超时时间（秒）</Label>
+          <Label htmlFor="timeoutSeconds">
+            {t("circuitBreaker.timeoutSeconds")}
+          </Label>
           <Input
             id="timeoutSeconds"
             type="number"
@@ -193,13 +199,15 @@ export function CircuitBreakerConfigPanel() {
             }
           />
           <p className="text-xs text-muted-foreground">
-            熔断器打开后多久尝试恢复（半开状态）
+            {t("circuitBreaker.timeoutSecondsHint")}
           </p>
         </div>
 
         {/* 成功阈值 */}
         <div className="space-y-2">
-          <Label htmlFor="successThreshold">成功阈值</Label>
+          <Label htmlFor="successThreshold">
+            {t("circuitBreaker.successThreshold")}
+          </Label>
           <Input
             id="successThreshold"
             type="number"
@@ -211,13 +219,15 @@ export function CircuitBreakerConfigPanel() {
             }
           />
           <p className="text-xs text-muted-foreground">
-            半开状态下成功多少次后关闭熔断器
+            {t("circuitBreaker.successThresholdHint")}
           </p>
         </div>
 
         {/* 错误率阈值 */}
         <div className="space-y-2">
-          <Label htmlFor="errorRateThreshold">错误率阈值 (%)</Label>
+          <Label htmlFor="errorRateThreshold">
+            {t("circuitBreaker.errorRateThreshold")}
+          </Label>
           <Input
             id="errorRateThreshold"
             type="number"
@@ -230,13 +240,13 @@ export function CircuitBreakerConfigPanel() {
             }
           />
           <p className="text-xs text-muted-foreground">
-            错误率超过此值时打开熔断器
+            {t("circuitBreaker.errorRateHint")}
           </p>
         </div>
 
         {/* 最小请求数 */}
         <div className="space-y-2">
-          <Label htmlFor="minRequests">最小请求数</Label>
+          <Label htmlFor="minRequests">{t("circuitBreaker.minRequests")}</Label>
           <Input
             id="minRequests"
             type="number"
@@ -248,42 +258,49 @@ export function CircuitBreakerConfigPanel() {
             }
           />
           <p className="text-xs text-muted-foreground">
-            计算错误率前的最小请求数
+            {t("circuitBreaker.minRequestsHint")}
           </p>
         </div>
       </div>
 
       <div className="flex gap-3">
         <Button onClick={handleSave} disabled={updateConfig.isPending}>
-          {updateConfig.isPending ? "保存中..." : "保存配置"}
+          {updateConfig.isPending
+            ? t("common.saving")
+            : t("circuitBreaker.saveConfig")}
         </Button>
         <Button
           variant="outline"
           onClick={handleReset}
           disabled={updateConfig.isPending}
         >
-          重置
+          {t("common.reset")}
         </Button>
       </div>
 
       {/* 说明信息 */}
       <div className="p-4 bg-muted/50 rounded-lg space-y-2 text-sm">
-        <h4 className="font-medium">配置说明</h4>
+        <h4 className="font-medium">{t("circuitBreaker.configNotes")}</h4>
         <ul className="space-y-1 text-muted-foreground">
           <li>
-            • <strong>失败阈值</strong>：连续失败达到此次数时，熔断器打开
+            • <strong>{t("circuitBreaker.failureThreshold")}</strong>：
+            {t("circuitBreaker.failureThresholdHint")}
           </li>
           <li>
-            • <strong>超时时间</strong>：熔断器打开后，等待此时间后尝试半开
+            • <strong>{t("circuitBreaker.timeoutSeconds")}</strong>：
+            {t("circuitBreaker.timeoutSecondsHint")}
           </li>
           <li>
-            • <strong>成功阈值</strong>：半开状态下，成功达到此次数时关闭熔断器
+            • <strong>{t("circuitBreaker.successThreshold")}</strong>：
+            {t("circuitBreaker.successThresholdHint")}
           </li>
           <li>
-            • <strong>错误率阈值</strong>：错误率超过此值时，熔断器打开
+            • <strong>{t("circuitBreaker.errorRateThreshold")}</strong>：
+            {t("circuitBreaker.errorRateHint")}
           </li>
           <li>
-            • <strong>最小请求数</strong>：只有请求数达到此值后才计算错误率
+            • <strong>{t("circuitBreaker.minRequests")}</strong>：
+            {t("circuitBreaker.minRequestsHint")}
           </li>
         </ul>
       </div>

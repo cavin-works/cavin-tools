@@ -36,17 +36,19 @@ export interface ProvidersQueryData {
 
 export interface UseProvidersQueryOptions {
   isProxyRunning?: boolean; // 代理服务是否运行中
+  enabled?: boolean; // 仅特定场景启用查询（如 OpenCode 表单的重复 key 检查）
 }
 
 export const useProvidersQuery = (
   appId: AppId,
   options?: UseProvidersQueryOptions,
 ): UseQueryResult<ProvidersQueryData> => {
-  const { isProxyRunning = false } = options || {};
+  const { isProxyRunning = false, enabled = true } = options || {};
 
   return useQuery({
     queryKey: ["providers", appId],
     placeholderData: keepPreviousData,
+    enabled,
     // 当代理服务运行时，每 10 秒刷新一次供应商列表
     // 这样可以自动反映后端熔断器自动禁用代理目标的变更
     refetchInterval: isProxyRunning ? 10000 : false,
@@ -54,11 +56,9 @@ export const useProvidersQuery = (
       let providers: Record<string, Provider> = {};
       let currentProviderId = "";
 
-      try {
-        providers = await providersApi.getAll(appId);
-      } catch (error) {
-        console.error("获取供应商列表失败:", error);
-      }
+      // 获取失败直接抛出：让查询进入 error 状态由组件呈现，
+      // 而不是吞错后误触发 importDefault 初始化
+      providers = await providersApi.getAll(appId);
 
       try {
         currentProviderId = await providersApi.getCurrent(appId);

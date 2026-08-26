@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ interface AddProviderDialogProps {
   onSubmit: (
     provider: Omit<Provider, "id"> & { providerKey?: string },
   ) => Promise<void> | void;
+  isSubmitting?: boolean;
 }
 
 export function AddProviderDialog({
@@ -40,8 +41,11 @@ export function AddProviderDialog({
   onOpenChange,
   appId,
   onSubmit,
+  isSubmitting = false,
 }: AddProviderDialogProps) {
   const { t } = useTranslation();
+  // 防止 Enter 双发等重复提交（ref 守卫：不依赖渲染周期）
+  const submittingRef = useRef(false);
   // OpenCode doesn't support universal providers
   const showUniversalTab = appId !== "opencode";
   const [activeTab, setActiveTab] = useState<"app-specific" | "universal">(
@@ -87,142 +91,148 @@ export function AddProviderDialog({
 
   const handleSubmit = useCallback(
     async (values: ProviderFormValues) => {
-      const parsedConfig = JSON.parse(values.settingsConfig) as Record<
-        string,
-        unknown
-      >;
+      if (submittingRef.current) return;
+      submittingRef.current = true;
+      try {
+        const parsedConfig = JSON.parse(values.settingsConfig) as Record<
+          string,
+          unknown
+        >;
 
-      // 构造基础提交数据
-      const providerData: Omit<Provider, "id"> & { providerKey?: string } = {
-        name: values.name.trim(),
-        notes: values.notes?.trim() || undefined,
-        websiteUrl: values.websiteUrl?.trim() || undefined,
-        settingsConfig: parsedConfig,
-        icon: values.icon?.trim() || undefined,
-        iconColor: values.iconColor?.trim() || undefined,
-        ...(values.presetCategory ? { category: values.presetCategory } : {}),
-        ...(values.meta ? { meta: values.meta } : {}),
-      };
-
-      // OpenCode: pass providerKey for ID generation
-      if (appId === "opencode" && values.providerKey) {
-        providerData.providerKey = values.providerKey;
-      }
-
-      const hasCustomEndpoints =
-        providerData.meta?.custom_endpoints &&
-        Object.keys(providerData.meta.custom_endpoints).length > 0;
-
-      if (!hasCustomEndpoints) {
-        // 收集端点候选（仅在缺少自定义端点时兜底）
-        const urlSet = new Set<string>();
-
-        const addUrl = (rawUrl?: string) => {
-          const url = (rawUrl || "").trim().replace(/\/+$/, "");
-          if (url && url.startsWith("http")) {
-            urlSet.add(url);
-          }
+        // 构造基础提交数据
+        const providerData: Omit<Provider, "id"> & { providerKey?: string } = {
+          name: values.name.trim(),
+          notes: values.notes?.trim() || undefined,
+          websiteUrl: values.websiteUrl?.trim() || undefined,
+          settingsConfig: parsedConfig,
+          icon: values.icon?.trim() || undefined,
+          iconColor: values.iconColor?.trim() || undefined,
+          ...(values.presetCategory ? { category: values.presetCategory } : {}),
+          ...(values.meta ? { meta: values.meta } : {}),
         };
 
-        if (values.presetId) {
-          if (appId === "claude") {
-            const presets = providerPresets;
-            const presetIndex = parseInt(
-              values.presetId.replace("claude-", ""),
-            );
-            if (
-              !isNaN(presetIndex) &&
-              presetIndex >= 0 &&
-              presetIndex < presets.length
-            ) {
-              const preset = presets[presetIndex];
-              if (preset?.endpointCandidates) {
-                preset.endpointCandidates.forEach(addUrl);
+        // OpenCode: pass providerKey for ID generation
+        if (appId === "opencode" && values.providerKey) {
+          providerData.providerKey = values.providerKey;
+        }
+
+        const hasCustomEndpoints =
+          providerData.meta?.custom_endpoints &&
+          Object.keys(providerData.meta.custom_endpoints).length > 0;
+
+        if (!hasCustomEndpoints) {
+          // 收集端点候选（仅在缺少自定义端点时兜底）
+          const urlSet = new Set<string>();
+
+          const addUrl = (rawUrl?: string) => {
+            const url = (rawUrl || "").trim().replace(/\/+$/, "");
+            if (url && url.startsWith("http")) {
+              urlSet.add(url);
+            }
+          };
+
+          if (values.presetId) {
+            if (appId === "claude") {
+              const presets = providerPresets;
+              const presetIndex = parseInt(
+                values.presetId.replace("claude-", ""),
+              );
+              if (
+                !isNaN(presetIndex) &&
+                presetIndex >= 0 &&
+                presetIndex < presets.length
+              ) {
+                const preset = presets[presetIndex];
+                if (preset?.endpointCandidates) {
+                  preset.endpointCandidates.forEach(addUrl);
+                }
+              }
+            } else if (appId === "codex") {
+              const presets = codexProviderPresets;
+              const presetIndex = parseInt(values.presetId.replace("codex-", ""));
+              if (
+                !isNaN(presetIndex) &&
+                presetIndex >= 0 &&
+                presetIndex < presets.length
+              ) {
+                const preset = presets[presetIndex];
+                if (Array.isArray(preset.endpointCandidates)) {
+                  preset.endpointCandidates.forEach(addUrl);
+                }
+              }
+            } else if (appId === "gemini") {
+              const presets = geminiProviderPresets;
+              const presetIndex = parseInt(
+                values.presetId.replace("gemini-", ""),
+              );
+              if (
+                !isNaN(presetIndex) &&
+                presetIndex >= 0 &&
+                presetIndex < presets.length
+              ) {
+                const preset = presets[presetIndex];
+                if (Array.isArray(preset.endpointCandidates)) {
+                  preset.endpointCandidates.forEach(addUrl);
+                }
               }
             }
+            // Note: OpenCode doesn't use endpointCandidates - it handles endpoints internally
+          }
+
+          if (appId === "claude") {
+            const env = parsedConfig.env as Record<string, any> | undefined;
+            if (env?.ANTHROPIC_BASE_URL) {
+              addUrl(env.ANTHROPIC_BASE_URL);
+            }
           } else if (appId === "codex") {
-            const presets = codexProviderPresets;
-            const presetIndex = parseInt(values.presetId.replace("codex-", ""));
-            if (
-              !isNaN(presetIndex) &&
-              presetIndex >= 0 &&
-              presetIndex < presets.length
-            ) {
-              const preset = presets[presetIndex];
-              if (Array.isArray(preset.endpointCandidates)) {
-                preset.endpointCandidates.forEach(addUrl);
+            const config = parsedConfig.config as string | undefined;
+            if (config) {
+              const baseUrlMatch = config.match(
+                /base_url\s*=\s*["']([^"']+)["']/,
+              );
+              if (baseUrlMatch?.[1]) {
+                addUrl(baseUrlMatch[1]);
               }
             }
           } else if (appId === "gemini") {
-            const presets = geminiProviderPresets;
-            const presetIndex = parseInt(
-              values.presetId.replace("gemini-", ""),
-            );
-            if (
-              !isNaN(presetIndex) &&
-              presetIndex >= 0 &&
-              presetIndex < presets.length
-            ) {
-              const preset = presets[presetIndex];
-              if (Array.isArray(preset.endpointCandidates)) {
-                preset.endpointCandidates.forEach(addUrl);
-              }
+            const env = parsedConfig.env as Record<string, any> | undefined;
+            if (env?.GOOGLE_GEMINI_BASE_URL) {
+              addUrl(env.GOOGLE_GEMINI_BASE_URL);
+            }
+          } else if (appId === "opencode") {
+            // OpenCode uses options.baseURL
+            const options = parsedConfig.options as
+              | Record<string, any>
+              | undefined;
+            if (options?.baseURL) {
+              addUrl(options.baseURL);
             }
           }
-          // Note: OpenCode doesn't use endpointCandidates - it handles endpoints internally
-        }
 
-        if (appId === "claude") {
-          const env = parsedConfig.env as Record<string, any> | undefined;
-          if (env?.ANTHROPIC_BASE_URL) {
-            addUrl(env.ANTHROPIC_BASE_URL);
-          }
-        } else if (appId === "codex") {
-          const config = parsedConfig.config as string | undefined;
-          if (config) {
-            const baseUrlMatch = config.match(
-              /base_url\s*=\s*["']([^"']+)["']/,
-            );
-            if (baseUrlMatch?.[1]) {
-              addUrl(baseUrlMatch[1]);
-            }
-          }
-        } else if (appId === "gemini") {
-          const env = parsedConfig.env as Record<string, any> | undefined;
-          if (env?.GOOGLE_GEMINI_BASE_URL) {
-            addUrl(env.GOOGLE_GEMINI_BASE_URL);
-          }
-        } else if (appId === "opencode") {
-          // OpenCode uses options.baseURL
-          const options = parsedConfig.options as
-            | Record<string, any>
-            | undefined;
-          if (options?.baseURL) {
-            addUrl(options.baseURL);
-          }
-        }
+          const urls = Array.from(urlSet);
+          if (urls.length > 0) {
+            const now = Date.now();
+            const customEndpoints: Record<string, CustomEndpoint> = {};
+            urls.forEach((url) => {
+              customEndpoints[url] = {
+                url,
+                addedAt: now,
+                lastUsed: undefined,
+              };
+            });
 
-        const urls = Array.from(urlSet);
-        if (urls.length > 0) {
-          const now = Date.now();
-          const customEndpoints: Record<string, CustomEndpoint> = {};
-          urls.forEach((url) => {
-            customEndpoints[url] = {
-              url,
-              addedAt: now,
-              lastUsed: undefined,
+            providerData.meta = {
+              ...(providerData.meta ?? {}),
+              custom_endpoints: customEndpoints,
             };
-          });
-
-          providerData.meta = {
-            ...(providerData.meta ?? {}),
-            custom_endpoints: customEndpoints,
-          };
+          }
         }
-      }
 
-      await onSubmit(providerData);
-      onOpenChange(false);
+        await onSubmit(providerData);
+        onOpenChange(false);
+      } finally {
+        submittingRef.current = false;
+      }
     },
     [appId, onSubmit, onOpenChange],
   );
@@ -285,6 +295,7 @@ export function AddProviderDialog({
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
                 className="border-border/20 hover:bg-accent hover:text-accent-foreground"
               >
                 {t("common.cancel")}
@@ -292,6 +303,7 @@ export function AddProviderDialog({
               <Button
                 type="submit"
                 form="provider-form"
+                disabled={isSubmitting}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 <Plus className="h-4 w-4 mr-2" />

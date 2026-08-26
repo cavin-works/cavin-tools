@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { DeepLinkImportRequest, deeplinkApi } from "@ai-assistant/lib/api/deeplink";
 import {
@@ -29,6 +29,8 @@ export function DeepLinkImportDialog() {
   const queryClient = useQueryClient();
   const [request, setRequest] = useState<DeepLinkImportRequest | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  // ref 镜像：事件监听回调里读取，避免导入状态变化导致反复解绑/重绑监听
+  const isImportingRef = useRef(false);
   const [isOpen, setIsOpen] = useState(false);
 
   // 容错判断：MCP 导入结果可能缺少 type 字段
@@ -54,6 +56,14 @@ export function DeepLinkImportDialog() {
     const unlistenImport = listen<DeepLinkImportRequest>(
       "deeplink-import",
       async (event) => {
+        // 导入进行中：丢弃新事件（不做队列），提示用户稍后重试
+        if (isImportingRef.current) {
+          toast.info(t("deeplink.importInProgress", {
+            defaultValue: "正在导入中，导入完成后请重新点击链接",
+          }));
+          return;
+        }
+
         // If inline config is present, merge it to get the complete configuration
         // (configUrl-only links are not merged: remote config is unsupported on backend)
         if (event.payload.config) {
@@ -97,6 +107,7 @@ export function DeepLinkImportDialog() {
     if (!request) return;
 
     setIsImporting(true);
+    isImportingRef.current = true;
 
     try {
       // 远程配置(configUrl)后端暂不支持,提交前剔除,仅导入链接内嵌的供应商配置
@@ -203,6 +214,7 @@ export function DeepLinkImportDialog() {
         description: error instanceof Error ? error.message : String(error),
       });
     } finally {
+      isImportingRef.current = false;
       setIsImporting(false);
     }
   };
