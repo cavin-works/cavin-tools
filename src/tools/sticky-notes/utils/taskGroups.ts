@@ -32,23 +32,35 @@ const formatGroupLabel = (timestamp: number, now: number): string => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * 全序比较器：有 order 的按 order 升序在前，无 order 的按创建时间倒序附在尾部。
+ * 避免 order 混合时比较器非传递导致排序不稳定（H3）。
+ */
+export const compareTasksByOrder = (left: TodoTask, right: TodoTask): number => {
+  if (left.order !== undefined && right.order !== undefined) {
+    return left.order - right.order;
+  }
+  if (left.order !== undefined) return -1;
+  if (right.order !== undefined) return 1;
+  return right.createdAt - left.createdAt;
+};
+
 export const groupTasksByCreatedDate = (tasks: TodoTask[]): TaskGroup[] => {
   const now = Date.now();
   const groups = new Map<string, TodoTask[]>();
 
-  [...tasks]
-    .sort((left, right) => right.createdAt - left.createdAt)
-    .forEach((task) => {
-      const label = formatGroupLabel(task.createdAt, now);
-      const group = groups.get(label);
+  // 保持传入顺序（拖拽排序结果），仅按 createdAt 日期分组，不重排（H3）
+  tasks.forEach((task) => {
+    const label = formatGroupLabel(task.createdAt, now);
+    const group = groups.get(label);
 
-      if (group) {
-        group.push(task);
-        return;
-      }
+    if (group) {
+      group.push(task);
+      return;
+    }
 
-      groups.set(label, [task]);
-    });
+    groups.set(label, [task]);
+  });
 
   return Array.from(groups.entries()).map(([label, groupedTasks]) => ({
     label,

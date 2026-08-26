@@ -103,12 +103,12 @@ export const useTodoStore = create<TodoState>((set, get) => ({
         });
       }
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      // 加载失败保持未初始化并禁止保存，避免默认配置覆盖磁盘数据（M3）
       set({
-        tasks: [],
-        config: DEFAULT_CONFIG,
-        initialized: true,
+        error: `加载任务数据失败: ${errorMessage}`,
+        initialized: false,
       });
-      console.warn('加载任务数据失败，使用默认配置:', err);
     } finally {
       set({ isLoading: false });
     }
@@ -136,7 +136,12 @@ export const useTodoStore = create<TodoState>((set, get) => ({
 
   // 保存任务数据
   saveTasks: async () => {
-    const { tasks, config } = get();
+    const { tasks, config, initialized } = get();
+    // 加载失败时拒绝保存，防止覆盖磁盘数据（M3）
+    if (!initialized) {
+      set({ error: '数据未加载成功，已阻止保存以免覆盖磁盘数据' });
+      return;
+    }
     try {
       await invoke('save_sticky_notes', {
         data: {
@@ -145,6 +150,8 @@ export const useTodoStore = create<TodoState>((set, get) => ({
           version: 1,
         } as TodoStoreData,
       });
+      // 保存成功后以磁盘为准重载一次，消除并发保存的 stale 状态（H2）
+      await get().reloadTasks();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       set({ error: `保存失败: ${errorMessage}` });
@@ -162,9 +169,11 @@ export const useTodoStore = create<TodoState>((set, get) => ({
       status: 'pending',
       priority,
       createdAt: now,
+      order: 0, // 新任务置顶，与小组件 handleAddTask 一致（H3）
     };
 
-    const updatedTasks = [newTask, ...tasks];
+    // 与小组件对齐：新任务 order 为 0，其余任务 order 顺延
+    const updatedTasks = [newTask, ...tasks.map((task, index) => ({ ...task, order: index + 1 }))];
     set({ tasks: updatedTasks });
     await saveTasks();
 

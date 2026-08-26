@@ -149,8 +149,10 @@ const validateShortcut = (shortcut: string): string | null => {
   const modifiers = tokens.filter((token) => MODIFIER_TOKENS.has(token.toLowerCase()));
   const keys = tokens.filter((token) => !MODIFIER_TOKENS.has(token.toLowerCase()));
 
-  if (modifiers.length === 0) {
-    return '至少需要一个修饰键，例如 Ctrl、Alt、Shift';
+  // 仅 Shift+主键 会与常规输入冲突，要求至少一个非 Shift 修饰键（M2）
+  const nonShiftModifiers = modifiers.filter((token) => token.toLowerCase() !== 'shift');
+  if (nonShiftModifiers.length === 0) {
+    return '至少需要一个非 Shift 修饰键，例如 Ctrl、Alt、Cmd';
   }
 
   if (keys.length !== 1) {

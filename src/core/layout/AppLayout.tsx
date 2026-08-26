@@ -112,20 +112,19 @@ export function AppLayout() {
   // 应用主题到 document
   useEffect(() => {
     const root = document.documentElement;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
 
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'light') {
-      root.classList.remove('dark');
-    } else {
-      // system: 跟随系统偏好
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    }
+    const applyTheme = () => {
+      root.classList.toggle('dark', theme === 'dark' || (theme === 'system' && media.matches));
+    };
+
+    applyTheme();
+
+    if (theme !== 'system') return;
+
+    // system: 跟随系统偏好，系统切换深浅色时实时更新（M6）
+    media.addEventListener('change', applyTheme);
+    return () => media.removeEventListener('change', applyTheme);
   }, [theme]);
 
   useEffect(() => {

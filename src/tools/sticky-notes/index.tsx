@@ -270,7 +270,7 @@ export const StickyNotes: React.FC = () => {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={filteredTasks.map((task) => task.id)}
+                items={visibleTasks.map((task) => task.id)}
                 strategy={verticalListSortingStrategy}
               >
                 {groupedTasks.map((group) => (

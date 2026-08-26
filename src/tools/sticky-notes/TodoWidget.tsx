@@ -33,7 +33,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { TodoTask, TodoPriority, TodoConfig, TodoStatus, ThemeColors } from './types';
 import { PRIORITY_COLORS, PRIORITY_LABELS, WIDGET_THEMES, DEFAULT_CONFIG } from './types';
-import { groupTasksByCreatedDate } from './utils/taskGroups';
+import { compareTasksByOrder, groupTasksByCreatedDate } from './utils/taskGroups';
 
 // 可排序的任务项组件
 interface SortableTaskItemProps {
@@ -312,57 +312,30 @@ export const TodoWidget: React.FC = () => {
       : `rgb(${r}, ${g}, ${b})`;
   };
 
+  // 从磁盘重载数据：初始加载、跨窗口同步、保存后以磁盘为准，共用同一入口（H2）
+  const loadFromDisk = async () => {
+    try {
+      const data = await invoke<{ tasks: TodoTask[]; config: TodoConfig }>('load_sticky_notes');
+      if (data) {
+        // 全序排序：有 order 的按 order 在前，无 order 的按创建时间附在尾部（H3）
+        setTasks([...(data.tasks || [])].sort(compareTasksByOrder));
+        if (data.config?.widget) {
+          setConfig(data.config);
+          setIsPinned(data.config.widget.isPinned);
+          setIsDesktopMode(data.config.widget.isDesktopMode);
+        }
+      }
+    } catch (err) {
+      console.error('加载数据失败:', err);
+    }
+  };
+
   // 加载数据
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await invoke<{ tasks: TodoTask[]; config: TodoConfig }>('load_sticky_notes');
-        if (data) {
-          // 按 order 字段排序，如果没有 order 则按创建时间排序
-          const sortedTasks = (data.tasks || []).sort((a, b) => {
-            if (a.order !== undefined && b.order !== undefined) {
-              return a.order - b.order;
-            }
-            return b.createdAt - a.createdAt;
-          });
-          setTasks(sortedTasks);
-          if (data.config?.widget) {
-            setConfig(data.config);
-            setIsPinned(data.config.widget.isPinned);
-            setIsDesktopMode(data.config.widget.isDesktopMode);
-          }
-        }
-      } catch (err) {
-        console.error('加载数据失败:', err);
-      }
-    };
-
-    loadData();
+    void loadFromDisk();
   }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await invoke<{ tasks: TodoTask[]; config: TodoConfig }>('load_sticky_notes');
-        if (data) {
-          const sortedTasks = (data.tasks || []).sort((a, b) => {
-            if (a.order !== undefined && b.order !== undefined) {
-              return a.order - b.order;
-            }
-            return b.createdAt - a.createdAt;
-          });
-          setTasks(sortedTasks);
-          if (data.config?.widget) {
-            setConfig(data.config);
-            setIsPinned(data.config.widget.isPinned);
-            setIsDesktopMode(data.config.widget.isDesktopMode);
-          }
-        }
-      } catch (err) {
-        console.error('同步数据失败:', err);
-      }
-    };
-
     const todoWindow = getCurrentWindow();
 
     // 直接保存 promise：卸载发生在 IPC resolve 之前时，cleanup 仍能拿到 unlisten 函数
@@ -372,9 +345,9 @@ export const TodoWidget: React.FC = () => {
     });
 
     const unlistenData = listen<string>('sticky-notes-data-updated', (event) => {
-      // payload 为来源窗口 label：跳过自身保存触发的回声，避免磁盘旧数据覆盖本地乐观更新
+      // payload 为来源窗口 label：跳过自身保存触发的回声，由 saveData 主动重载
       if (event.payload === todoWindow.label) return;
-      void loadData();
+      void loadFromDisk();
     });
 
     const unlistenMoved = todoWindow.onMoved(({ payload }) => {
@@ -415,6 +388,8 @@ export const TodoWidget: React.FC = () => {
           version: 1,
         },
       });
+      // 保存成功后以磁盘为准重载一次，消除并发保存的 stale 状态（H2）
+      await loadFromDisk();
     } catch (err) {
       console.error('保存失败:', err);
     }
@@ -714,6 +689,8 @@ export const TodoWidget: React.FC = () => {
   const displayTasks =
     filter === 'pending' ? pendingTasks : filter === 'completed' ? completedTasks : tasks;
   const groupedTasks = groupTasksByCreatedDate(displayTasks);
+  // 渲染列表与 SortableContext items 同源（H3）
+  const visibleTasks = groupedTasks.flatMap((group) => group.tasks);
 
   useEffect(() => {
     if (displayTasks.length === 0) {
@@ -971,7 +948,7 @@ export const TodoWidget: React.FC = () => {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={displayTasks.map((task) => task.id)}
+              items={visibleTasks.map((task) => task.id)}
               strategy={verticalListSortingStrategy}
             >
               {groupedTasks.map((group) => (

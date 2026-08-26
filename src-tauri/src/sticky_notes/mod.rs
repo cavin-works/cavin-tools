@@ -266,7 +266,7 @@ pub fn embed_window_into_desktop(hwnd: isize) -> Result<(), String> {
         // 0x052C is a special message that tells Explorer to create the WorkerW window
         let _result = SendMessageTimeoutW(
             progman,
-            WM_USER + 0x02C, // 0x052C
+            WM_USER + 0x12C, // 0x052C
             windows::Win32::Foundation::WPARAM(0x0D),
             windows::Win32::Foundation::LPARAM(0),
             SMTO_NORMAL,
@@ -696,15 +696,18 @@ pub async fn load_sticky_notes(app: AppHandle) -> Result<Option<TodoStoreData>, 
         .store("sticky-notes")
         .map_err(|e| format!("Failed to open store: {}", e))?;
 
-    let tasks = store
-        .get("tasks")
-        .and_then(|v| serde_json::from_value::<Vec<TodoTask>>(v.clone()).ok())
-        .unwrap_or_default();
+    // 数据存在但解析失败时返回错误，而不是静默用空数据/默认配置覆盖
+    let tasks = match store.get("tasks") {
+        Some(v) => serde_json::from_value::<Vec<TodoTask>>(v.clone())
+            .map_err(|e| format!("Failed to parse tasks: {}", e))?,
+        None => Vec::new(),
+    };
 
-    let config = store
-        .get("config")
-        .and_then(|v| serde_json::from_value::<TodoConfig>(v.clone()).ok())
-        .unwrap_or_else(get_default_config);
+    let config = match store.get("config") {
+        Some(v) => serde_json::from_value::<TodoConfig>(v.clone())
+            .map_err(|e| format!("Failed to parse config: {}", e))?,
+        None => get_default_config(),
+    };
 
     let version = store
         .get("version")
@@ -718,6 +721,10 @@ pub async fn load_sticky_notes(app: AppHandle) -> Result<Option<TodoStoreData>, 
     }))
 }
 
+/// 串行化保存，防止主窗口与小组件并发保存交错落盘（H2）
+/// ponytail: 全局单锁覆盖整个 store；若出现更多写入方再细化粒度
+static SAVE_LOCK: Mutex<()> = Mutex::new(());
+
 /// Save sticky notes to store
 #[tauri::command]
 pub async fn save_sticky_notes(
@@ -725,6 +732,10 @@ pub async fn save_sticky_notes(
     window: WebviewWindow,
     data: TodoStoreData,
 ) -> Result<(), String> {
+    let _save_guard = SAVE_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+
     let store = app
         .store("sticky-notes")
         .map_err(|e| format!("Failed to open store: {}", e))?;
