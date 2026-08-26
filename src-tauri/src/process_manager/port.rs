@@ -72,11 +72,8 @@ fn query_ports_by_pid_windows(pid: u32) -> Result<Vec<PortInfo>, String> {
         }
     }
 
-    if ports.is_empty() {
-        Err(format!("进程 {} 没有占用任何端口", pid))
-    } else {
-        Ok(ports)
-    }
+    // 进程无端口占用是正常状态,返回空列表(前端展示 0 个端口)
+    Ok(ports)
 }
 
 /// Unix平台根据PID查询端口
@@ -213,11 +210,8 @@ fn query_port_windows(port: u16) -> Result<Vec<PortInfo>, String> {
         }
     }
 
-    if ports.is_empty() {
-        Err(format!("端口 {} 未被占用", port))
-    } else {
-        Ok(ports)
-    }
+    // 端口未被占用时返回空列表（正常状态），由前端展示空态
+    Ok(ports)
 }
 
 /// Unix平台查询端口
@@ -231,7 +225,8 @@ fn query_port_unix(port: u16) -> Result<Vec<PortInfo>, String> {
     match output {
         Ok(output) => {
             if !output.status.success() {
-                return Err(format!("端口 {} 未被占用", port));
+                // 空占用是正常状态,返回空列表由前端展示空态(与 Windows 路径一致)
+                return Ok(Vec::new());
             }
 
             let content = String::from_utf8_lossy(&output.stdout);
@@ -293,11 +288,8 @@ fn query_port_unix(port: u16) -> Result<Vec<PortInfo>, String> {
                 }
             }
 
-            if ports.is_empty() {
-                Err(format!("端口 {} 未被占用", port))
-            } else {
-                Ok(ports)
-            }
+            // 空占用是正常状态,返回空列表由前端展示空态(与 Windows 路径一致)
+            Ok(ports)
         }
         Err(_) => {
             // 如果 lsof 不可用,尝试使用 netstat

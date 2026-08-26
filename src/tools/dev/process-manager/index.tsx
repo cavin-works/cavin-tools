@@ -12,6 +12,7 @@ export const ProcessManager: React.FC = () => {
     processes,
     searchResults,
     portResults,
+    lastQueriedPort,
     isLoading,
     error,
     getProcesses,
@@ -128,8 +129,11 @@ export const ProcessManager: React.FC = () => {
               <ProcessList processes={searchResults} title="搜索结果" />
             )}
 
-            {viewType === 'port' && portResults.length > 0 && (
-              <PortList ports={portResults} portNumber={portResults[0].port} />
+            {viewType === 'port' && (
+              <PortList
+                ports={portResults}
+                portNumber={portResults[0]?.port ?? lastQueriedPort ?? undefined}
+              />
             )}
           </>
         )}

@@ -69,6 +69,7 @@ rusqlite = { version = "0.31", features = ["bundled", "backup"] }
 indexmap = { version = "2", features = ["serde"] }
 
 # Utilities
+md-5 = "0.10"
 regex = "1.10"
 thiserror = "2.0"
 anyhow = "1.0"

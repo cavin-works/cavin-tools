@@ -46,13 +46,6 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
     }
   };
 
-  const formatMemory = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-    return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
-  };
-
   if (processes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -116,7 +109,7 @@ export const ProcessList: React.FC<ProcessListProps> = ({ processes, title }) =>
                       <span className="font-medium text-foreground">{process.name}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-muted-foreground">{formatMemory(process.memory_usage ?? 0)}</span>
+                      <span className="text-muted-foreground">{(process.memory_usage ?? 0).toFixed(1)} MB</span>
                     </td>
                     <td className="py-3 px-4">
                       {ports ? (

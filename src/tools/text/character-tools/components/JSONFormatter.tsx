@@ -13,7 +13,8 @@ type IndentType = '2' | '4' | 'tab';
 
 export function JSONFormatter() {
   const [inputJSON, setInputJSON] = useState('');
-  const [parsedData, setParsedData] = useState<any>(null);
+  // undefined 表示"无结果"；JSON 顶层原始值 0/false/null/"" 都是合法结果
+  const [parsedData, setParsedData] = useState<any>(undefined);
   const [indent, setIndent] = useState<IndentType>('2');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -37,7 +38,7 @@ export function JSONFormatter() {
     
     if (!inputJSON.trim()) {
       setError('请输入 JSON 内容');
-      setParsedData(null);
+      setParsedData(undefined);
       return;
     }
 
@@ -48,7 +49,7 @@ export function JSONFormatter() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '无效的 JSON 格式';
       setError(errorMessage);
-      setParsedData(null);
+      setParsedData(undefined);
     }
   };
 
@@ -57,7 +58,7 @@ export function JSONFormatter() {
   };
 
   const handleCopy = async () => {
-    if (!parsedData) return;
+    if (parsedData === undefined) return;
     
     try {
       const formatted = JSON.stringify(parsedData, null, isCompressed ? 0 : getIndentValue(indent));
@@ -71,7 +72,7 @@ export function JSONFormatter() {
 
   const handleClear = () => {
     setInputJSON('');
-    setParsedData(null);
+    setParsedData(undefined);
     setError('');
     setIsCompressed(false);
   };
@@ -161,7 +162,7 @@ export function JSONFormatter() {
             <Button
               onClick={handleClear}
               variant="outline"
-              disabled={!inputJSON && !parsedData}
+              disabled={!inputJSON && parsedData === undefined}
             >
               清空
             </Button>
@@ -188,7 +189,7 @@ export function JSONFormatter() {
               onClick={handleCopy}
               variant="ghost"
               size="sm"
-              disabled={!parsedData}
+              disabled={parsedData === undefined}
             >
               {copied ? (
                 <>
@@ -205,7 +206,7 @@ export function JSONFormatter() {
           </div>
         </CardHeader>
         <CardContent className="flex-1">
-          {parsedData && !error ? (
+          {parsedData !== undefined && !error ? (
             <div className="border rounded-lg p-4 overflow-auto bg-muted/30 min-h-[200px]">
               <JSONTreeView data={parsedData} />
             </div>

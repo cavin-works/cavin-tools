@@ -15,6 +15,7 @@ use tauri::{Manager, RunEvent};
 #[cfg(feature = "background-remover")]
 pub mod background_remover;
 pub mod ffmpeg;
+pub mod hash_tool;
 pub mod image_collage;
 pub mod image_converter;
 pub mod image_editor;
@@ -1374,6 +1375,7 @@ pub fn run() {
             query_ports_by_pid_command,
             qrcode_tool::generate_qr_png,
             qrcode_tool::save_qr,
+            hash_tool::hash_md5,
             updater::check_update,
             updater::download_and_install_update,
             // ============================================================

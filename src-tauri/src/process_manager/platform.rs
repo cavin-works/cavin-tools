@@ -40,8 +40,8 @@ fn list_processes_windows() -> Result<Vec<ProcessInfo>, String> {
         }
 
         // 解析CSV格式: "映像名称","PID","会话名","会话#","内存使用"
-        // 使用简单的 CSV 解析，处理带引号的字段
-        let parts: Vec<&str> = line.split(',').collect();
+        // 字段值都在引号内，按分隔符 `","` 切分，避免内存字段的千分位逗号把字段切碎
+        let parts: Vec<&str> = line.split("\",\"").collect();
         if parts.len() < 5 {
             continue;
         }
@@ -61,7 +61,7 @@ fn list_processes_windows() -> Result<Vec<ProcessInfo>, String> {
             continue; // 跳过无效 PID
         }
 
-        // 清理并提取内存使用（去掉引号和 " K" 后缀）
+        // 清理并提取内存使用（去掉引号和 " K" 后缀，如 "12,345 K"）
         let memory_str = parts.get(4)
             .map(|s| s.trim().trim_matches('"'))
             .and_then(|s| s.strip_suffix(" K"))

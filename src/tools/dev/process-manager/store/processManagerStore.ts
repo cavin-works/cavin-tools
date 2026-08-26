@@ -12,6 +12,8 @@ interface ProcessManagerState {
   processes: ProcessInfo[];
   searchResults: ProcessInfo[];
   portResults: PortInfo[];
+  /** 最近一次查询的端口号（空结果时用于空态提示） */
+  lastQueriedPort: number | null;
   isLoading: boolean;
   error: string | null;
   searchTerm: string;
@@ -30,7 +32,8 @@ interface ProcessManagerState {
   killProcess: (pid: number) => Promise<void>;
   queryPort: (port: number) => Promise<void>;
   killPort: (port: number) => Promise<void>;
-  queryPortsByPid: (pid: number) => Promise<PortInfo[]>;
+  /** 失败时返回 undefined（错误已写入 store.error），不抛出 */
+  queryPortsByPid: (pid: number) => Promise<PortInfo[] | undefined>;
 
   // 清除
   clear: () => void;
@@ -42,6 +45,7 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
   processes: [],
   searchResults: [],
   portResults: [],
+  lastQueriedPort: null,
   isLoading: false,
   error: null,
   searchTerm: '',
@@ -134,11 +138,11 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
     try {
       const results = await invoke<PortInfo[]>('query_port_command', { port });
       setPortResults(results);
+      set({ lastQueriedPort: port });
       setViewType('port');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`查询端口失败: ${errorMessage}`);
-      throw err;
     } finally {
       setLoading(false);
     }
@@ -175,7 +179,7 @@ export const useProcessManagerStore = create<ProcessManagerState>((set, get) => 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`查询端口失败: ${errorMessage}`);
-      throw err;
+      return undefined;
     }
   },
 

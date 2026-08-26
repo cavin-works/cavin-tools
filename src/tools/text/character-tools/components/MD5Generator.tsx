@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,27 +11,25 @@ export function MD5Generator() {
   const [md5Hash, setMD5Hash] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const generateMD5 = async (text: string) => {
-    if (!text) {
+  useEffect(() => {
+    if (!inputText) {
       setMD5Hash('');
       return;
     }
 
-    try {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(text);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      setMD5Hash(hashHex);
-    } catch (error) {
-      console.error('MD5 生成失败:', error);
-      setMD5Hash('错误: 无法生成哈希值');
-    }
-  };
-
-  useEffect(() => {
-    generateMD5(inputText);
+    // invoke 是异步的：组件卸载（切换 Tab）后不再 setState
+    let cancelled = false;
+    invoke<string>('hash_md5', { text: inputText })
+      .then((hash) => {
+        if (!cancelled) setMD5Hash(hash);
+      })
+      .catch((error) => {
+        console.error('MD5 生成失败:', error);
+        if (!cancelled) setMD5Hash('错误: 无法生成哈希值');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [inputText]);
 
   const handleCopy = async () => {
@@ -80,7 +79,7 @@ export function MD5Generator() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">SHA-256 哈希值</CardTitle>
+            <CardTitle className="text-lg">MD5 哈希值</CardTitle>
             {md5Hash && (
               <Button
                 onClick={handleCopy}
@@ -111,7 +110,7 @@ export function MD5Generator() {
                 </p>
               </div>
               <p className="text-sm text-muted-foreground font-medium">
-                长度: {md5Hash.length} 个字符 (SHA-256)
+                长度: {md5Hash.length} 个字符 (MD5)
               </p>
             </div>
           ) : (

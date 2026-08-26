@@ -54,7 +54,11 @@ export function TimestampConverter() {
       }
       setTimeResult(format(date));
     } else {
-      const date = new Date(text.replace(' ', 'T'));
+      // 纯日期（YYYY-MM-DD）会被 JS 按 UTC 解析，补 T00:00:00 改为本地零点
+      const normalized = /^\d{4}-\d{2}-\d{2}$/.test(text)
+        ? `${text}T00:00:00`
+        : text.replace(' ', 'T');
+      const date = new Date(normalized);
       if (Number.isNaN(date.getTime())) {
         setError('无效的时间格式，请使用 YYYY-MM-DD HH:mm:ss');
         return;

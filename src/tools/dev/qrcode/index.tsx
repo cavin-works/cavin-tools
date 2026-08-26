@@ -24,6 +24,7 @@ export function QrCodeTool() {
   useEffect(() => {
     if (!text.trim()) {
       setPreview('');
+      setLoading(false);
       return;
     }
     let cancelled = false;
